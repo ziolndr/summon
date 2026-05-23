@@ -1880,10 +1880,10 @@ function renderResult(){
   applyModeLabels();
   syncResultQuery();
 
-  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='book'?'view on open library ↗':m.type==='tv'?'view on tvmaze ↗':'view on imdb ↗';
+  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':'view on imdb ↗';
   $('#imdb').onclick=()=>window.open(
     m.type==='game'?`https://rawg.io/games/${m.rawgSlug||encodeURIComponent(m.title.toLowerCase().replaceAll(' ','-'))}`:
-    m.type==='book'?`https://openlibrary.org${m.openLibraryKey||'/search?q='+encodeURIComponent(m.title)}`:
+    m.type==='book'?(m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title)}`):
     m.type==='tv'?(m.tvMazeUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`):
     `https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`,'_blank'
   );
@@ -2245,12 +2245,9 @@ function staticBookRecord(row){
   };
 }
 
-async function loadBooks(limit){
-  const base=STATIC_BOOKS.map(staticBookRecord);
-  const out=[];
-  while(out.length<limit)out.push(...base);
-  return out.slice(0,limit);
-}
+
+
+
 
 
 function fallbackBookCover(title='', author=''){
@@ -2286,6 +2283,98 @@ function fallbackBookCover(title='', author=''){
     </foreignObject>
   </svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+
+/* Gutendex / Project Gutenberg books API + static fallback */
+const GUTENDEX_URL='https://gutendex.com/books';
+
+const GUTENDEX_QUERIES=[
+  'science fiction',
+  'fantasy',
+  'gothic',
+  'dystopia',
+  'philosophy',
+  'ghost',
+  'adventure',
+  'mystery',
+  'romance',
+  'myth'
+];
+
+async function fetchGutendexBatch(query,page=1){
+  const p=new URLSearchParams({
+    search:query,
+    languages:'en',
+    page:String(page)
+  });
+
+  const res=await fetch(`${GUTENDEX_URL}?${p}`);
+  if(!res.ok)throw new Error(`gutendex ${res.status}`);
+  return res.json();
+}
+
+function gutendexBookRecord(item){
+  const title=item?.title||'';
+  const authors=(item?.authors||[]).map(a=>a.name).filter(Boolean);
+  const author=authors[0]||'Unknown author';
+  const subjects=(item?.subjects||[])
+    .map(s=>String(s).replace(/\s+--\s+/g,' / ').trim())
+    .filter(Boolean)
+    .slice(0,8);
+  const bookshelves=(item?.bookshelves||[]).slice(0,3);
+  const topics=(subjects.length?subjects:bookshelves.length?bookshelves:['Public domain literature']);
+  const year=item?.authors?.[0]?.birth_year?String(item.authors[0].birth_year):'';
+  const formats=item?.formats||{};
+  const cover=formats['image/jpeg']||'';
+
+  if(!title)return null;
+
+  return {
+    type:'book',
+    title,
+    authors,
+    year,
+    subjects:topics,
+    genres:topics.slice(0,2),
+    overview:`${title}. ${authors.length?'By '+authors.join(', ')+'. ':''}${topics.length?'Subjects: '+topics.join(', ')+'. ':''}A public-domain literary object indexed through Project Gutenberg metadata, authorship, topic, era, and thematic signal.`,
+    image:cover || fallbackBookCover(title,author),
+    cover:cover || fallbackBookCover(title,author),
+    gutendexId:item.id||'',
+    gutenbergUrl:`https://www.gutenberg.org/ebooks/${item.id}`,
+    openLibraryKey:`/search?q=${encodeURIComponent(title+' '+author)}`
+  };
+}
+
+async function loadBooks(limit){
+  const seen=new Set();
+  const books=[];
+  const pageBase=1+(shuffleSeed%3);
+
+  for(let qi=0;qi<GUTENDEX_QUERIES.length && books.length<limit;qi++){
+    const q=GUTENDEX_QUERIES[(qi+corpusPageOffset)%GUTENDEX_QUERIES.length];
+    const page=pageBase + (qi%2);
+    try{
+      const data=await fetchGutendexBatch(q,page);
+      for(const item of(data.results||[])){
+        const rec=gutendexBookRecord(item);
+        if(!rec||seen.has(rec.title))continue;
+        seen.add(rec.title);
+        books.push(rec);
+        if(books.length>=limit)break;
+      }
+    }catch(e){
+      console.warn('Gutendex failed, falling back to static corpus',e);
+      break;
+    }
+  }
+
+  if(books.length<Math.min(24,limit)){
+    const fallback=STATIC_BOOKS.map(staticBookRecord).filter(b=>!seen.has(b.title));
+    books.push(...fallback);
+  }
+
+  return books.slice(0,limit);
 }
 
 </script>
