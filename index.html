@@ -5,6 +5,20 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#ffffff">
 <title>SUMMON</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+<meta name="description" content="Find anything by meaning.">
+<meta property="og:title" content="SUMMON">
+<meta property="og:description" content="Find anything by meaning.">
+<meta property="og:image" content="/og-image.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SUMMON">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SUMMON">
+<meta name="twitter:description" content="Find anything by meaning.">
+<meta name="twitter:image" content="/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
@@ -1159,6 +1173,170 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell.media-tv{
   }
 }
 
+
+/* ─── Mobile result-state hard fix ───
+   Search results must render on mobile, and only one theme toggle should be visible. */
+
+body.has-results{
+  overflow-x:hidden !important;
+}
+
+@media(max-width:980px){
+  body.has-results .top{
+    display:none !important;
+  }
+
+  body.has-results .results{
+    display:block !important;
+    visibility:visible !important;
+    opacity:1 !important;
+    min-height:100svh !important;
+    height:auto !important;
+    overflow:visible !important;
+    background:var(--bg) !important;
+  }
+
+  body.has-results .feature{
+    display:block !important;
+    position:relative !important;
+    visibility:visible !important;
+    opacity:1 !important;
+    min-height:68svh !important;
+    height:auto !important;
+    overflow:hidden !important;
+  }
+
+  body.has-results .feature-media,
+  body.has-results .feature-img{
+    display:block !important;
+    visibility:visible !important;
+    opacity:1 !important;
+  }
+
+  body.has-results .feature-content{
+    display:flex !important;
+    visibility:visible !important;
+    opacity:1 !important;
+    min-height:68svh !important;
+    height:auto !important;
+  }
+
+  body.has-results .ranking{
+    display:block !important;
+    position:relative !important;
+    visibility:visible !important;
+    opacity:1 !important;
+    min-height:auto !important;
+    height:auto !important;
+    overflow:visible !important;
+    background:var(--bg) !important;
+  }
+
+  body.has-results .rank-list,
+  body.has-results #rankList{
+    display:block !important;
+    visibility:visible !important;
+    opacity:1 !important;
+  }
+
+  body.has-results .rank-row{
+    display:grid !important;
+  }
+
+  /* mobile theme toggle: only the fixed top-right result toggle may show */
+  body.has-results .theme-switch:not(.result-theme-switch .theme-switch){
+    display:none !important;
+  }
+
+  body.has-results .result-theme-switch{
+    display:block !important;
+    position:fixed !important;
+    top:14px !important;
+    right:14px !important;
+    z-index:3000 !important;
+  }
+
+  body.has-results .result-theme-switch .theme-switch{
+    display:block !important;
+  }
+
+  body:not(.has-results) .result-theme-switch{
+    display:none !important;
+  }
+}
+
+/* desktop also should not show duplicate result toggles unless on result page */
+body:not(.has-results) .result-theme-switch{
+  display:none !important;
+}
+
+
+/* duplicate theme toggle cleanup */
+@media(max-width:980px){
+  body.has-results .search-pane .theme-switch,
+  body.has-results .top .theme-switch,
+  body.has-results .mode-row .theme-switch{
+    display:none !important;
+  }
+
+  body.has-results .result-theme-switch{
+    display:block !important;
+  }
+}
+
+
+/* compact segmented controls — no full-width containers */
+.mode-row{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  align-items:center !important;
+  gap:10px !important;
+  width:auto !important;
+  max-width:max-content !important;
+}
+
+.mode-group,
+.depth-group,
+.toggle-group,
+.search-mode,
+.search-depth{
+  display:inline-flex !important;
+  width:auto !important;
+  max-width:max-content !important;
+  flex:0 0 auto !important;
+}
+
+.toggle-btn,
+.mode-btn,
+.depth-btn,
+[data-mode],
+[data-depth]{
+  flex:0 0 auto !important;
+  width:auto !important;
+  min-width:auto !important;
+}
+
+@media(max-width:980px){
+  .mode-row{
+    max-width:100% !important;
+    gap:8px !important;
+  }
+
+  .mode-group,
+  .depth-group,
+  .toggle-group,
+  .search-mode,
+  .search-depth{
+    max-width:max-content !important;
+  }
+}
+
+@media(max-width:560px){
+  .mode-row{
+    align-items:flex-start !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1575,13 +1753,14 @@ async function search(text){
 
     if(!results.length){toast('no response');return}
 
-    renderResult();
     document.body.classList.add('cutting');
-    setTimeout(()=>{
-      document.body.classList.add('has-results');
-      window.scrollTo({top:0,behavior:'instant'});
+    document.body.classList.add('has-results');
+    renderResult();
+    requestAnimationFrame(()=>{
+      window.scrollTo({top:0,behavior:'auto'});
+      $('#results')?.scrollIntoView({behavior:'auto',block:'start'});
       document.body.classList.remove('cutting');
-    },140);
+    });
     history.replaceState(null,'',`#${encodeURIComponent(q)}`);
   }catch(e){
     console.error(e);toast('connection failed');
@@ -1636,6 +1815,10 @@ function renderResult(){
     navigator.clipboard?.writeText(url).then(()=>toast('link copied'));
   };
   renderRankList();
+  document.body.classList.add('results-mounted');
+  requestAnimationFrame(()=>{
+    try{ autosizeResultQueryFull?.(); }catch(e){}
+  });
 }
 
 function renderRankList(){
@@ -1674,7 +1857,7 @@ function newSearch(){
   stopOracleDrift();
   document.body.classList.remove('has-results','searching','cutting');
   history.replaceState(null,'',location.pathname+location.search);
-  window.scrollTo({top:0,behavior:'instant'});
+  window.scrollTo({top:0,behavior:'auto'});
   query.focus({preventScroll:true});
   finishResolveState();resetQueryTraces();
   setTimeout(startOracleDrift,500);
@@ -1712,7 +1895,7 @@ async function setCorpusMode(mode){
   if(document.body.classList.contains('has-results')){
     document.body.classList.remove('has-results','searching','cutting');
     history.replaceState(null,'',location.pathname+location.search);
-    window.scrollTo({top:0,behavior:'instant'});
+    window.scrollTo({top:0,behavior:'auto'});
   }
 }
 
@@ -1950,6 +2133,18 @@ document.addEventListener('keydown',e=>{
     setTimeout(startQueryTraces,500);
   }
 })();
+
+
+function showResultsMobileSafe(){
+  document.body.classList.add('has-results','results-mounted');
+  requestAnimationFrame(()=>{
+    renderResult();
+    requestAnimationFrame(()=>{
+      window.scrollTo({top:0,behavior:'auto'});
+      document.querySelector('#results')?.scrollIntoView({behavior:'auto',block:'start'});
+    });
+  });
+}
 
 </script>
 </body>
