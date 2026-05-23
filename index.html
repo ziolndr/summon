@@ -1661,23 +1661,55 @@ async function loadGames(limit){
   return out;
 }
 
-async function loadBooks(limit){
-  const perPage=Math.min(100,Math.max(40,limit));
-  const np=Math.max(1,Math.ceil(limit/perPage));
-  const pages=await Promise.all(Array.from({length:np},(_,i)=>fetchOLPage(i+1,perPage).catch(()=>({docs:[]}))));
-  const seen=new Set(),out=[];
-  for(const page of pages){
-    for(const b of(page.docs||[])){
-      if(!b?.title||seen.has(b.title))continue;
-      seen.add(b.title);
-      const rec=bookRecord(b);
-      if(!rec.cover)continue;
-      out.push(rec);if(out.length>=limit)break;
+
+async function loadBooks(limit=bookLimit()){
+  const base='https://openlibrary.org/search.json';
+  const fields='title,author_name,first_publish_year,subject,cover_i,edition_count';
+  const queries=[
+    'subject:fiction OR subject:literature OR subject:science_fiction OR subject:fantasy',
+    'subject:classic_literature OR subject:science_fiction OR subject:fantasy',
+    'subject:dystopia OR subject:robots OR subject:philosophy'
+  ];
+
+  const docs=[];
+  for(const q of queries){
+    if(docs.length>=limit)break;
+    const url=`${base}?q=${encodeURIComponent(q)}&limit=${Math.min(100,limit)}&fields=${encodeURIComponent(fields)}`;
+    try{
+      const data=await fetchJsonCorsSafe(url);
+      docs.push(...(data.docs||[]));
+    }catch(e){
+      console.warn('Open Library blocked, using fallback books', e);
+      break;
     }
-    if(out.length>=limit)break;
   }
-  return out;
+
+  const seen=new Set();
+  const books=[];
+  for(const d of docs){
+    const title=d.title||'';
+    if(!title||seen.has(title))continue;
+    seen.add(title);
+    const author=(d.author_name||[])[0]||'Unknown author';
+    const subjects=(d.subject||[]).slice(0,8).filter(Boolean);
+    const cover=d.cover_i?`https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg`:'';
+    books.push({
+      type:'book',
+      title,
+      author,
+      year:d.first_publish_year?String(d.first_publish_year):'',
+      subjects,
+      genres:subjects.slice(0,2),
+      overview:`${title}. By ${author}. Subjects: ${subjects.join(', ') || 'Literature'}. A literary object indexed through authorship, subject, era, and thematic signal.`,
+      src:cover || `https://covers.openlibrary.org/b/title/${encodeURIComponent(title)}-L.jpg`,
+      externalUrl:`https://openlibrary.org/search?q=${encodeURIComponent(title+' '+author)}`
+    });
+    if(books.length>=limit)break;
+  }
+
+  return books.length ? books : fallbackBookCorpus(limit);
 }
+
 
 async function loadTV(limit){
   const np=Math.max(1,Math.ceil(limit/250));
@@ -2176,6 +2208,72 @@ function showResultsMobileSafe(){
       document.querySelector('#results')?.scrollIntoView({behavior:'auto',block:'start'});
     });
   });
+}
+
+
+/* Open Library CORS fix + local book fallback */
+const CORS_JSON_PROXIES=[
+  url=>`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url=>`https://corsproxy.io/?${encodeURIComponent(url)}`
+];
+
+async function fetchJsonCorsSafe(url, opts={}){
+  try{
+    const direct=await fetch(url, opts);
+    if(direct.ok)return direct.json();
+  }catch(e){}
+  for(const wrap of CORS_JSON_PROXIES){
+    try{
+      const res=await fetch(wrap(url), opts);
+      if(res.ok)return res.json();
+    }catch(e){}
+  }
+  throw new Error(`cors blocked ${url}`);
+}
+
+const FALLBACK_BOOKS=[
+  ['The Invisible Man','H. G. Wells',1897,['Science Fiction','Classic Literature','Identity','Experiment']],
+  ['Frankenstein','Mary Shelley',1818,['Gothic fiction','Science Fiction','Creation','Monstrosity']],
+  ['Foundation','Isaac Asimov',1951,['Science Fiction','Psychohistory','Empire','Systems']],
+  ['The Robots of Dawn','Isaac Asimov',1983,['Robots','Science Fiction','Detection','Society']],
+  ['The Naked Sun','Isaac Asimov',1957,['Robots','Science Fiction','Isolation','Civilization']],
+  ['The Picture of Dorian Gray','Oscar Wilde',1890,['Beauty','Corruption','Identity','Fantasy']],
+  ['1984','George Orwell',1949,['Dystopia','Surveillance','Power','Language']],
+  ['The Left Hand of Darkness','Ursula K. Le Guin',1969,['Science Fiction','Gender','Alien worlds','Diplomacy']],
+  ['The Hobbit','J. R. R. Tolkien',1937,['Fantasy','Quest','Adventure','Myth']],
+  ['Neuromancer','William Gibson',1984,['Cyberpunk','Artificial intelligence','Cities','Memory']],
+  ['Dune','Frank Herbert',1965,['Science Fiction','Empire','Ecology','Prophecy']],
+  ['Solaris','Stanisław Lem',1961,['Science Fiction','Consciousness','Alien intelligence','Memory']],
+  ['Brave New World','Aldous Huxley',1932,['Dystopia','Conditioning','Pleasure','Control']],
+  ['Do Androids Dream of Electric Sheep?','Philip K. Dick',1968,['Androids','Empathy','Reality','Science Fiction']],
+  ['A Scanner Darkly','Philip K. Dick',1977,['Identity','Surveillance','Drugs','Fragmentation']],
+  ['The Trial','Franz Kafka',1925,['Law','Bureaucracy','Guilt','Absurdism']],
+  ['Invisible Cities','Italo Calvino',1972,['Cities','Memory','Architecture','Imagination']],
+  ['The Name of the Rose','Umberto Eco',1980,['Mystery','Semiotics','Monastery','Knowledge']],
+  ['The Dispossessed','Ursula K. Le Guin',1974,['Anarchism','Physics','Society','Exile']],
+  ['Snow Crash','Neal Stephenson',1992,['Cyberpunk','Language','Virtual reality','Religion']],
+  ['Blood Meridian','Cormac McCarthy',1985,['Violence','Myth','American West','Fate']],
+  ['The Road','Cormac McCarthy',2006,['Survival','Fatherhood','Apocalypse','Memory']],
+  ['Moby-Dick','Herman Melville',1851,['Obsession','Sea','Metaphysics','Whales']],
+  ['Ficciones','Jorge Luis Borges',1944,['Labyrinths','Infinity','Books','Reality']],
+  ['The Three-Body Problem','Liu Cixin',2008,['First contact','Physics','Civilization','Science Fiction']],
+  ['Station Eleven','Emily St. John Mandel',2014,['Art','Pandemic','Memory','Performance']],
+  ['Annihilation','Jeff VanderMeer',2014,['Biology','Area X','Mutation','Perception']],
+  ['House of Leaves','Mark Z. Danielewski',2000,['Architecture','Horror','Text','Labyrinth']]
+];
+
+function fallbackBookCorpus(limit=160){
+  return FALLBACK_BOOKS.slice(0,limit).map(([title,author,year,subjects])=>({
+    type:'book',
+    title,
+    author,
+    year:String(year||''),
+    subjects,
+    genres:subjects.slice(0,2),
+    overview:`${title}. By ${author}. Subjects: ${subjects.join(', ')}. A literary object indexed through authorship, subject, era, and thematic signal.`,
+    src:`https://covers.openlibrary.org/b/title/${encodeURIComponent(title)}-L.jpg`,
+    externalUrl:`https://openlibrary.org/search?q=${encodeURIComponent(title+' '+author)}`
+  }));
 }
 
 </script>
