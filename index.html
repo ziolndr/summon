@@ -1,0 +1,1956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#ffffff">
+<title>SUMMON</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+<style>
+/* ─── Variables ─── */
+:root{
+  --bg:#ffffff;
+  --bg2:#f5f3ee;
+  --ink:#0b0b0b;
+  --ink-mid:rgba(11,11,11,.56);
+  --ink-soft:rgba(11,11,11,.36);
+  --ink-faint:rgba(11,11,11,.16);
+  --line:rgba(11,11,11,.18);
+  --wall:#050505;
+  --wall-filter:contrast(1.08) saturate(1.04) brightness(.98);
+  --tile-lift:0 10px 28px rgba(0,0,0,.18);
+  --tile-edge:0 0 0 1px rgba(255,255,255,.03);
+  --grain-svg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.15' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
+  --hero-text:#f6f1e8;
+  --hero-text-mid:rgba(246,241,232,.72);
+  --hero-text-soft:rgba(246,241,232,.48);
+  --accent:#b24b36;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  --sans:'General Sans','Inter',system-ui,sans-serif;
+  --brand:'Unbounded','General Sans',sans-serif;
+}
+body[data-theme="dark"]{
+  --bg:#050505;
+  --bg2:#0a0a0a;
+  --ink:#f4f1eb;
+  --ink-mid:rgba(244,241,235,.56);
+  --ink-soft:rgba(244,241,235,.36);
+  --ink-faint:rgba(244,241,235,.14);
+  --line:rgba(244,241,235,.14);
+  --accent:#d86b4c;
+}
+
+/* ─── Reset ─── */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+button,input,textarea{font:inherit}
+button{border:0;background:none;color:inherit;cursor:pointer}
+img{display:block}
+
+/* ─── Base ─── */
+html,body{
+  width:100%;min-height:100%;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+body::after{
+  content:'';position:fixed;inset:0;z-index:999;pointer-events:none;
+  opacity:.032;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.76' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:220px;
+}
+
+/* ─── Homepage Grid ─── */
+.top{
+  min-height:100svh;
+  display:grid;
+  grid-template-columns:34.5vw 1fr;
+  border-bottom:1px solid var(--line);
+  background:var(--bg);
+}
+
+/* ─── Search Pane ─── */
+.search-pane{
+  min-height:100svh;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:64px clamp(28px,4vw,72px);
+  position:relative;
+}
+
+/* ─── Brand ─── */
+.brand{
+  font-family:var(--brand);
+  font-weight:700;
+  text-transform:uppercase;
+  font-size:clamp(38px,4.6vw,66px);
+  letter-spacing:-.075em;
+  line-height:.84;
+  color:var(--ink);
+}
+
+/* ─── Form Elements ─── */
+.prompt-label{
+  margin-top:34px;
+  font-family:var(--mono);font-size:10px;
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-mid);
+}
+.search-form{
+  margin-top:18px;max-width:520px;
+  display:grid;grid-template-columns:minmax(0,1fr) 30px;
+  gap:14px;align-items:end;
+  border-bottom:1px solid var(--ink-mid);
+  padding-bottom:12px;
+}
+#query{
+  width:100%;min-width:0;outline:0;border:0;background:transparent;
+  color:var(--ink);font-family:var(--mono);font-size:18px;line-height:1.25;
+}
+#query::placeholder{color:var(--ink-soft)}
+#go{
+  font-family:var(--mono);font-size:24px;line-height:1;
+  color:var(--ink-mid);transition:transform .15s ease,color .15s ease;
+}
+#go:hover{transform:translateX(3px);color:var(--ink)}
+.search-hint{
+  margin-top:12px;max-width:520px;
+  font-family:var(--mono);font-size:10px;
+  text-transform:uppercase;letter-spacing:.12em;
+  color:var(--ink-soft);
+}
+
+/* ─── Controls Row ─── */
+.mode-row{
+  margin-top:18px;max-width:560px;
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+}
+.toggle-group{
+  display:inline-flex;gap:4px;padding:3px;
+  border:1px solid var(--ink-faint);
+  font-family:var(--mono);font-size:10px;
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.toggle-btn{
+  padding:6px 9px;color:var(--ink-soft);
+  transition:background .12s,color .12s;
+}
+.toggle-btn.active{background:var(--ink);color:var(--bg)}
+.toggle-btn[aria-busy="true"]{opacity:.6}
+
+/* ─── Theme Switch ─── */
+.theme-switch{
+  width:34px;height:16px;padding:0;border:0;
+  background:transparent;position:relative;
+  opacity:.6;transition:opacity .16s,transform .16s;
+}
+.theme-switch:hover{opacity:.9}
+.theme-switch:active{transform:scale(.97)}
+.theme-switch::before{
+  content:'';position:absolute;inset:0;border-radius:999px;
+  background:var(--ink-faint);
+  box-shadow:inset 0 0 0 1px var(--ink-faint);
+}
+.theme-switch span{
+  position:absolute;top:3px;left:3px;
+  width:10px;height:10px;border-radius:2px;
+  background:var(--ink);transition:transform .18s cubic-bezier(.4,0,.2,1);
+}
+body[data-theme="dark"] .theme-switch span{transform:translateX(18px)}
+
+/* ─── Corpus Loading ─── */
+.corpus-load-state{
+  margin-top:14px;max-width:520px;
+  font-family:var(--mono);
+}
+.corpus-load-copy{
+  font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-soft);
+  min-height:1.2em;font-variant-numeric:tabular-nums;
+}
+.corpus-load-bar{
+  position:relative;margin-top:8px;height:1px;
+  overflow:hidden;background:var(--ink-faint);
+}
+.corpus-load-bar span{
+  position:absolute;top:0;left:0;height:100%;width:0%;
+  background:var(--ink);transition:width .32s;
+}
+body.corpus-loading .corpus-load-copy{color:var(--ink-mid)}
+body.corpus-loading .corpus-load-bar span{
+  width:34%;animation:barSweep 1.15s cubic-bezier(.4,0,.2,1) infinite;
+}
+body.corpus-ready .corpus-load-bar span{width:100%;animation:none;opacity:.4}
+
+/* ─── Query Traces ─── */
+.query-traces{
+  margin-top:20px;max-width:520px;
+  font-family:var(--mono);color:var(--ink-soft);user-select:none;
+}
+.trace-label{
+  font-size:9px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px;
+}
+.trace-line{
+  min-height:18px;display:flex;align-items:baseline;gap:8px;
+  font-size:11px;line-height:1.45;letter-spacing:.015em;
+  color:var(--ink-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.trace-prefix{color:var(--ink-faint)}
+.trace-cursor{
+  display:inline-block;width:6px;height:1em;
+  border-right:1px solid var(--ink-soft);
+  transform:translateY(2px);animation:blink 1.1s steps(2,end) infinite;
+}
+
+/* ─── Resolve State ─── */
+.resolve-state{display:none;margin-top:20px;max-width:520px;font-family:var(--mono)}
+body.searching .resolve-state{display:block}
+body.searching .query-traces{display:none}
+.resolve-kicker{
+  font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-soft);margin-bottom:6px;
+}
+.resolve-status{
+  min-height:18px;font-size:11px;letter-spacing:.06em;
+  color:var(--ink-mid);font-weight:500;margin-bottom:10px;
+}
+.resolve-bar{
+  position:relative;height:1px;overflow:hidden;background:var(--ink-faint);
+}
+.resolve-bar span{
+  position:absolute;top:0;left:0;height:100%;width:34%;
+  background:var(--ink);transform:translateX(-120%);
+}
+body.searching .resolve-bar span{animation:barSweep 1.15s cubic-bezier(.4,0,.2,1) infinite}
+
+/* ─── Film Wall Pane ─── */
+.film-wall-pane{
+  min-height:100svh;height:100svh;
+  background:var(--wall);overflow:auto;position:relative;
+  overscroll-behavior:contain;
+}
+.film-wall-pane::-webkit-scrollbar{width:0;height:0}
+
+/* ─── Film Wall Grid ─── */
+.film-wall{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-auto-rows:auto;
+  gap:1px;
+  background:var(--wall);
+}
+
+/* ─── Wall Tiles ─── */
+.wall-cell{
+  position:relative;overflow:hidden;
+  aspect-ratio:3/4;
+  background:var(--wall);
+  box-shadow:var(--tile-edge),var(--tile-lift);
+  isolation:isolate;
+}
+.wall-cell img{
+  width:100%;height:100%;
+  object-fit:cover;object-position:center;
+  filter:var(--wall-filter);
+  transform:scale(1.01);
+  transition:filter .3s ease,transform .3s ease;
+}
+.wall-cell::before{
+  content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(circle at center,
+    rgba(0,0,0,0) 42%,
+    rgba(0,0,0,.08) 76%,
+    rgba(0,0,0,.16) 100%);
+}
+.wall-cell::after{
+  content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:
+    linear-gradient(to bottom,transparent 55%,rgba(0,0,0,.12) 100%),
+    var(--grain-svg);
+  background-size:auto,160px 160px;
+  mix-blend-mode:soft-light;
+  opacity:.12;
+}
+
+/* ─── Search State ─── */
+body.searching .film-wall{animation-play-state:paused}
+body.searching .film-wall-pane{
+  filter:brightness(.68) saturate(.84);
+  transition:filter .3s ease;
+}
+body.searching .resolve-kicker{color:var(--ink-mid)}
+body.searching .resolve-status{color:var(--ink);font-weight:600}
+
+/* ─── Cut Transition ─── */
+body.cutting::before{
+  content:'';position:fixed;inset:0;z-index:2000;
+  background:#000;pointer-events:none;
+  animation:cutFlash .24s ease both;
+}
+body.has-results .results{animation:fadeIn .28s ease both}
+
+/* ─── Hide Homepage on Results ─── */
+body.has-results .top{display:none}
+
+/* ─── Results Layout ─── */
+.results{
+  display:none;
+  grid-template-columns:minmax(380px,52vw) 1fr;
+  min-height:100svh;background:var(--bg);
+}
+body.has-results .results{display:grid}
+
+/* ─── Feature Hero ─── */
+.feature{
+  position:relative;min-height:100svh;
+  background:#080808;color:var(--hero-text);overflow:hidden;
+}
+.feature-media{
+  position:absolute;inset:0;width:100%;height:100%;
+  background:#050505;overflow:hidden;isolation:isolate;
+}
+.feature-media::before{
+  content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(circle at center,
+    rgba(0,0,0,0) 44%,
+    rgba(0,0,0,.08) 78%,
+    rgba(0,0,0,.16) 100%);
+}
+.feature-media::after{
+  content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:var(--grain-svg);
+  background-size:160px 160px;
+  mix-blend-mode:soft-light;
+  opacity:.10;
+}
+.feature-img{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:center;
+  image-rendering:auto;
+  filter:contrast(1.08) saturate(1.04) brightness(.98);
+  transform:scale(1.01);
+}
+.feature::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:
+    linear-gradient(to right,rgba(0,0,0,.58) 0%,rgba(0,0,0,.18) 46%,rgba(0,0,0,.04) 100%),
+    linear-gradient(to bottom,rgba(0,0,0,.03) 0%,rgba(0,0,0,.04) 54%,rgba(0,0,0,.44) 100%);
+}
+.feature-img.is-posterish{object-position:center 28%}
+.feature.posterish::after{
+  background:
+    linear-gradient(to right,rgba(0,0,0,.58) 0%,rgba(0,0,0,.20) 42%,rgba(0,0,0,.04) 100%),
+    linear-gradient(to bottom,rgba(0,0,0,.04) 0%,rgba(0,0,0,.04) 54%,rgba(0,0,0,.44) 100%);
+}
+.feature-content{
+  position:relative;z-index:3;min-height:100svh;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:clamp(26px,4vw,58px);
+}
+.back{
+  position:absolute;top:clamp(20px,2.6vw,38px);
+  left:clamp(26px,4vw,58px);align-self:flex-start;
+  font-family:var(--mono);font-size:11px;text-transform:uppercase;
+  color:var(--hero-text-mid);
+}
+.feature-main{max-width:430px;padding-bottom:clamp(10px,2vw,26px)}
+#title{
+  font-family:var(--sans);font-size:clamp(34px,4.2vw,64px);
+  line-height:.96;font-weight:600;letter-spacing:-.05em;
+  color:#fff;text-wrap:balance;max-width:12ch;
+  text-shadow:0 2px 24px rgba(0,0,0,.36);
+}
+.meta{
+  margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;
+  font-size:12px;letter-spacing:.01em;color:var(--hero-text-mid);
+}
+.meta span:not(:last-child)::after{
+  content:'·';margin-left:8px;color:var(--hero-text-soft);
+}
+.score-row{
+  display:inline-flex;margin-top:16px;
+  border:1px solid var(--hero-text-soft);
+  font-family:var(--mono);font-size:10px;text-transform:uppercase;
+}
+.score-row span{padding:8px 12px;border-right:1px solid var(--hero-text-soft)}
+.score-row span:last-child{border-right:0}
+#overview{
+  margin-top:16px;max-width:37ch;
+  font-size:14px;line-height:1.52;color:var(--hero-text-mid);
+}
+.actions{display:flex;gap:16px;align-items:center;margin-top:24px}
+.action{
+  font-family:var(--mono);font-size:11px;
+  color:var(--hero-text-mid);text-transform:uppercase;
+  text-decoration:underline;text-underline-offset:4px;
+}
+.action.link{opacity:.7}
+
+/* ─── Ranking Panel ─── */
+.ranking{
+  min-height:100svh;
+  padding:clamp(34px,4.5vw,70px) clamp(32px,4.8vw,76px);
+  background:var(--bg);border-left:1px solid var(--line);
+  overflow:auto;
+}
+.ranking::-webkit-scrollbar{width:0}
+.result-query-shell{
+  margin-bottom:28px;padding-bottom:22px;
+  border-bottom:1px solid var(--line);
+}
+.result-mode{
+  margin-bottom:12px;font-family:var(--mono);
+  font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-soft);
+}
+.result-query-form{
+  display:grid;grid-template-columns:minmax(0,1fr) 34px;
+  gap:18px;align-items:start;
+}
+#resultQuery{
+  width:100%;min-width:0;min-height:2.4em;resize:none;overflow:hidden;
+  border:0;outline:0;background:transparent;
+  color:var(--ink);font-family:var(--sans);
+  font-size:clamp(24px,2.6vw,42px);line-height:1.08;
+  font-weight:500;letter-spacing:-.045em;
+  white-space:pre-wrap;
+}
+#resultQuery::placeholder{color:var(--ink-soft)}
+#resultGo{
+  padding-top:.15em;font-family:var(--mono);
+  font-size:24px;color:var(--ink-mid);
+  transition:transform .16s,opacity .16s;
+}
+#resultGo:hover{transform:translateX(3px)}
+#resultGo:active{transform:translateX(6px) scale(.96)}
+
+/* ─── Result Processing ─── */
+.result-processing{
+  display:none;margin-top:14px;
+  font-family:var(--mono);font-size:10px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);
+}
+.result-processing i{
+  display:block;position:relative;height:1px;margin-top:8px;
+  overflow:hidden;background:var(--ink-faint);
+}
+.result-processing i::after{
+  content:'';position:absolute;top:0;left:0;
+  width:34%;height:100%;background:var(--ink);
+  transform:translateX(-120%);
+}
+body.has-results.searching .result-processing{display:block}
+body.has-results.searching .result-processing i::after{
+  animation:barSweep 1.15s cubic-bezier(.4,0,.2,1) infinite;
+}
+body.has-results.searching .rank-list{opacity:.4;transition:opacity .24s}
+body.has-results.searching .feature-img{
+  filter:saturate(.86) brightness(.72);transition:filter .28s;
+}
+body.has-results.searching #resultGo{
+  animation:arrowPulse .75s ease-in-out infinite alternate;
+}
+
+/* ─── Rank List ─── */
+.rank-intro{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:18px;
+}
+.rank-kicker,.rank-count{
+  font-family:var(--mono);font-size:10px;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);
+}
+.rank-list{display:flex;flex-direction:column}
+.rank-row{
+  width:100%;text-align:left;
+  display:grid;grid-template-columns:28px 72px minmax(0,1fr) auto;
+  gap:16px;align-items:center;padding:13px 0;
+  border-bottom:1px solid var(--ink-faint);
+  color:var(--ink);background:transparent;
+  transition:background .12s;
+}
+.rank-row:hover{background:var(--ink-faint)}
+.wall-cell:hover img{transform:scale(1.02);filter:contrast(1.1) saturate(1.06) brightness(1)}
+.rank-row.active .rank-title{color:var(--accent)}
+.rank-num{
+  font-family:var(--mono);font-size:11px;color:var(--ink-soft);
+}
+.rank-thumb{
+  width:72px;height:48px;object-fit:cover;object-position:center;
+  filter:contrast(1.08) saturate(1.04) brightness(.98);
+  background:var(--wall);
+  box-shadow:0 0 0 1px rgba(255,255,255,.03),0 8px 20px rgba(0,0,0,.14);
+}
+.rank-copy{min-width:0}
+.rank-title{
+  display:block;font-size:15px;font-weight:500;line-height:1.15;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  color:var(--ink);letter-spacing:-.01em;
+}
+.rank-meta{
+  margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;
+  font-family:var(--mono);font-size:10px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);
+}
+.rank-score{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:62px;padding:7px 10px;
+  border:1px solid var(--ink-soft);
+  font-family:var(--mono);font-size:12px;
+  color:var(--ink-mid);font-variant-numeric:tabular-nums;
+  transition:border-color .16s,color .16s;
+}
+.rank-row.active .rank-score{border-color:var(--accent);color:var(--accent)}
+.rank-actions{
+  margin-top:26px;display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--mono);font-size:11px;text-transform:uppercase;
+  color:var(--ink-soft);
+}
+.rank-actions button{color:var(--ink-mid)}
+
+/* ─── Lower Links ─── */
+.lower-links{
+  position:absolute;left:clamp(28px,4vw,72px);right:clamp(28px,4vw,72px);
+  bottom:34px;display:flex;justify-content:space-between;gap:20px;
+  align-items:flex-end;
+  font-family:var(--mono);font-size:10px;text-transform:uppercase;
+  color:var(--ink-mid);
+  border-top:1px solid var(--ink-faint);padding-top:16px;
+}
+.site-signals{
+  display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;
+  font-variant-numeric:tabular-nums;line-height:1.6;
+}
+.site-signal-primary{flex-basis:100%;color:var(--ink-mid)}
+.site-signal:not(.site-signal-primary){color:var(--ink-soft)}
+.site-signal:not(.site-signal-primary)::after{
+  content:'';display:inline-block;width:14px;height:1px;
+  margin-left:12px;vertical-align:middle;background:var(--ink-faint);
+}
+.site-signal:last-child::after{display:none}
+
+/* ─── Result Theme Switch (fixed) ─── */
+.result-theme-switch{
+  position:fixed;top:18px;right:18px;z-index:1000;display:none;
+}
+body.has-results .result-theme-switch{display:block}
+
+/* ─── Toast ─── */
+.toast{
+  position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+  z-index:120;background:#000;color:#fff;
+  font-family:var(--mono);font-size:11px;padding:10px 16px;
+}
+
+/* ─── Keyframes ─── */
+@keyframes barSweep{
+  from{transform:translateX(-120%)}
+  to{transform:translateX(330%)}
+}
+@keyframes blink{50%{opacity:0}}
+@keyframes cutFlash{
+  0%{opacity:0}45%{opacity:1}100%{opacity:0}
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes arrowPulse{
+  from{transform:translateX(0);opacity:.5}
+  to{transform:translateX(4px);opacity:1}
+}
+
+/* ─── Desktop Wall Drift ─── */
+@media(min-width:981px){
+  .film-wall-pane{overflow:hidden !important}
+  .film-wall{min-height:200svh}
+}
+
+/* ─── Tablet ─── */
+@media(max-width:980px){
+  html,body{height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto}
+  .top{display:block !important;min-height:auto;background:var(--bg)}
+  .search-pane{
+    min-height:auto;padding:42px 20px 24px;
+    border-bottom:1px solid var(--line);
+  }
+  .brand{font-size:clamp(42px,13.5vw,64px)}
+  .prompt-label{margin-top:28px}
+  #query{font-size:clamp(20px,6.7vw,30px)}
+  .search-form{max-width:100%}
+  .search-hint{max-width:100%;font-size:9px}
+  .mode-row{max-width:100%;display:grid;grid-template-columns:1fr;gap:10px}
+  .toggle-group{
+    max-width:100%;overflow-x:auto;white-space:nowrap;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
+  .toggle-group::-webkit-scrollbar{display:none}
+  .toggle-btn{flex:0 0 auto;font-size:9px;padding:7px 10px}
+  .corpus-load-state,.query-traces{max-width:100%}
+  .trace-line{max-width:100%;overflow:hidden}
+  .lower-links{
+    position:relative;inset:auto;margin-top:26px;
+    display:grid;grid-template-columns:minmax(0,1fr) auto;
+    gap:14px;align-items:end;
+  }
+  .site-signals{max-width:100%;font-size:8px}
+  .film-wall-pane{
+    position:relative;height:auto;min-height:0;
+    max-height:none;overflow:visible;
+  }
+  .film-wall{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    min-height:0;height:auto;
+  }
+  .results{display:block !important;min-height:100svh}
+  .feature{min-height:64svh;width:100%}
+  .feature-media{min-height:64svh;width:100%}
+  .feature-content{padding:42px 20px 24px}
+  #title{font-size:clamp(42px,13vw,68px);max-width:92vw;overflow-wrap:break-word}
+  .ranking{
+    width:100%;min-height:auto;
+    padding:28px 20px 40px;border-left:0;
+    border-top:1px solid var(--line);
+  }
+  #resultQuery{font-size:clamp(26px,8vw,38px)}
+  .rank-row{grid-template-columns:24px 64px minmax(0,1fr) auto;gap:10px}
+  .rank-thumb{width:64px;height:44px}
+  .rank-score{min-width:54px;padding:7px 8px;font-size:11px}
+  .result-theme-switch{top:12px;right:12px}
+}
+
+/* ─── Phone ─── */
+@media(max-width:560px){
+  .search-pane{padding:36px 18px 22px}
+  .brand{font-size:clamp(36px,14vw,54px)}
+  #query{font-size:clamp(18px,6vw,26px)}
+  .film-wall{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .feature{min-height:58svh}
+  .feature-media{min-height:58svh}
+  .feature-content{padding:36px 18px 22px}
+  #title{font-size:clamp(38px,12vw,58px)}
+  .ranking{padding:24px 18px 36px}
+  .rank-row{grid-template-columns:22px 56px minmax(0,1fr) auto;gap:8px}
+  .rank-thumb{width:56px;height:40px}
+  .rank-score{min-width:50px;font-size:10px}
+  #resultQuery{font-size:clamp(24px,7.5vw,34px)}
+}
+
+/* ─── Preset Examples ─── */
+.search-hint{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+}
+#modeHint{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.preset-toggle{
+  flex:0 0 auto;
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  padding-left:14px;
+  border-left:1px solid var(--ink-faint);
+  transition:color .14s ease;
+}
+.preset-toggle:hover{color:var(--ink)}
+.preset-drawer{
+  display:none;
+  max-width:520px;
+  margin-top:12px;
+  grid-template-columns:1fr;
+  gap:6px;
+  overflow:hidden;
+}
+.preset-drawer.open{display:grid}
+.preset-chip{
+  width:100%;
+  min-width:0;
+  text-align:left;
+  font-family:var(--mono);
+  font-size:10px;
+  line-height:1.35;
+  letter-spacing:.015em;
+  color:var(--ink-mid);
+  border:1px solid var(--ink-faint);
+  padding:8px 10px;
+  background:transparent;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  transition:border-color .14s ease,color .14s ease,background .14s ease;
+}
+.preset-chip:hover{
+  color:var(--ink);
+  border-color:var(--ink-mid);
+  background:rgba(11,11,11,.025);
+}
+body[data-theme="dark"] .preset-chip:hover{
+  background:rgba(244,241,235,.045);
+}
+@media(max-width:980px){
+  .preset-drawer{
+    max-width:100%;
+  }
+  .search-hint{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+  }
+  .preset-toggle{
+    font-size:9px;
+    padding-left:10px;
+  }
+  .preset-chip{
+    font-size:9px;
+    padding:8px 9px;
+  }
+}
+
+
+/* mode hint must read fully, not truncate awkwardly */
+.search-hint{
+  align-items:flex-start !important;
+}
+
+#modeHint{
+  white-space:normal !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  line-height:1.45 !important;
+}
+
+@media(max-width:980px){
+  .search-hint{
+    grid-template-columns:1fr !important;
+    gap:8px !important;
+  }
+
+  #modeHint{
+    display:block !important;
+    max-width:100% !important;
+  }
+
+  .preset-toggle{
+    justify-self:start !important;
+    padding-left:0 !important;
+    border-left:0 !important;
+    border-top:1px solid var(--ink-faint) !important;
+    padding-top:8px !important;
+  }
+}
+
+/* keep examples quiet; live traces remain the interesting surface */
+.preset-drawer{
+  gap:5px !important;
+}
+
+.preset-chip{
+  opacity:.82 !important;
+}
+
+.preset-chip:hover{
+  opacity:1 !important;
+}
+
+
+/* final hint fix: no examples, no wrapping */
+.search-hint{
+  display:block !important;
+  max-width:520px !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  line-height:1.4 !important;
+}
+
+#modeHint{
+  display:block !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  max-width:100% !important;
+  line-height:1.4 !important;
+}
+
+.preset-toggle,
+.preset-drawer{
+  display:none !important;
+}
+
+@media(max-width:980px){
+  .search-hint{
+    display:block !important;
+    max-width:100% !important;
+    white-space:nowrap !important;
+  }
+
+  #modeHint{
+    white-space:nowrap !important;
+  }
+}
+
+
+/* restored full hint text, no examples */
+.search-hint{
+  display:block !important;
+  max-width:100% !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+
+#modeHint{
+  display:block !important;
+  max-width:100% !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+
+
+/* ─── Editorial Cinema Image Pass ───
+   Dense, crisp, tactile. No glow. No fake gloss. */
+
+:root{
+  --wall-filter:contrast(1.13) saturate(1.045) brightness(.94) !important;
+  --tile-lift:0 12px 34px rgba(0,0,0,.22) !important;
+  --tile-edge:0 0 0 1px rgba(255,255,255,.045) !important;
+}
+
+/* wall images: richer blacks, more print density */
+.wall-cell{
+  background:#030303 !important;
+  box-shadow:
+    var(--tile-edge),
+    0 8px 22px rgba(0,0,0,.18),
+    0 18px 48px rgba(0,0,0,.16) !important;
+}
+
+.wall-cell img{
+  filter:contrast(1.13) saturate(1.045) brightness(.94) !important;
+  transform:scale(1.012) !important;
+  backface-visibility:hidden !important;
+}
+
+/* stronger but still subtle physical vignette */
+.wall-cell::before{
+  z-index:1 !important;
+  background:
+    radial-gradient(circle at 48% 42%,
+      rgba(255,255,255,.045) 0%,
+      rgba(255,255,255,.018) 28%,
+      rgba(0,0,0,0) 46%,
+      rgba(0,0,0,.12) 78%,
+      rgba(0,0,0,.24) 100%) !important;
+  mix-blend-mode:soft-light !important;
+  opacity:.82 !important;
+}
+
+/* tighter tactile grain */
+.wall-cell::after{
+  z-index:2 !important;
+  background:
+    linear-gradient(to bottom,rgba(255,255,255,.025),rgba(0,0,0,.10)),
+    var(--grain-svg) !important;
+  background-size:auto,132px 132px !important;
+  mix-blend-mode:soft-light !important;
+  opacity:.16 !important;
+}
+
+/* hover: very slight editorial lift, not UI-card float */
+@media(pointer:fine){
+  .wall-cell:hover img{
+    transform:scale(1.026) !important;
+    filter:contrast(1.16) saturate(1.06) brightness(.98) !important;
+  }
+
+  .wall-cell:hover{
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,.06),
+      0 18px 44px rgba(0,0,0,.28) !important;
+  }
+}
+
+/* result hero: premium still / poster density */
+.feature-media{
+  background:#020202 !important;
+}
+
+.feature-img{
+  filter:contrast(1.12) saturate(1.05) brightness(.94) !important;
+  transform:scale(1.012) !important;
+}
+
+/* hero vignette becomes more cinematic, text remains readable */
+.feature-media::before{
+  background:
+    radial-gradient(circle at 52% 40%,
+      rgba(255,255,255,.035) 0%,
+      rgba(255,255,255,.012) 28%,
+      rgba(0,0,0,0) 46%,
+      rgba(0,0,0,.14) 78%,
+      rgba(0,0,0,.28) 100%) !important;
+  mix-blend-mode:soft-light !important;
+  opacity:.9 !important;
+}
+
+.feature-media::after{
+  background:var(--grain-svg) !important;
+  background-size:132px 132px !important;
+  mix-blend-mode:soft-light !important;
+  opacity:.135 !important;
+}
+
+.feature::after{
+  background:
+    linear-gradient(to right,
+      rgba(0,0,0,.62) 0%,
+      rgba(0,0,0,.26) 42%,
+      rgba(0,0,0,.07) 72%,
+      rgba(0,0,0,.20) 100%),
+    linear-gradient(to bottom,
+      rgba(0,0,0,.05) 0%,
+      rgba(0,0,0,.02) 42%,
+      rgba(0,0,0,.50) 100%) !important;
+}
+
+/* poster-ish hero still needs extra side protection */
+.feature.posterish::after{
+  background:
+    linear-gradient(to right,
+      rgba(0,0,0,.68) 0%,
+      rgba(0,0,0,.32) 42%,
+      rgba(0,0,0,.10) 72%,
+      rgba(0,0,0,.28) 100%),
+    linear-gradient(to bottom,
+      rgba(0,0,0,.04) 0%,
+      rgba(0,0,0,.05) 52%,
+      rgba(0,0,0,.54) 100%) !important;
+}
+
+/* coherence badge stays legible over denser hero imagery */
+.score-row{
+  background:rgba(0,0,0,.34) !important;
+  border-color:rgba(246,241,232,.50) !important;
+  backdrop-filter:blur(8px) saturate(.9) !important;
+  -webkit-backdrop-filter:blur(8px) saturate(.9) !important;
+  box-shadow:0 10px 34px rgba(0,0,0,.22) !important;
+}
+
+.score-row span{
+  color:rgba(246,241,232,.92) !important;
+  text-shadow:0 1px 12px rgba(0,0,0,.48) !important;
+}
+
+.score-row span:last-child{
+  color:#fff !important;
+}
+
+/* result thumbnails: make nearby list feel less flat */
+.rank-thumb{
+  filter:contrast(1.12) saturate(1.045) brightness(.95) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.035),
+    0 10px 24px rgba(0,0,0,.16) !important;
+}
+
+/* search processing should not muddy the image wall too much */
+body.searching .film-wall-pane{
+  filter:brightness(.74) saturate(.88) contrast(1.03) !important;
+}
+
+/* mobile: preserve clarity, reduce depth/shadow cost */
+@media(max-width:980px){
+  .wall-cell{
+    box-shadow:0 0 0 1px rgba(255,255,255,.035) !important;
+  }
+
+  .wall-cell img{
+    filter:contrast(1.11) saturate(1.04) brightness(.94) !important;
+    transform:scale(1.008) !important;
+  }
+
+  .wall-cell::after{
+    opacity:.12 !important;
+    background-size:auto,150px 150px !important;
+  }
+
+  .feature-img{
+    filter:contrast(1.10) saturate(1.04) brightness(.94) !important;
+    transform:scale(1.006) !important;
+  }
+
+  .feature-media::after{
+    opacity:.105 !important;
+    background-size:150px 150px !important;
+  }
+
+  .score-row{
+    background:rgba(0,0,0,.42) !important;
+  }
+}
+
+
+
+/* ─── Final Native Media Wall ───
+   Reference film size/quality without metadata.
+   Film/books/TV use larger poster/key-art geometry.
+   Games keep native screenshot geometry.
+   Mix preserves native shapes. */
+
+body:not(.has-results) .film-wall{
+  min-height:180svh !important;
+  grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
+  gap:2px !important;
+  background:#151515 !important;
+}
+
+/* Film, books, and TV get the reference poster-wall scale */
+body[data-mode="film"]:not(.has-results) .wall-cell,
+body[data-mode="books"]:not(.has-results) .wall-cell,
+body[data-mode="tv"]:not(.has-results) .wall-cell{
+  aspect-ratio:2 / 3 !important;
+}
+
+/* Games keep the screenshot geometry that worked */
+body[data-mode="games"]:not(.has-results) .film-wall{
+  grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
+  gap:2px !important;
+}
+
+body[data-mode="games"]:not(.has-results) .wall-cell{
+  aspect-ratio:16 / 9 !important;
+}
+
+/* Shared image treatment for homepage media wall */
+body:not(.has-results) .wall-cell{
+  background:#111 !important;
+  overflow:hidden !important;
+}
+
+body:not(.has-results) .wall-cell img{
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+  object-position:center center !important;
+  display:block !important;
+  filter:contrast(1.10) saturate(1.04) brightness(.92) !important;
+  transform:scale(1.006) !important;
+}
+
+/* Keep the cinematic tactile overlay, no metadata/captions */
+body:not(.has-results) .wall-cell::before{
+  content:'' !important;
+  position:absolute !important;
+  inset:0 !important;
+  z-index:1 !important;
+  pointer-events:none !important;
+  background:
+    radial-gradient(circle at 48% 42%,
+      rgba(255,255,255,.035) 0%,
+      rgba(255,255,255,.012) 28%,
+      rgba(0,0,0,0) 48%,
+      rgba(0,0,0,.10) 78%,
+      rgba(0,0,0,.22) 100%) !important;
+  mix-blend-mode:soft-light !important;
+}
+
+body:not(.has-results) .wall-cell::after{
+  content:'' !important;
+  position:absolute !important;
+  inset:0 !important;
+  z-index:2 !important;
+  pointer-events:none !important;
+  background:
+    linear-gradient(to bottom,rgba(0,0,0,.02),rgba(0,0,0,.16)),
+    linear-gradient(to top,rgba(0,0,0,.22),transparent 44%),
+    var(--grain-svg) !important;
+  background-size:auto,auto,150px 150px !important;
+  mix-blend-mode:soft-light !important;
+  opacity:.15 !important;
+}
+
+.wall-caption{
+  display:none !important;
+}
+
+/* Mix uses native editorial masonry:
+   games rectangular; film/books/TV poster scale. */
+body[data-mode="mixed"]:not(.has-results) .film-wall{
+  display:block !important;
+  column-count:4 !important;
+  column-gap:2px !important;
+  min-height:180svh !important;
+  background:#151515 !important;
+  animation:none !important;
+  transform:none !important;
+}
+
+body[data-mode="mixed"]:not(.has-results) .wall-cell{
+  display:block !important;
+  width:100% !important;
+  margin:0 0 2px !important;
+  break-inside:avoid !important;
+  -webkit-column-break-inside:avoid !important;
+  page-break-inside:avoid !important;
+}
+
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="game"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell.media-game{
+  aspect-ratio:16 / 9 !important;
+}
+
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="book"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="tv"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell.media-film,
+body[data-mode="mixed"]:not(.has-results) .wall-cell.media-book,
+body[data-mode="mixed"]:not(.has-results) .wall-cell.media-tv{
+  aspect-ratio:2 / 3 !important;
+}
+
+/* Desktop drift still works for grid modes, not masonry mix */
+@media(min-width:981px){
+  body[data-mode="mixed"]:not(.has-results) .film-wall{
+    animation:none !important;
+  }
+}
+
+/* Mobile/tablet */
+@media(max-width:980px){
+  body:not(.has-results) .film-wall{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    min-height:120svh !important;
+    gap:1px !important;
+  }
+
+  body[data-mode="games"]:not(.has-results) .film-wall{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+
+  body[data-mode="mixed"]:not(.has-results) .film-wall{
+    column-count:2 !important;
+    column-gap:1px !important;
+    min-height:120svh !important;
+  }
+
+  body[data-mode="film"]:not(.has-results) .wall-cell,
+  body[data-mode="books"]:not(.has-results) .wall-cell,
+  body[data-mode="tv"]:not(.has-results) .wall-cell,
+  body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"],
+  body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="book"],
+  body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="tv"]{
+    aspect-ratio:2 / 3 !important;
+  }
+
+  body[data-mode="games"]:not(.has-results) .wall-cell,
+  body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="game"]{
+    aspect-ratio:16 / 9 !important;
+  }
+}
+
+</style>
+</head>
+<body>
+<section class="top">
+  <div class="search-pane">
+    <div>
+      <div class="brand" aria-label="SUMMON">SUMMON</div>
+      <div class="prompt-label">find a film</div>
+      <form id="searchForm" class="search-form">
+        <input id="query" autocomplete="off" spellcheck="false" inputmode="search" enterkeyhint="search" placeholder="describe the scene, mood, memory, or idea">
+        <button id="go" aria-label="Search">→</button>
+      </form>
+      <div class="search-hint">
+        <span id="modeHint">search film by meaning</span>
+      </div>
+      <div class="mode-row">
+        <div class="toggle-group" role="group" aria-label="Corpus mode">
+          <button type="button" class="toggle-btn active" data-mode="film">film</button>
+          <button type="button" class="toggle-btn" data-mode="games">games</button>
+          <button type="button" class="toggle-btn" data-mode="books">books</button>
+          <button type="button" class="toggle-btn" data-mode="tv">tv</button>
+          <button type="button" class="toggle-btn" data-mode="mixed">mix</button>
+        </div>
+        <div class="toggle-group" role="group" aria-label="Search depth">
+          <button type="button" class="toggle-btn active" data-depth="surface">surface</button>
+          <button type="button" class="toggle-btn" data-depth="field">field</button>
+          <button type="button" class="toggle-btn" data-depth="archive">archive</button>
+        </div>
+        <button type="button" class="theme-switch" data-theme-switch aria-label="Toggle theme"><span></span></button>
+      </div>
+      <div class="corpus-load-state" id="corpusLoadState" aria-live="polite">
+        <div class="corpus-load-copy"><span id="corpusLoadText">ready</span></div>
+        <div class="corpus-load-bar"><span id="corpusLoadBar"></span></div>
+      </div>
+      <div class="query-traces" id="queryTraces" aria-hidden="true">
+        <div class="trace-label">query traces</div>
+        <div class="trace-line"><span class="trace-prefix">›</span><span id="traceText"></span><span class="trace-cursor"></span></div>
+      </div>
+      <div class="resolve-state" id="resolveState" aria-hidden="true">
+        <div class="resolve-kicker">resolving</div>
+        <div class="resolve-status" id="resolveStatus">locking archive</div>
+        <div class="resolve-bar"><span id="resolveBar"></span></div>
+      </div>
+    </div>
+    <div class="lower-links">
+      <div class="site-signals">
+        <span class="site-signal site-signal-primary">© 2026 Actual General Intelligence Inc.</span>
+        <span class="site-signal">ARBITER COHERENCE ENGINE</span>
+      </div>
+      <button id="shuffleFilms" type="button" data-action="shuffle-corpus">shuffle films</button>
+    </div>
+  </div>
+  <div class="film-wall-pane">
+    <div class="film-wall" id="wall"></div>
+  </div>
+</section>
+
+<section class="results" id="results">
+  <button type="button" class="result-theme-switch theme-switch" data-theme-switch aria-label="Toggle theme"><span></span></button>
+  <div class="feature">
+    <div class="feature-media">
+      <img class="feature-img" id="featureImg" alt="" decoding="async" loading="eager" fetchpriority="high" referrerpolicy="no-referrer">
+    </div>
+    <div class="feature-content">
+      <button class="back" id="newSearch">← new search</button>
+      <div class="feature-main">
+        <h1 id="title">Film</h1>
+        <div class="meta" id="meta"></div>
+        <div class="score-row"><span>coherence</span><span id="score">0.000</span></div>
+        <p id="overview"></p>
+        <div class="actions">
+          <button class="action" id="imdb">open source ↗</button>
+          <button class="action link" id="copyLink">copy link</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ranking">
+    <div class="result-query-shell">
+      <div class="result-mode" id="resultMode">film corpus</div>
+      <form id="resultSearchForm" class="result-query-form">
+        <textarea id="resultQuery" autocomplete="off" spellcheck="false" rows="2" placeholder="edit the search"></textarea>
+        <button id="resultGo" type="submit" aria-label="Search">→</button>
+      </form>
+      <div class="result-processing" aria-hidden="true">
+        <span id="resultResolveStatus">resolving</span>
+        <i></i>
+      </div>
+    </div>
+    <div class="rank-intro">
+      <span class="rank-kicker">nearby</span>
+      <span class="rank-count" id="rankCount">10 returned</span>
+    </div>
+    <div id="rankList" class="rank-list"></div>
+    <div class="rank-actions">
+      <button id="shuffleFilmsResult" type="button" data-action="shuffle-corpus">shuffle films</button>
+      <span id="status">loading films</span>
+    </div>
+  </div>
+</section>
+
+<script>
+const ALGOLIA_APP_ID='C3XKD4DFTX';
+const ALGOLIA_API_KEY='af8f49e765acc850e83ae75c64303cf3';
+const ALGOLIA_INDEX='algolia_movie_sample_dataset';
+const ALGOLIA_URL=`https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/${ALGOLIA_INDEX}/query`;
+const ARBITER_URL='https://api.arbiter.traut.ai/public/compare';
+const IMG='https://image.tmdb.org/t/p/';
+const HITS=250;
+const RETURN_COUNT=10;
+const RAWG_KEY='3765495b17254a2393b9be2c5cc0dd77';
+const RAWG_URL='https://api.rawg.io/api/games';
+const OPENLIBRARY_URL='https://openlibrary.org/search.json';
+const OL_COVER='https://covers.openlibrary.org/b/id/';
+const TVMAZE_URL='https://api.tvmaze.com/shows';
+const RAWG_PAGE_SIZE=40;
+
+const DEPTHS={
+  surface:{film:80,games:80,books:80,tv:80,mixedFilm:35,mixedGames:35,mixedBooks:35,mixedTv:35,rawgPages:3},
+  field:{film:220,games:140,books:160,tv:160,mixedFilm:65,mixedGames:65,mixedBooks:65,mixedTv:65,rawgPages:5},
+  archive:{film:500,games:500,books:500,tv:500,mixedFilm:125,mixedGames:125,mixedBooks:125,mixedTv:125,rawgPages:13}
+};
+
+let corpusMode='film',searchDepth='field';
+let cache=null,results=[],active=0,currentQuery='',corpusPageOffset=0,shuffleSeed=0;
+let hasExecutedSearch=false;
+
+const $=s=>document.querySelector(s);
+const query=$('#query');
+const resultQuery=$('#resultQuery');
+const statusEl=$('#status');
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function norm(p){return p?(String(p).startsWith('/')?String(p):'/'+String(p)):null}
+function img(p,size='original'){return p?`${IMG}${size}${norm(p)}`:''}
+
+function still(m,size='w780'){
+  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
+  return img(m?.backdropPath||m?.posterPath,size);
+}
+function poster(m,size='w342'){
+  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
+  return img(m?.posterPath,size);
+}
+function heroSrc(m){
+  if(!m) return '';
+  if(m.type==='game') return m.image||m.cover||'';
+  if(m.type==='book') return m.cover||m.image||'';
+  if(m.type==='tv') return m.cover||m.image||'';
+  if(m.backdropPath) return img(m.backdropPath,'original')||img(m.backdropPath,'w1280');
+  if(m.posterPath) return img(m.posterPath,'original')||img(m.posterPath,'w780');
+  return '';
+}
+function thumbSrc(m){
+  if(!m) return '';
+  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
+  return img(m.backdropPath||m.posterPath,'w342')||img(m.posterPath,'w185');
+}
+function candidate(m){
+  return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,6).join(', ')}. ${(m.platforms||[]).join(', ')}. ${m.overview.substring(0,360)}`;
+}
+function setStatus(t){if(statusEl)statusEl.textContent=t}
+function toast(t){
+  const el=document.createElement('div');el.className='toast';el.textContent=t;
+  document.body.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .25s';setTimeout(()=>el.remove(),260)},1400);
+}
+
+function getLimit(key){
+  const d=DEPTHS[searchDepth]||DEPTHS.field;
+  return d[key]||d.film;
+}
+function filmLimit(){return corpusMode==='mixed'?getLimit('mixedFilm'):getLimit('film')}
+function gameLimit(){return corpusMode==='mixed'?getLimit('mixedGames'):getLimit('games')}
+function bookLimit(){return corpusMode==='mixed'?getLimit('mixedBooks'):getLimit('books')}
+function tvLimit(){return corpusMode==='mixed'?getLimit('mixedTv'):getLimit('tv')}
+function totalLimit(){return filmLimit()+gameLimit()+bookLimit()+tvLimit()}
+
+// ─── API Fetchers ───
+
+async function fetchAlgoliaPage(n){
+  const res=await fetch(ALGOLIA_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Algolia-Application-Id':ALGOLIA_APP_ID,'X-Algolia-API-Key':ALGOLIA_API_KEY},
+    body:JSON.stringify({query:'',hitsPerPage:HITS,page:n,attributesToRetrieve:['title','overview','poster_path','backdrop_path','release_date','genres']})
+  });
+  if(!res.ok)throw new Error(`algolia ${res.status}`);
+  return res.json();
+}
+
+async function fetchRawgPage(page=1){
+  const p=new URLSearchParams({key:RAWG_KEY,page:String(page),page_size:String(RAWG_PAGE_SIZE),ordering:'-metacritic',dates:'1998-01-01,2026-12-31'});
+  const res=await fetch(`${RAWG_URL}?${p}`);
+  if(!res.ok)throw new Error(`rawg ${res.status}`);
+  return res.json();
+}
+
+async function fetchOLPage(page=1,limit=100){
+  const p=new URLSearchParams({q:'subject:fiction OR subject:literature OR subject:science_fiction OR subject:fantasy OR subject:mystery',page:String(page),limit:String(limit),fields:'key,title,author_name,first_publish_year,subject,cover_i,edition_count'});
+  const res=await fetch(`${OPENLIBRARY_URL}?${p}`);
+  if(!res.ok)throw new Error(`ol ${res.status}`);
+  return res.json();
+}
+
+async function fetchTVPage(page=0){
+  const res=await fetch(`${TVMAZE_URL}?page=${page}`);
+  if(!res.ok)throw new Error(`tvmaze ${res.status}`);
+  return res.json();
+}
+
+// ─── Record Builders ───
+
+function filmRecord(h){
+  let genres=[];
+  if(Array.isArray(h.genres)) genres=h.genres.map(g=>typeof g==='object'?(g.name||''):g).filter(Boolean);
+  return {type:'film',title:h.title,overview:h.overview||'',year:h.release_date?String(h.release_date).slice(0,4):'',posterPath:norm(h.poster_path),backdropPath:norm(h.backdrop_path),genres};
+}
+
+function gameRecord(g){
+  const genres=(g.genres||[]).map(x=>x.name).filter(Boolean);
+  const tags=(g.tags||[]).slice(0,4).map(x=>x.name).filter(Boolean);
+  const platforms=(g.platforms||[]).slice(0,4).map(p=>p?.platform?.name).filter(Boolean);
+  const ss=(g.short_screenshots||[]).map(s=>s.image).filter(Boolean);
+  const image=ss[1]||ss[0]||g.background_image||'';
+  return {
+    type:'game',title:g.name,year:g.released?String(g.released).slice(0,4):'',
+    genres,platforms,rating:g.metacritic||null,
+    overview:`${g.name}. ${genres.join(', ')}. ${g.metacritic?'Metacritic '+g.metacritic+'. ':''}${platforms.length?'Platforms: '+platforms.join(', ')+'. ':''}${tags.length?'Tags: '+tags.join(', ')+'. ':''}A game surface defined by ${[...genres,...tags].slice(0,8).join(', ')||'play, world, systems, mood'}.`,
+    image,cover:g.background_image||image,rawgId:g.id,rawgSlug:g.slug
+  };
+}
+
+function bookRecord(b){
+  const subjects=(b.subject||[]).filter(Boolean).filter(s=>s.length<42).slice(0,8);
+  const authors=(b.author_name||[]).slice(0,2);
+  const cover=b.cover_i?`${OL_COVER}${b.cover_i}-L.jpg`:'';
+  return {
+    type:'book',title:b.title,year:b.first_publish_year?String(b.first_publish_year):'',
+    genres:subjects.slice(0,3),subjects,authors,
+    overview:`${b.title}. ${authors.length?'By '+authors.join(', ')+'. ':''}${b.first_publish_year?'First published '+b.first_publish_year+'. ':''}${subjects.length?'Subjects: '+subjects.join(', ')+'. ':''}A literary object indexed through authorship, subject, era, and thematic signal.`,
+    image:cover,cover,openLibraryKey:b.key
+  };
+}
+
+function tvRecord(s){
+  const genres=(s.genres||[]).filter(Boolean);
+  const year=s.premiered?String(s.premiered).slice(0,4):'';
+  const summary=String(s.summary||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+  const image=String(s.image?.medium||s.image?.original||'').replace(/^http:/,'https:');
+  const cover=String(s.image?.original||s.image?.medium||'').replace(/^http:/,'https:');
+  const network=s.network?.name||s.webChannel?.name||'';
+  return {
+    type:'tv',title:s.name,year,genres,network,
+    overview:`${s.name}. ${year?'Premiered '+year+'. ':''}${genres.join(', ')}. ${network?'Network: '+network+'. ':''}${summary||'A television series indexed through genre, network, era, and premise.'}`,
+    image,cover,tvMazeId:s.id,tvMazeUrl:s.url
+  };
+}
+
+// ─── Corpus Loaders ───
+
+async function loadFilms(limit){
+  const pages=await Promise.all(Array.from({length:Math.max(1,Math.ceil(limit/HITS))},(_,i)=>fetchAlgoliaPage((corpusPageOffset+i)%4).catch(()=>({hits:[]}))));
+  const seen=new Set(),out=[];
+  for(const page of pages){
+    for(const h of(page.hits||[])){
+      if(!h.title||!h.overview?.trim()||seen.has(h.title))continue;
+      seen.add(h.title);out.push(filmRecord(h));
+      if(out.length>=limit)break;
+    }
+    if(out.length>=limit)break;
+  }
+  return out;
+}
+
+async function loadGames(limit){
+  const base=1+((corpusPageOffset||0)%4);
+  const rp=DEPTHS[searchDepth]?.rawgPages||5;
+  const pages=await Promise.all(Array.from({length:rp},(_,i)=>fetchRawgPage(base+i).catch(()=>({results:[]}))));
+  const seen=new Set(),out=[];
+  for(const page of pages){
+    for(const g of(page.results||[])){
+      if(!g?.name||seen.has(g.name))continue;
+      seen.add(g.name);
+      const rec=gameRecord(g);
+      if(!rec.image&&!rec.cover)continue;
+      out.push(rec);if(out.length>=limit)break;
+    }
+    if(out.length>=limit)break;
+  }
+  return out;
+}
+
+async function loadBooks(limit){
+  const perPage=Math.min(100,Math.max(40,limit));
+  const np=Math.max(1,Math.ceil(limit/perPage));
+  const pages=await Promise.all(Array.from({length:np},(_,i)=>fetchOLPage(i+1,perPage).catch(()=>({docs:[]}))));
+  const seen=new Set(),out=[];
+  for(const page of pages){
+    for(const b of(page.docs||[])){
+      if(!b?.title||seen.has(b.title))continue;
+      seen.add(b.title);
+      const rec=bookRecord(b);
+      if(!rec.cover)continue;
+      out.push(rec);if(out.length>=limit)break;
+    }
+    if(out.length>=limit)break;
+  }
+  return out;
+}
+
+async function loadTV(limit){
+  const np=Math.max(1,Math.ceil(limit/250));
+  const pages=await Promise.all(Array.from({length:np},(_,i)=>fetchTVPage(i).catch(()=>[])));
+  const seen=new Set(),out=[];
+  for(const page of pages){
+    for(const s of(page||[])){
+      if(!s?.name||seen.has(s.name))continue;
+      seen.add(s.name);
+      const rec=tvRecord(s);
+      if(!rec.image&&!rec.cover)continue;
+      out.push(rec);if(out.length>=limit)break;
+    }
+    if(out.length>=limit)break;
+  }
+  return out;
+}
+
+// ─── Wall Rendering ───
+
+function renderWall(movies){
+  // Strict filter: only tiles with real, non-empty image URLs
+  const sample=[...movies]
+    .map(m=>({...m,src:still(m,'w780')||poster(m,'w500')}))
+    .filter(m=>m.src&&m.src.length>15)
+    .sort(()=>Math.random()-.5)
+    .slice(0,48);
+
+  $('#wall').innerHTML=sample.map(m=>
+    `<div class="wall-cell media-${esc(m.type||'film')}" data-type="${esc(m.type||'film')}" data-title="${esc(m.title)}">
+      <img src="${m.src}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"
+           onerror="this.onerror=null;this.closest('.wall-cell')?.remove()">
+    </div>`
+  ).join('');
+
+  requestAnimationFrame(()=>setTimeout(startOracleDrift,500));
+}
+
+// ─── Corpus Assembly ───
+
+function finalizeCorpus(movies){
+  if(shuffleSeed)movies.sort(()=>Math.random()-.5);
+  const candidates=movies.map(candidate).slice(0,totalLimit());
+  const map=new Map();
+  candidates.forEach((c,i)=>map.set(c,movies[i]));
+  cache={movies,candidates,map};
+  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='mixed'?'mixed records':'films';
+  setStatus(`${movies.length} ${label} loaded`);
+  renderWall(movies);
+  return cache;
+}
+
+async function loadCorpus(){
+  if(cache)return cache;
+  if(corpusMode==='games') return finalizeCorpus(await loadGames(gameLimit()));
+  if(corpusMode==='books') return finalizeCorpus(await loadBooks(bookLimit()));
+  if(corpusMode==='tv') return finalizeCorpus(await loadTV(tvLimit()));
+  if(corpusMode==='mixed'){
+    const[f,g,b,t]=await Promise.all([loadFilms(filmLimit()),loadGames(gameLimit()),loadBooks(bookLimit()),loadTV(tvLimit())]);
+    const mixed=[];const mx=Math.max(f.length,g.length,b.length,t.length);
+    for(let i=0;i<mx;i++){if(f[i])mixed.push(f[i]);if(g[i])mixed.push(g[i]);if(b[i])mixed.push(b[i]);if(t[i])mixed.push(t[i])}
+    return finalizeCorpus(mixed);
+  }
+  return finalizeCorpus(await loadFilms(filmLimit()));
+}
+
+async function loadCorpusWithRetry(attempts=2){
+  let lastErr;
+  for(let i=0;i<attempts;i++){
+    try{return await loadCorpus()}catch(e){lastErr=e;await new Promise(r=>setTimeout(r,450+i*850))}
+  }
+  throw lastErr;
+}
+
+// ─── Search ───
+
+function parse(data,map){
+  const rows=Array.isArray(data?.all)?data.all:(Array.isArray(data?.top)?data.top:[]);
+  return rows.map(r=>{const m=map.get(r.text);return m?{...m,score:Number(r.score||0),candidate:r.text}:null}).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,RETURN_COUNT);
+}
+
+async function search(text){
+  const q=(text||'').trim();
+  if(!q)return;
+  currentQuery=q;query.value=q;
+  syncResultQuery();
+  stopOracleDrift();
+  startResolveState(q);
+  document.body.classList.add('searching');
+  document.body.classList.remove('cutting');
+
+  try{
+    const corpus=await loadCorpusWithRetry(2);
+    setTimeout(startOracleDrift,120);
+
+    const res=await fetch(ARBITER_URL,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({query:q,candidates:corpus.candidates.slice(0,totalLimit()),use_freq:true,top_k:RETURN_COUNT})
+    });
+    if(!res.ok)throw new Error(`arbiter ${res.status}`);
+
+    const data=await res.json();
+    results=parse(data,corpus.map);
+    active=0;hasExecutedSearch=true;
+
+    if(!results.length){toast('no response');return}
+
+    renderResult();
+    document.body.classList.add('cutting');
+    setTimeout(()=>{
+      document.body.classList.add('has-results');
+      window.scrollTo({top:0,behavior:'instant'});
+      document.body.classList.remove('cutting');
+    },140);
+    history.replaceState(null,'',`#${encodeURIComponent(q)}`);
+  }catch(e){
+    console.error(e);toast('connection failed');
+  }finally{
+    finishResolveState();
+    document.body.classList.remove('searching');
+  }
+}
+
+// ─── Result Rendering ───
+
+function renderResult(){
+  if(!hasExecutedSearch||!results.length){document.body.classList.remove('has-results');return}
+  const m=results[active];if(!m)return;
+
+  const src=heroSrc(m);
+  const fi=$('#featureImg');
+  const feat=$('.feature');
+  fi.classList.remove('is-posterish');feat?.classList.remove('posterish');
+  fi.onload=()=>{
+    const r=fi.naturalWidth/Math.max(1,fi.naturalHeight);
+    const p=r<1.25;
+    fi.classList.toggle('is-posterish',p);feat?.classList.toggle('posterish',p);
+  };
+  fi.src=src||'';fi.alt=m.title||'';
+  fi.style.objectFit='cover';fi.style.objectPosition='center';
+
+  $('#title').textContent=m.title;
+  $('#score').textContent=Number(m.score).toFixed(3);
+  const ov=(m.overview||'No overview available.').trim();
+  $('#overview').textContent=ov.length>260?ov.slice(0,257).trimEnd()+'…':ov;
+
+  $('#meta').innerHTML=[
+    m.year?`<span>${esc(m.year)}</span>`:'',
+    ...(m.authors||[]).slice(0,1).map(a=>`<span>${esc(a)}</span>`),
+    ...(m.genres||[]).slice(0,2).map(g=>`<span>${esc(g)}</span>`)
+  ].join('');
+
+  const rc=$('#rankCount');if(rc)rc.textContent=`${results.length} returned`;
+  applyModeLabels();
+  syncResultQuery();
+
+  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='book'?'view on open library ↗':m.type==='tv'?'view on tvmaze ↗':'view on imdb ↗';
+  $('#imdb').onclick=()=>window.open(
+    m.type==='game'?`https://rawg.io/games/${m.rawgSlug||encodeURIComponent(m.title.toLowerCase().replaceAll(' ','-'))}`:
+    m.type==='book'?`https://openlibrary.org${m.openLibraryKey||'/search?q='+encodeURIComponent(m.title)}`:
+    m.type==='tv'?(m.tvMazeUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`):
+    `https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`,'_blank'
+  );
+  $('#copyLink').onclick=()=>{
+    const url=`${location.href.split('#')[0]}#${encodeURIComponent(currentQuery)}`;
+    navigator.clipboard?.writeText(url).then(()=>toast('link copied'));
+  };
+  renderRankList();
+}
+
+function renderRankList(){
+  $('#rankList').innerHTML=results.map((m,i)=>{
+    const t=thumbSrc(m);
+    const bits=[m.year||'',...(m.authors||[]).slice(0,1),...(m.genres||[]).slice(0,2)].filter(Boolean);
+    return `<button class="rank-row ${i===active?'active':''}" data-i="${i}">
+      <span class="rank-num">${String(i+1).padStart(2,'0')}</span>
+      ${t?`<img class="rank-thumb" src="${t}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`:'<span style="width:72px;height:48px;background:var(--wall);display:block"></span>'}
+      <span class="rank-copy">
+        <span class="rank-title">${esc(m.title)}</span>
+        <span class="rank-meta">${bits.map(b=>`<span>${esc(b)}</span>`).join('')}</span>
+      </span>
+      <span class="rank-score">${Number(m.score).toFixed(3)}</span>
+    </button>`;
+  }).join('');
+  $('#rankList').querySelectorAll('.rank-row').forEach(btn=>{btn.onclick=()=>{active=Number(btn.dataset.i);renderResult()}});
+}
+
+// ─── Actions ───
+
+async function shuffleFilms(){
+  corpusPageOffset=(corpusPageOffset+1+Math.floor(Math.random()*3))%4;
+  shuffleSeed++;cache=null;
+  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='mixed'?'mix':'films';
+  setStatus(`shuffling ${label}`);
+  setCorpusLoading(true,corpusLoadLabel('loading'));
+  try{
+    await loadCorpusWithRetry(2);
+    setCorpusLoading(false);
+  }catch(e){console.error(e);toast('shuffle failed');setCorpusLoading(false)}
+}
+
+function newSearch(){
+  hasExecutedSearch=false;
+  stopOracleDrift();
+  document.body.classList.remove('has-results','searching','cutting');
+  history.replaceState(null,'',location.pathname+location.search);
+  window.scrollTo({top:0,behavior:'instant'});
+  query.focus({preventScroll:true});
+  finishResolveState();resetQueryTraces();
+  setTimeout(startOracleDrift,500);
+}
+
+function runResultSearch(){
+  const v=getResultQueryValue();if(!v)return;
+  currentQuery=v;if(query)query.value=v;
+  syncResultQuery();
+  document.body.classList.add('searching');
+  $('#resultResolveStatus').textContent='accepting query';
+  setTimeout(()=>search(v),120);
+}
+
+function getResultQueryValue(){return(resultQuery?.value||resultQuery?.textContent||currentQuery||'').trim()}
+
+function syncResultQuery(){
+  if(!resultQuery)return;
+  const v=currentQuery||query?.value||'';
+  resultQuery.value=v;resultQuery.textContent=v;
+  resultQuery.style.height='auto';
+  resultQuery.style.height=`${Math.max(resultQuery.scrollHeight,58)}px`;
+}
+
+// ─── Mode / Depth / Theme ───
+
+async function setCorpusMode(mode){
+  if(!['film','games','books','tv','mixed'].includes(mode)||corpusMode===mode)return;
+  corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;
+  applyModeLabels();
+  setCorpusLoading(true,corpusLoadLabel('loading'));
+  try{
+    await loadCorpusWithRetry(2);setCorpusLoading(false);
+  }catch(e){console.error(e);setCorpusLoading(false,'load failed');return}
+  if(document.body.classList.contains('has-results')){
+    document.body.classList.remove('has-results','searching','cutting');
+    history.replaceState(null,'',location.pathname+location.search);
+    window.scrollTo({top:0,behavior:'instant'});
+  }
+}
+
+async function setSearchDepth(depth){
+  if(!DEPTHS[depth]||searchDepth===depth)return;
+  searchDepth=depth;cache=null;applyModeLabels();
+  setCorpusLoading(true,corpusLoadLabel('loading'));
+  try{
+    await loadCorpusWithRetry(2);setCorpusLoading(false);
+  }catch(e){console.error(e);setCorpusLoading(false,'load failed')}
+}
+
+function applyTheme(t){
+  document.body.dataset.theme=t==='dark'?'dark':'light';
+  try{localStorage.setItem('summon-theme',document.body.dataset.theme)}catch(e){}
+}
+function toggleTheme(){
+  applyTheme(document.body.dataset.theme==='dark'?'light':'dark');
+}
+
+function applyModeLabels(){
+    document.body.dataset.mode=corpusMode;
+  document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===corpusMode));
+  document.querySelectorAll('[data-depth]').forEach(b=>b.classList.toggle('active',b.dataset.depth===searchDepth));
+  const n=totalLimit();
+  const hint=$('#modeHint');
+  if(hint){
+    const modeLabel =
+      corpusMode==='games' ? 'games' :
+      corpusMode==='books' ? 'books' :
+      corpusMode==='tv' ? 'tv shows' :
+      corpusMode==='mixed' ? 'films + games + books + tv' :
+      'films';
+    hint.textContent = `search ${n} ${modeLabel} by meaning`;
+  }
+  const pl=$('.prompt-label');
+  if(pl)pl.textContent=corpusMode==='games'?'find a game':corpusMode==='books'?'find a book':corpusMode==='tv'?'find a show':corpusMode==='mixed'?'find anything':'find a film';
+  const qi=$('#query');
+  if(qi)qi.placeholder=corpusMode==='games'?'describe the world, loop, mechanic, feeling, or system':corpusMode==='books'?'describe the voice, mood, idea, world, or wound':corpusMode==='tv'?'describe the world, episode, mood, institution, or obsession':corpusMode==='mixed'?'describe the signal, world, scene, mood, or system':'describe the scene, mood, memory, or idea';
+  const rm=$('#resultMode');
+  if(rm)rm.textContent=`${n}-${corpusMode==='mixed'?'mixed':corpusMode} corpus · ${searchDepth}`;
+  const sl=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='mixed'?'mix':'films';
+  const hb=$('#shuffleFilms');if(hb)hb.textContent=`shuffle ${sl}`;
+  const rb=$('#shuffleFilmsResult');if(rb)rb.textContent=`shuffle ${sl}`;
+}
+
+function corpusLoadLabel(prefix='loading'){
+  const n=totalLimit();
+  const d=searchDepth;
+  const m=corpusMode==='mixed'?'mixed records':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':'films';
+  return `${prefix} ${n} ${m} · ${d}`;
+}
+
+function setCorpusLoading(on,text=''){
+  const lt=$('#corpusLoadText');
+  document.body.classList.remove('corpus-loading','corpus-ready');
+  document.querySelectorAll('.toggle-btn').forEach(b=>{b.disabled=false;b.setAttribute('aria-busy',on?'true':'false')});
+  if(on){document.body.classList.add('corpus-loading');if(lt)lt.textContent=text||corpusLoadLabel('loading')}
+  else{document.body.classList.add('corpus-ready');if(lt)lt.textContent=text||corpusLoadLabel('ready')}
+}
+
+// ─── Resolve State ───
+
+const RESOLVE_STATES=['locking archive','reading candidate field','measuring coherence','isolating strongest signal','preparing reveal'];
+let resolveTimer=null,resolveIdx=0;
+
+function startResolveState(q){
+  clearResolve();resolvingTrace(q);
+  setResolveCopy(RESOLVE_STATES[0]);
+  resolveTimer=setInterval(()=>{
+    resolveIdx=Math.min(resolveIdx+1,RESOLVE_STATES.length-1);
+    setResolveCopy(RESOLVE_STATES[resolveIdx]);
+    if(resolveIdx>=RESOLVE_STATES.length-1){clearInterval(resolveTimer);resolveTimer=null}
+  },1100);
+}
+function finishResolveState(){clearResolve()}
+function clearResolve(){if(resolveTimer){clearInterval(resolveTimer);resolveTimer=null}resolveIdx=0}
+function setResolveCopy(t){
+  const s=$('#resolveStatus');if(s)s.textContent=t;
+  const r=$('#resultResolveStatus');if(r)r.textContent=t;
+}
+
+
+// ─── Query Traces ───
+
+const TRACES={
+  film:[
+    'grief as geometry',
+    'a lonely person finds connection',
+    'energy becomes memory',
+    'beauty without sentimentality',
+    'a room that should not exist'
+  ],
+  tv:[
+    'a detective distrusts memory',
+    'power eating itself',
+    'the office is alive',
+    'surveillance wearing family drama',
+    'a town remembers too much'
+  ],
+  books:[
+    'a ghost remembers being human',
+    'a city pretends to be a person',
+    'infinity behaving badly',
+    'a king studies mercy',
+    'language becomes dangerous'
+  ],
+  games:[
+    'a fallen astronomer wants stars',
+    'chess if the board were haunted',
+    'a playable myth about consequence',
+    'hidden systems under pressure',
+    'a world older than the player'
+  ],
+  mixed:[
+    'the square root of negative one wants culture',
+    'a lonely satellite returns home',
+    'a person made of equations',
+    'myth translated into media',
+    'one signal across every medium'
+  ]
+};
+
+let traceTimer=null,traceIdx=0,tracePaused=false;
+
+function typeTrace(text,pos=0){
+  const el=$('#traceText');
+  if(!el||tracePaused||document.body.classList.contains('has-results'))return;
+  el.textContent=text.slice(0,pos);
+  if(pos<=text.length){traceTimer=setTimeout(()=>typeTrace(text,pos+1),pos===0?220:22+Math.random()*18)}
+  else{traceTimer=setTimeout(()=>eraseTrace(text,text.length),2600)}
+}
+function eraseTrace(text,pos){
+  const el=$('#traceText');
+  if(!el||tracePaused||document.body.classList.contains('has-results'))return;
+  el.textContent=text.slice(0,pos);
+  if(pos>0){traceTimer=setTimeout(()=>eraseTrace(text,pos-1),14+Math.random()*12)}
+  else{traceIdx=(traceIdx+1)%(TRACES[corpusMode]||TRACES.film).length;traceTimer=setTimeout(()=>typeTrace((TRACES[corpusMode]||TRACES.film)[traceIdx]),420)}
+}
+function startQueryTraces(){
+  if(document.body.classList.contains('has-results'))return;
+  tracePaused=false;clearTraceTimer();
+  const el=$('#traceText');if(el&&!el.textContent)typeTrace((TRACES[corpusMode]||TRACES.film)[traceIdx]);
+}
+function pauseQueryTraces(){tracePaused=true;clearTraceTimer()}
+function resumeQueryTraces(){
+  if(document.body.classList.contains('searching')||document.body.classList.contains('has-results'))return;
+  tracePaused=false;clearTraceTimer();
+  const el=$('#traceText');if(el&&!el.textContent)typeTrace((TRACES[corpusMode]||TRACES.film)[traceIdx]);
+}
+function resolvingTrace(q){clearTraceTimer();tracePaused=true;const el=$('#traceText');if(el)el.textContent=q?`${q}  /  resolving`:'resolving'}
+function resetQueryTraces(){const el=$('#traceText');if(el)el.textContent='';tracePaused=false;clearTraceTimer();setTimeout(startQueryTraces,320)}
+function clearTraceTimer(){if(traceTimer){clearTimeout(traceTimer);traceTimer=null}}
+
+// ─── Oracle Drift ───
+
+let driftRAF=null,driftStart=null,driftReadyTimer=null;
+
+function stopOracleDrift(){
+  if(driftRAF){cancelAnimationFrame(driftRAF);driftRAF=null}
+  if(driftReadyTimer){clearTimeout(driftReadyTimer);driftReadyTimer=null}
+}
+
+function startOracleDrift(){
+  const pane=$('.film-wall-pane'),wall=$('#wall');
+  if(!pane||!wall)return;
+  if(document.body.classList.contains('has-results')||document.body.classList.contains('searching'))return;
+  stopOracleDrift();
+
+  const mobile=window.matchMedia('(max-width:980px)').matches;
+  if(mobile)return; // No drift on mobile — tiles flow naturally
+
+  pane.style.overflow='hidden';
+  wall.style.transform='none';
+  pane.scrollTop=0;
+
+  const duration=82000;
+  const measure=()=>{
+    if(document.body.classList.contains('has-results')||document.body.classList.contains('searching'))return;
+    const ph=pane.clientHeight||Math.round(window.innerHeight*.7);
+    const wh=Math.max(wall.scrollHeight,wall.getBoundingClientRect().height);
+    const travel=Math.max(70,Math.min(wh-ph,Math.round(window.innerHeight*.26)));
+    driftStart=performance.now();
+    const tick=(now)=>{
+      if(document.body.classList.contains('has-results')||document.body.classList.contains('searching')){driftRAF=null;return}
+      const t=((now-driftStart)%duration)/duration;
+      pane.scrollTop=travel*(t<.5?t*2:(1-t)*2);
+      driftRAF=requestAnimationFrame(tick);
+    };
+    driftRAF=requestAnimationFrame(tick);
+  };
+  driftReadyTimer=setTimeout(measure,450);
+}
+
+window.addEventListener('load',()=>setTimeout(startOracleDrift,500));
+window.addEventListener('resize',()=>setTimeout(startOracleDrift,200));
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopOracleDrift();else setTimeout(startOracleDrift,200)});
+
+// ─── Event Bindings ───
+
+query.addEventListener('focus',pauseQueryTraces);
+query.addEventListener('blur',()=>setTimeout(resumeQueryTraces,250));
+ $('#searchForm').addEventListener('submit',e=>{e.preventDefault();search(query.value)});
+resultQuery.addEventListener('input',()=>{currentQuery=resultQuery.value;syncResultQuery()});
+resultQuery.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();runResultSearch()}});
+ $('#resultSearchForm').addEventListener('submit',e=>{e.preventDefault();runResultSearch()});
+ $('#shuffleFilms').addEventListener('click',shuffleFilms);
+ $('#shuffleFilmsResult').addEventListener('click',shuffleFilms);
+ $('#newSearch').addEventListener('click',newSearch);
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setCorpusMode(b.dataset.mode)));
+document.querySelectorAll('[data-depth]').forEach(b=>b.addEventListener('click',()=>setSearchDepth(b.dataset.depth)));
+document.querySelectorAll('[data-theme-switch]').forEach(b=>b.addEventListener('click',toggleTheme));
+document.addEventListener('keydown',e=>{
+  if(!results.length)return;
+  if(e.key==='ArrowRight'&&active<results.length-1){active++;renderResult()}
+  if(e.key==='ArrowLeft'&&active>0){active--;renderResult()}
+});
+
+// ─── Init ───
+
+(async function init(){
+  try{
+    let saved='light';
+    try{saved=localStorage.getItem('summon-theme')||'light'}catch(e){}
+    applyTheme(saved);
+    applyModeLabels();
+    setCorpusLoading(true,corpusLoadLabel('loading'));
+    await loadCorpusWithRetry(2);
+    setCorpusLoading(false);
+    const h=decodeURIComponent(location.hash.replace(/^#/,''));
+    if(h)search(h);
+    else{setTimeout(startOracleDrift,700);setTimeout(startQueryTraces,500)}
+  }catch(e){
+    console.error(e);setStatus('corpus not ready');setCorpusLoading(false);
+    setTimeout(startQueryTraces,500);
+  }
+})();
+
+</script>
+</body>
+</html>
