@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#ffffff">
 <title>SUMMON</title>
-<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
 <meta name="description" content="Find anything by meaning.">
@@ -1335,6 +1336,37 @@ body:not(.has-results) .result-theme-switch{
   .mode-row{
     align-items:flex-start !important;
   }
+}
+
+
+/* input placeholder ellipsis: make clipped hint text visibly continue */
+.search-form{
+  min-width:0 !important;
+  overflow:hidden !important;
+}
+
+#query{
+  min-width:0 !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+}
+
+#query::placeholder{
+  text-overflow:ellipsis !important;
+}
+
+@supports(-webkit-text-security:none){
+  #query{
+    text-overflow:ellipsis !important;
+  }
+}
+
+/* result query should also avoid horizontal blowout */
+#resultQuery{
+  min-width:0 !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
 }
 
 </style>
