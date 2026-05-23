@@ -1369,6 +1369,19 @@ body:not(.has-results) .result-theme-switch{
   text-overflow:ellipsis !important;
 }
 
+
+/* book cover fallback: no black/blank tiles when remote cover image fails */
+body[data-mode="books"]:not(.has-results) .wall-cell[data-type="book"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="book"]{
+  background:#12100e !important;
+}
+
+body[data-mode="books"]:not(.has-results) .wall-cell[data-type="book"] img[src^="data:image/svg+xml"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="book"] img[src^="data:image/svg+xml"]{
+  filter:contrast(1.04) saturate(.96) brightness(.94) !important;
+  object-fit:cover !important;
+}
+
 </style>
 </head>
 <body>
@@ -1739,9 +1752,9 @@ function renderWall(movies){
     .slice(0,48);
 
   $('#wall').innerHTML=sample.map(m=>
-    `<div class="wall-cell media-${esc(m.type||'film')}" data-type="${esc(m.type||'film')}" data-title="${esc(m.title)}">
+    `<div class="wall-cell media-${esc(m.type||'film')}" data-type="${esc(m.type||'film')}" data-title="${esc(m.title)}" data-author="${esc((m.authors||[])[0]||m.author||'')}">
       <img src="${m.src}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"
-           onerror="this.onerror=null;this.closest('.wall-cell')?.remove()">
+           onerror="this.onerror=null;const c=this.closest('.wall-cell');if(c?.dataset?.type==='book'){this.src=fallbackBookCover(c.dataset.title,c.dataset.author||'')}else{c?.remove()}">
     </div>`
   ).join('');
 
@@ -2237,6 +2250,42 @@ async function loadBooks(limit){
   const out=[];
   while(out.length<limit)out.push(...base);
   return out.slice(0,limit);
+}
+
+
+function fallbackBookCover(title='', author=''){
+  const safeTitle = String(title || 'BOOK').slice(0,64);
+  const safeAuthor = String(author || '').slice(0,42);
+  const hue = [...safeTitle].reduce((a,c)=>a+c.charCodeAt(0),0) % 360;
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="hsl(${hue},16%,18%)"/>
+        <stop offset="1" stop-color="hsl(${(hue+36)%360},18%,7%)"/>
+      </linearGradient>
+      <filter id="n">
+        <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3"/>
+        <feColorMatrix type="saturate" values="0"/>
+        <feComponentTransfer><feFuncA type="table" tableValues="0 .18"/></feComponentTransfer>
+      </filter>
+    </defs>
+    <rect width="600" height="900" fill="url(#g)"/>
+    <rect width="600" height="900" filter="url(#n)" opacity=".32"/>
+    <rect x="34" y="34" width="532" height="832" fill="none" stroke="rgba(246,241,232,.18)" stroke-width="2"/>
+    <text x="54" y="112" font-family="IBM Plex Mono, Menlo, monospace" font-size="20" fill="rgba(246,241,232,.58)" letter-spacing="3">SUMMON / BOOK</text>
+    <foreignObject x="54" y="260" width="492" height="310">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Georgia,serif;font-size:54px;line-height:.92;font-weight:600;letter-spacing:-2px;color:rgb(246,241,232);word-wrap:break-word;">
+        ${esc(safeTitle)}
+      </div>
+    </foreignObject>
+    <foreignObject x="54" y="690" width="492" height="90">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:IBM Plex Mono,Menlo,monospace;font-size:20px;line-height:1.25;color:rgba(246,241,232,.66);text-transform:uppercase;letter-spacing:2px;word-wrap:break-word;">
+        ${esc(safeAuthor)}
+      </div>
+    </foreignObject>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
 </script>
