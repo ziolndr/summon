@@ -1566,7 +1566,9 @@ const OPENLIBRARY_URL=''; /* disabled for static book corpus */
 const OL_COVER='https://covers.openlibrary.org/b/id/';
 const TVMAZE_URL='https://api.tvmaze.com/shows';
 const ITUNES_URL='https://itunes.apple.com/search';
-const GDELT_DOC_URL='https://api.gdeltproject.org/api/v2/doc/doc';
+const CURRENTS_API_KEY='6leo9dON1EuYXb3edmMrZAFmzome8D3JHlYZqFgUcA-CAaoO';
+const CURRENTS_SEARCH_URL='https://api.currentsapi.services/v1/search';
+const CURRENTS_LATEST_URL='https://api.currentsapi.services/v1/latest-news';
 const RAWG_PAGE_SIZE=40;
 
 const DEPTHS={
@@ -1971,6 +1973,131 @@ function fallbackSignalImage(title='', domain=''){
 
 
 
+
+async function fetchSignalBatch(query,maxrecords=100,timespan='3days'){
+  const now=new Date();
+  const days=timespan==='7days'?7:timespan==='3days'?3:1;
+  const start=new Date(now.getTime()-days*24*60*60*1000).toISOString().slice(0,10);
+
+  const p=new URLSearchParams({
+    apiKey:CURRENTS_API_KEY,
+    keywords:query,
+    language:'en',
+    start_date:start,
+    page_size:String(Math.min(200,maxrecords))
+  });
+
+  const url=`${CURRENTS_SEARCH_URL}?${p}`;
+  const res=await fetch(url,{cache:'no-store'});
+  if(!res.ok)throw new Error(`currents ${res.status}`);
+  const data=await res.json();
+  if(data.status&&data.status!=='ok')throw new Error(data.message||'currents failed');
+  return data;
+}
+
+function signalRecord(a,lane='live world'){
+  const title=String(a?.title||'').trim();
+  const url=String(a?.url||'').trim();
+  const domain=String(a?.source||'').trim() || (()=>{try{return new URL(url).hostname.replace(/^www\./,'')}catch(e){return ''}})();
+  if(!title||!url)return null;
+
+  const rawImage=String(a?.image||'').replace(/^http:/,'https:').trim();
+
+  // Signal mode should feel editorial: image-backed articles only.
+  if(!rawImage || !/^https?:\/\//i.test(rawImage))return null;
+
+  const badImageHints=['logo','icon','avatar','default','placeholder','spacer','transparent','blank','favicon','profile'];
+  const lowerImage=rawImage.toLowerCase();
+  if(badImageHints.some(x=>lowerImage.includes(x)))return null;
+
+  const published=String(a?.published||'');
+  const year=published?published.slice(0,4):'';
+  const category=Array.isArray(a?.category)?a.category.join(', '):String(a?.category||'');
+  const description=String(a?.description||'').replace(/\s+/g,' ').trim();
+
+  return {
+    type:'signal',
+    title,
+    year,
+    domain,
+    sourceCountry:'',
+    language:'en',
+    seenDate:published,
+    genres:[domain||'Live signal'].filter(Boolean),
+    subjects:[lane,domain,category,'news','current events','live signal','world state'].filter(Boolean),
+    overview:`${title}. Source: ${domain||'unknown source'}. ${published?'Published: '+published+'. ':''}${category?'Category: '+category+'. ':''}${description||'Live public article metadata indexed through source, category, recency, event context, and narrative signal.'} Discovery lane: ${lane}.`,
+    image:rawImage,
+    cover:rawImage,
+    sourceUrl:url,
+    signalLane:lane
+  };
+}
+
+function isQualitySignalRecord(rec){
+  if(!rec||rec.type!=='signal')return false;
+  if(!rec.image || !/^https?:\/\//i.test(rec.image))return false;
+  const domain=String(rec.domain||'').toLowerCase();
+  const title=String(rec.title||'').toLowerCase();
+
+  const blockedDomains=[
+    'youtube.com','youtu.be','facebook.com','instagram.com','tiktok.com',
+    'x.com','twitter.com','reddit.com','pinterest.com','medium.com','substack.com'
+  ];
+
+  if(blockedDomains.some(d=>domain.includes(d)))return false;
+  if(title.length<24)return false;
+  return true;
+}
+
+async function loadSignal(limit){
+  setCorpusLoading(true,`loading ${limit} live signals · ${searchDepth}`);
+
+  const seen=new Set();
+  const out=[];
+  const per=Math.min(200,Math.max(50,Math.ceil(limit/2)));
+  const span=searchDepth==='archive'?'7days':searchDepth==='field'?'3days':'24hours';
+
+  const laneIndexes=SIGNAL_LANES.map((_,i)=>i).sort((a,b)=>{
+    const ax=(a*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
+    const bx=(b*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
+    return ax-bx;
+  });
+
+  let lastError=null;
+
+  for(let i=0;i<laneIndexes.length && out.length<limit;i++){
+    const lane=SIGNAL_LANES[laneIndexes[i]];
+    try{
+      const data=await fetchSignalBatch(lane,per,span);
+      const articles=Array.isArray(data?.news)?data.news:[];
+      for(const article of articles){
+        const rec=signalRecord(article,lane);
+        if(!rec)continue;
+        const key=rec.title+'|'+rec.domain;
+        if(seen.has(key))continue;
+        seen.add(key);
+        out.push(rec);
+        if(out.length>=limit)break;
+      }
+    }catch(e){
+      lastError=e;
+      console.warn('signal lane failed',lane,e);
+      continue;
+    }
+  }
+
+  const cleaned=out.filter(isQualitySignalRecord);
+
+  if(!cleaned.length){
+    const message=lastError?.message||'Currents returned no quality image-backed live articles';
+    setStatus(`signal failed · ${message}`);
+    throw new Error(message);
+  }
+
+  return cleaned.slice(0,limit);
+}
+
+
 const SIGNAL_LANES=[
   'geopolitics',
   'energy security',
@@ -2000,182 +2127,16 @@ const SIGNAL_LANES=[
 ];
 
 
-function fetchJsonp(url, callbackParam='callback', timeoutMs=12000){
-  return new Promise((resolve,reject)=>{
-    const cb=`__gdelt_cb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const script=document.createElement('script');
-    const timer=setTimeout(()=>{
-      cleanup();
-      reject(new Error('gdelt jsonp timeout'));
-    },timeoutMs);
-
-    function cleanup(){
-      clearTimeout(timer);
-      delete window[cb];
-      script.remove();
-    }
-
-    window[cb]=(data)=>{
-      cleanup();
-      resolve(data);
-    };
-
-    const u=new URL(url);
-    u.searchParams.set(callbackParam,cb);
-    script.src=u.toString();
-    script.onerror=()=>{
-      cleanup();
-      reject(new Error('gdelt jsonp failed'));
-    };
-    document.head.appendChild(script);
-  });
-}
-
-async function fetchSignalBatch(query,maxrecords=100,timespan='3days'){
-  const p=new URLSearchParams({
-    query,
-    mode:'artlist',
-    format:'json',
-    sort:'hybridrel',
-    maxrecords:String(Math.min(250,maxrecords)),
-    timespan
-  });
-
-  const url=`${GDELT_DOC_URL}?${p}`;
-
-  try{
-    const res=await fetch(url,{mode:'cors',cache:'no-store'});
-    if(res.ok)return res.json();
-    throw new Error(`gdelt ${res.status}`);
-  }catch(e){
-    console.warn('GDELT direct fetch failed, trying JSONP',e);
-    return fetchJsonp(url,'callback',12000);
-  }
-}
-
-function signalRecord(a,lane='live world'){
-  const title=String(a?.title||'').trim();
-  const url=String(a?.url||'').trim();
-  const domain=String(a?.domain||'').trim();
-  if(!title||!url)return null;
-
-  const rawImage=String(a?.socialimage||a?.image||'').replace(/^http:/,'https:').trim();
-
-  // Quality gate: signal tiles must use real article imagery.
-  // No generated SUMMON cards and no blank/black placeholders.
-  if(!rawImage || !/^https?:\/\//i.test(rawImage))return null;
-
-  const badImageHints=[
-    'logo',
-    'icon',
-    'avatar',
-    'default',
-    'placeholder',
-    'spacer',
-    'transparent',
-    'blank',
-    'favicon',
-    'profile'
-  ];
-  const lowerImage=rawImage.toLowerCase();
-  if(badImageHints.some(x=>lowerImage.includes(x)))return null;
-
-  const country=a?.sourcecountry||a?.sourceCountry||'';
-  const lang=a?.language||'';
-  const seen=String(a?.seendate||a?.seenDate||'');
-  const year=seen?seen.slice(0,4):'';
-
-  return {
-    type:'signal',
-    title,
-    year,
-    domain,
-    sourceCountry:country,
-    language:lang,
-    seenDate:seen,
-    genres:[domain||'Live signal'].filter(Boolean),
-    subjects:[lane,domain,country,lang,'news','current events','live signal','world state'].filter(Boolean),
-    overview:`${title}. Source: ${domain||'unknown domain'}. ${country?'Country: '+country+'. ':''}${seen?'Seen: '+seen+'. ':''}Live public article metadata indexed through source, domain, geography, recency, event context, and narrative signal. Discovery lane: ${lane}.`,
-    image:rawImage,
-    cover:rawImage,
-    sourceUrl:url,
-    signalLane:lane
-  };
-}
 
 
-function isQualitySignalRecord(rec){
-  if(!rec||rec.type!=='signal')return false;
-  if(!rec.image || !/^https?:\/\//i.test(rec.image))return false;
-  const domain=String(rec.domain||'').toLowerCase();
-  const title=String(rec.title||'').toLowerCase();
+async 
 
-  const blockedDomains=[
-    'youtube.com',
-    'youtu.be',
-    'facebook.com',
-    'instagram.com',
-    'tiktok.com',
-    'x.com',
-    'twitter.com',
-    'reddit.com',
-    'pinterest.com',
-    'medium.com',
-    'substack.com'
-  ];
 
-  if(blockedDomains.some(d=>domain.includes(d)))return false;
-  if(title.length<24)return false;
-  return true;
-}
 
-async function loadSignal(limit){
-  setCorpusLoading(true,`loading ${limit} live signals · ${searchDepth}`);
 
-  const seen=new Set();
-  const out=[];
-  const per=Math.min(250,Math.max(80,Math.ceil(limit/2)));
-  const span=searchDepth==='archive'?'7days':searchDepth==='field'?'3days':'24hours';
 
-  const laneIndexes=SIGNAL_LANES.map((_,i)=>i).sort((a,b)=>{
-    const ax=(a*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
-    const bx=(b*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
-    return ax-bx;
-  });
 
-  let lastError=null;
-
-  for(let i=0;i<laneIndexes.length && out.length<limit;i++){
-    const lane=SIGNAL_LANES[laneIndexes[i]];
-    try{
-      const data=await fetchSignalBatch(lane,per,span);
-      const articles=Array.isArray(data?.articles)?data.articles:[];
-      for(const article of articles){
-        const rec=signalRecord(article,lane);
-        if(!rec)continue;
-        const key=rec.title+'|'+rec.domain;
-        if(seen.has(key))continue;
-        seen.add(key);
-        out.push(rec);
-        if(out.length>=limit)break;
-      }
-    }catch(e){
-      lastError=e;
-      console.warn('signal lane failed',lane,e);
-      continue;
-    }
-  }
-
-  const cleaned=out.filter(isQualitySignalRecord);
-
-  if(!cleaned.length){
-    const message=lastError?.message||'GDELT returned no quality image-backed live articles';
-    setStatus(`signal failed · ${message}`);
-    throw new Error(message);
-  }
-
-  return cleaned.slice(0,limit);
-}
+async 
 
 
 // ─── Corpus Loaders ───
