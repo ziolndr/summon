@@ -1562,6 +1562,23 @@ function thumbSrc(m){
   if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music') return m.image||m.cover||'';
   return img(m.backdropPath||m.posterPath,'w342')||img(m.posterPath,'w185');
 }
+
+function isolateCorpusByMode(items){
+  if(!Array.isArray(items))return [];
+  if(corpusMode==='mixed')return items;
+
+  const expected =
+    corpusMode==='film' ? 'film' :
+    corpusMode==='games' ? 'game' :
+    corpusMode==='books' ? 'book' :
+    corpusMode==='tv' ? 'tv' :
+    corpusMode==='music' ? 'music' :
+    null;
+
+  if(!expected)return items;
+  return items.filter(x=>x && x.type===expected);
+}
+
 function candidate(m){
   return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,6).join(', ')}. ${(m.platforms||[]).join(', ')}. ${m.overview.substring(0,360)}`;
 }
@@ -1695,7 +1712,7 @@ function musicRecord(a){
     year,
     genres:[genre],
     subjects:[genre,'album','music','recording','artist'],
-    overview:`${title}. By ${artist}. ${year?'Released '+year+'. ':''}Genre: ${genre}. A musical object indexed through artist, album, genre, release era, mood, rhythm, and cultural signal.`,
+    overview:`${title}. By ${artist}. ${year?'Released '+year+'. ':''}Genre: ${genre}. A musical object indexed through artist, album, genre, subculture, release era, mood, rhythm, club context, and cultural signal.`,
     image,
     cover:image,
     itunesUrl:a.collectionViewUrl||a.artistViewUrl||`https://music.apple.com/search?term=${encodeURIComponent(title+' '+artist)}`
@@ -1704,22 +1721,32 @@ function musicRecord(a){
 
 async function loadMusic(limit){
   const lanes=[
-    'alternative rock',
+    'techno',
+    'detroit techno',
+    'minimal techno',
+    'acid techno',
+    'deep house',
+    'chicago house',
+    'electro',
+    'idm electronic',
+    'ambient techno',
+    'industrial electronic',
+    'drum and bass',
+    'jungle',
+    'trance',
     'electronic ambient',
+    'experimental electronic',
+    'krautrock',
+    'synthwave',
+    'post punk',
+    'alternative rock',
     'hip hop',
     'jazz',
-    'soul',
-    'punk',
-    'metal',
-    'classical',
-    'indie rock',
-    'experimental',
-    'soundtrack',
-    'folk'
+    'soul'
   ];
   const seen=new Set();
   const out=[];
-  const per=Math.min(120,Math.max(40,Math.ceil(limit/2)));
+  const per=Math.min(200,Math.max(60,Math.ceil(limit/2)));
 
   for(let i=0;i<lanes.length && out.length<limit;i++){
     const lane=lanes[(i+corpusPageOffset+shuffleSeed)%lanes.length];
@@ -1740,7 +1767,7 @@ async function loadMusic(limit){
     }
   }
 
-  return out;
+  return out.filter(x=>x&&x.type==='music');
 }
 
 
@@ -1849,7 +1876,7 @@ async function loadTV(limit){
 
 function renderWall(movies){
   // Strict filter: only tiles with real, non-empty image URLs
-  const sample=[...movies]
+  const sample=[...isolateCorpusByMode(movies)]
     .map(m=>({...m,src:still(m,'w780')||poster(m,'w500')}))
     .filter(m=>m.src&&m.src.length>15)
     .sort(()=>Math.random()-.5)
@@ -1869,6 +1896,7 @@ function renderWall(movies){
 
 function finalizeCorpus(movies){
   if(shuffleSeed)movies.sort(()=>Math.random()-.5);
+  movies=isolateCorpusByMode(movies);
   const candidates=movies.map(candidate).slice(0,totalLimit());
   const map=new Map();
   candidates.forEach((c,i)=>map.set(c,movies[i]));
@@ -1919,7 +1947,8 @@ async function loadCorpusWithRetry(attempts=2){
 
 function parse(data,map){
   const rows=Array.isArray(data?.all)?data.all:(Array.isArray(data?.top)?data.top:[]);
-  return rows.map(r=>{const m=map.get(r.text);return m?{...m,score:Number(r.score||0),candidate:r.text}:null}).filter(Boolean).slice(0,RETURN_COUNT);
+  const expected=corpusMode==='mixed'?null:(corpusMode==='games'?'game':corpusMode==='film'?'film':corpusMode==='books'?'book':corpusMode==='tv'?'tv':corpusMode==='music'?'music':null);
+  return rows.map(r=>{const m=map.get(r.text);return (m&&(!expected||m.type===expected))?{...m,score:Number(r.score||0),candidate:r.text}:null}).filter(Boolean).slice(0,RETURN_COUNT);
 }
 
 async function search(text){
@@ -2221,6 +2250,11 @@ const TRACES={
     'a world older than the player'
   ],
   music:[
+    'a techno record for walking through concrete at 3am',
+    'detroit machine music with human grief inside it',
+    'acid house for a corrupted neon ritual',
+    'minimal techno that feels like architecture breathing',
+    'industrial music for a beautiful system failure',
     'an album for driving through sodium lights',
     'music that feels like a city remembering rain',
     'a record for grief with a pulse',
