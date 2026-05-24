@@ -1562,27 +1562,7 @@ function thumbSrc(m){
   if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music') return m.image||m.cover||'';
   return img(m.backdropPath||m.posterPath,'w342')||img(m.posterPath,'w185');
 }
-
-function isolateCorpusByMode(items){
-  if(!Array.isArray(items))return [];
-  if(corpusMode==='mixed')return items;
-
-  const expected =
-    corpusMode==='film' ? 'film' :
-    corpusMode==='games' ? 'game' :
-    corpusMode==='books' ? 'book' :
-    corpusMode==='tv' ? 'tv' :
-    corpusMode==='music' ? 'music' :
-    null;
-
-  if(!expected)return items;
-  return items.filter(x=>x && x.type===expected);
-}
-
 function candidate(m){
-  if(m.type==='music'){
-    return `${m.title}. ${(m.artists||m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,8).join(', ')}. ${m.musicSignal||''}. Scene/source: ${m.searchLane||''}. ${m.overview.substring(0,460)}`;
-  }
   return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,6).join(', ')}. ${(m.platforms||[]).join(', ')}. ${m.overview.substring(0,360)}`;
 }
 function setStatus(t){if(statusEl)statusEl.textContent=t}
@@ -1698,34 +1678,7 @@ async function fetchMusicAlbums(term,limit=100,offset=0){
   return data.results||[];
 }
 
-
-function isLowQualityMusicRecord(a){
-  const title=String(a?.collectionName||a?.trackName||'').toLowerCase();
-  const artist=String(a?.artistName||'').toLowerCase();
-  const genre=String(a?.primaryGenreName||'').toLowerCase();
-  const joined=`${title} ${artist} ${genre}`;
-
-  const bad=[
-    'artificial intelligence',
-    'ai music',
-    'ai generated',
-    'white noise',
-    'sleep sounds',
-    'therapy sounds',
-    'meditation music',
-    'relaxing music',
-    'karaoke',
-    'tribute to',
-    'sound effects',
-    'alarm tones',
-    'ringtone'
-  ];
-
-  return bad.some(x=>joined.includes(x));
-}
-
-function musicRecord(a,lane='music'){
-  if(isLowQualityMusicRecord(a))return null;
+function musicRecord(a){
   const title=a.collectionName||'';
   const artist=a.artistName||'Unknown artist';
   const genre=a.primaryGenreName||'Music';
@@ -1741,10 +1694,8 @@ function musicRecord(a,lane='music'){
     authors:[artist],
     year,
     genres:[genre],
-    subjects:[genre,'album','music','recording','artist','sound','rhythm'].filter(Boolean),
-    searchLane:lane,
-    musicSignal:`${genre}. ${artist}. ${title}`,
-    overview:`${title}. By ${artist}. ${year?'Released '+year+'. ':''}Genre: ${genre}. A musical object indexed through artist, album, genre, scene, subculture, release era, mood, rhythm, production context, instrumentality, and cultural signal.`,
+    subjects:[genre,'album','music','recording','artist'],
+    overview:`${title}. By ${artist}. ${year?'Released '+year+'. ':''}Genre: ${genre}. A musical object indexed through artist, album, genre, release era, mood, rhythm, and cultural signal.`,
     image,
     cover:image,
     itunesUrl:a.collectionViewUrl||a.artistViewUrl||`https://music.apple.com/search?term=${encodeURIComponent(title+' '+artist)}`
@@ -1753,109 +1704,29 @@ function musicRecord(a,lane='music'){
 
 async function loadMusic(limit){
   const lanes=[
-    // canonical electronic / machine-adjacent but musically credible
-    'kraftwerk',
-    'aphex twin',
-    'autechre',
-    'boards of canada',
-    'drexciya',
-    'dopplereffekt',
-    'jeff mills',
-    'juan atkins',
-    'cybotron',
-    'model 500',
-    'basic channel',
-    'burial',
-    'oneohtrix point never',
-    'arca',
-    'four tet',
-    'floating points',
-    'tim hecker',
-    'fennesz',
-    'laurie spiegel',
-    'suzanne ciani',
-    'wendy carlos',
-    'brian eno',
-    'tangerine dream',
-    'yellow magic orchestra',
-
-    // electronic / club genres
-    'techno',
-    'detroit techno',
-    'minimal techno',
-    'acid techno',
-    'ambient techno',
-    'industrial techno',
-    'house',
-    'deep house',
-    'chicago house',
-    'acid house',
-    'electro',
-    'idm',
-    'ambient',
-    'dark ambient',
-    'downtempo',
-    'trip hop',
-    'drum and bass',
-    'jungle',
-    'trance',
-    'experimental electronic',
-    'synth pop',
-    'new wave',
-    'krautrock',
-
-    // broad quality lanes
-    'post punk',
-    'shoegaze',
-    'dream pop',
-    'art pop',
     'alternative rock',
-    'indie rock',
-    'psychedelic rock',
-    'jazz',
-    'free jazz',
-    'fusion jazz',
-    'soul',
-    'funk',
-    'disco',
-    'r&b',
+    'electronic ambient',
     'hip hop',
-    'underground hip hop',
+    'jazz',
+    'soul',
     'punk',
     'metal',
-    'black metal',
-    'folk',
-    'singer songwriter',
-    'country',
-    'reggae',
-    'dub',
-    'afrobeat',
-    'latin',
-    'salsa',
-    'bossa nova',
     'classical',
-    'minimalism classical',
-    'film score',
+    'indie rock',
+    'experimental',
     'soundtrack',
-    'avant garde',
-    'experimental music'
+    'folk'
   ];
   const seen=new Set();
   const out=[];
-  const per=Math.min(200,Math.max(50,Math.ceil(limit/3)));
+  const per=Math.min(120,Math.max(40,Math.ceil(limit/2)));
 
-  const laneIndexes=lanes.map((_,i)=>i).sort((a,b)=>{
-    const ax=(a*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
-    const bx=(b*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
-    return ax-bx;
-  });
-
-  for(let i=0;i<laneIndexes.length && out.length<limit;i++){
-    const lane=lanes[laneIndexes[i]];
+  for(let i=0;i<lanes.length && out.length<limit;i++){
+    const lane=lanes[(i+corpusPageOffset+shuffleSeed)%lanes.length];
     try{
       const rows=await fetchMusicAlbums(lane,per);
       for(const row of rows){
-        const rec=musicRecord(row,lane);
+        const rec=musicRecord(row);
         if(!rec)continue;
         const key=`${rec.title}|${rec.artists[0]}`;
         if(seen.has(key))continue;
@@ -1869,7 +1740,7 @@ async function loadMusic(limit){
     }
   }
 
-  return out.filter(x=>x&&x.type==='music');
+  return out;
 }
 
 
@@ -1978,7 +1849,7 @@ async function loadTV(limit){
 
 function renderWall(movies){
   // Strict filter: only tiles with real, non-empty image URLs
-  const sample=[...isolateCorpusByMode(movies)]
+  const sample=[...movies]
     .map(m=>({...m,src:still(m,'w780')||poster(m,'w500')}))
     .filter(m=>m.src&&m.src.length>15)
     .sort(()=>Math.random()-.5)
@@ -1998,12 +1869,11 @@ function renderWall(movies){
 
 function finalizeCorpus(movies){
   if(shuffleSeed)movies.sort(()=>Math.random()-.5);
-  movies=isolateCorpusByMode(movies);
   const candidates=movies.map(candidate).slice(0,totalLimit());
   const map=new Map();
   candidates.forEach((c,i)=>map.set(c,movies[i]));
   cache={movies,candidates,map};
-  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'records':corpusMode==='mixed'?'mixed records':'films';
+  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'albums':corpusMode==='mixed'?'mixed records':'films';
   setStatus(`${movies.length} ${label} loaded`);
   renderWall(movies);
   return cache;
@@ -2049,8 +1919,7 @@ async function loadCorpusWithRetry(attempts=2){
 
 function parse(data,map){
   const rows=Array.isArray(data?.all)?data.all:(Array.isArray(data?.top)?data.top:[]);
-  const expected=corpusMode==='mixed'?null:(corpusMode==='games'?'game':corpusMode==='film'?'film':corpusMode==='books'?'book':corpusMode==='tv'?'tv':corpusMode==='music'?'music':null);
-  return rows.map(r=>{const m=map.get(r.text);return (m&&(!expected||m.type===expected))?{...m,score:Number(r.score||0),candidate:r.text}:null}).filter(Boolean).slice(0,RETURN_COUNT);
+  return rows.map(r=>{const m=map.get(r.text);return m?{...m,score:Number(r.score||0),candidate:r.text}:null}).filter(Boolean).slice(0,RETURN_COUNT);
 }
 
 async function search(text){
@@ -2267,7 +2136,7 @@ function applyModeLabels(){
       corpusMode==='games' ? 'games' :
       corpusMode==='books' ? 'books' :
       corpusMode==='tv' ? 'tv shows' :
-      corpusMode==='music' ? 'records' :
+      corpusMode==='music' ? 'albums' :
       corpusMode==='mixed' ? 'films + games + books + tv + music' :
       'films';
     hint.textContent = `search ${n} ${modeLabel} by meaning`;
@@ -2286,7 +2155,7 @@ function applyModeLabels(){
 function corpusLoadLabel(prefix='loading'){
   const n=totalLimit();
   const d=searchDepth;
-  const m=corpusMode==='mixed'?'mixed records':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'records':'films';
+  const m=corpusMode==='mixed'?'mixed records':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'albums':'films';
   return `${prefix} ${n} ${m} · ${d}`;
 }
 
@@ -2352,25 +2221,6 @@ const TRACES={
     'a world older than the player'
   ],
   music:[
-    'synthetic music that feels intelligent without saying so',
-    'electronic music with a pulse and a memory',
-    'machine-funk trying to become sensual through rhythm',
-    'synthetic music for a city at night',
-    'an album that sounds like circuitry discovering grief',
-    'a techno record for walking through concrete at 3am',
-    'a salsa record playing through a city at dusk',
-    'a jazz album for a room full of ghosts',
-    'country music for leaving a place forever',
-    'a metal record that sounds like prophecy',
-    'a classical piece for a machine learning grief',
-    'a reggae track for sunlight after disaster',
-    'a folk song that knows too much history',
-    'hip hop for a city remembering itself',
-    'ambient music for an empty airport',
-    'detroit machine music with human grief inside it',
-    'acid house for a corrupted neon ritual',
-    'minimal techno that feels like architecture breathing',
-    'industrial music for a beautiful system failure',
     'an album for driving through sodium lights',
     'music that feels like a city remembering rain',
     'a record for grief with a pulse',
