@@ -1436,6 +1436,18 @@ body[data-mode="signal"]:not(.has-results) .wall-cell img[src^="data:image/svg+x
   filter:contrast(1.06) saturate(.94) brightness(.92) !important;
 }
 
+
+/* signal quality gate: only real article imagery should appear */
+body[data-mode="signal"]:not(.has-results) .wall-cell img[src^="data:image/svg+xml"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"] img[src^="data:image/svg+xml"]{
+  display:none !important;
+}
+
+body[data-mode="signal"]:not(.has-results) .wall-cell:has(img[src^="data:image/svg+xml"]),
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]:has(img[src^="data:image/svg+xml"]){
+  display:none !important;
+}
+
 </style>
 </head>
 <body>
@@ -2047,11 +2059,31 @@ function signalRecord(a,lane='live world'){
   const domain=String(a?.domain||'').trim();
   if(!title||!url)return null;
 
+  const rawImage=String(a?.socialimage||a?.image||'').replace(/^http:/,'https:').trim();
+
+  // Quality gate: signal tiles must use real article imagery.
+  // No generated SUMMON cards and no blank/black placeholders.
+  if(!rawImage || !/^https?:\/\//i.test(rawImage))return null;
+
+  const badImageHints=[
+    'logo',
+    'icon',
+    'avatar',
+    'default',
+    'placeholder',
+    'spacer',
+    'transparent',
+    'blank',
+    'favicon',
+    'profile'
+  ];
+  const lowerImage=rawImage.toLowerCase();
+  if(badImageHints.some(x=>lowerImage.includes(x)))return null;
+
   const country=a?.sourcecountry||a?.sourceCountry||'';
   const lang=a?.language||'';
   const seen=String(a?.seendate||a?.seenDate||'');
   const year=seen?seen.slice(0,4):'';
-  const image=String(a?.socialimage||a?.image||'').replace(/^http:/,'https:') || fallbackSignalImage(title,domain);
 
   return {
     type:'signal',
@@ -2064,11 +2096,37 @@ function signalRecord(a,lane='live world'){
     genres:[domain||'Live signal'].filter(Boolean),
     subjects:[lane,domain,country,lang,'news','current events','live signal','world state'].filter(Boolean),
     overview:`${title}. Source: ${domain||'unknown domain'}. ${country?'Country: '+country+'. ':''}${seen?'Seen: '+seen+'. ':''}Live public article metadata indexed through source, domain, geography, recency, event context, and narrative signal. Discovery lane: ${lane}.`,
-    image,
-    cover:image,
+    image:rawImage,
+    cover:rawImage,
     sourceUrl:url,
     signalLane:lane
   };
+}
+
+
+function isQualitySignalRecord(rec){
+  if(!rec||rec.type!=='signal')return false;
+  if(!rec.image || !/^https?:\/\//i.test(rec.image))return false;
+  const domain=String(rec.domain||'').toLowerCase();
+  const title=String(rec.title||'').toLowerCase();
+
+  const blockedDomains=[
+    'youtube.com',
+    'youtu.be',
+    'facebook.com',
+    'instagram.com',
+    'tiktok.com',
+    'x.com',
+    'twitter.com',
+    'reddit.com',
+    'pinterest.com',
+    'medium.com',
+    'substack.com'
+  ];
+
+  if(blockedDomains.some(d=>domain.includes(d)))return false;
+  if(title.length<24)return false;
+  return true;
 }
 
 async function loadSignal(limit){
@@ -2076,7 +2134,7 @@ async function loadSignal(limit){
 
   const seen=new Set();
   const out=[];
-  const per=Math.min(120,Math.max(40,Math.ceil(limit/3)));
+  const per=Math.min(250,Math.max(80,Math.ceil(limit/2)));
   const span=searchDepth==='archive'?'7days':searchDepth==='field'?'3days':'24hours';
 
   const laneIndexes=SIGNAL_LANES.map((_,i)=>i).sort((a,b)=>{
@@ -2108,10 +2166,10 @@ async function loadSignal(limit){
     }
   }
 
-  const cleaned=out.filter(x=>x&&x.type==='signal');
+  const cleaned=out.filter(isQualitySignalRecord);
 
   if(!cleaned.length){
-    const message=lastError?.message||'GDELT returned no live articles';
+    const message=lastError?.message||'GDELT returned no quality image-backed live articles';
     setStatus(`signal failed · ${message}`);
     throw new Error(message);
   }
@@ -2494,7 +2552,8 @@ async function setCorpusMode(mode){
     setCorpusLoading(false);
     if(corpusMode==='signal'){
       const wall=$('#wall');
-      if(wall)wall.innerHTML=`<div class="wall-cell media-signal" data-type="signal"><img src="${fallbackSignalImage('GDELT live signal unavailable','gdeltproject.org')}" alt=""></div>`;
+      if(wall)wall.innerHTML='';
+      setStatus('signal failed · no quality live images');
     }
   });
 }
