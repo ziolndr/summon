@@ -1721,35 +1721,64 @@ function musicRecord(a){
 
 async function loadMusic(limit){
   const lanes=[
-    'techno',
-    'detroit techno',
-    'minimal techno',
-    'acid techno',
-    'deep house',
-    'chicago house',
-    'electro',
-    'idm electronic',
-    'ambient techno',
-    'industrial electronic',
-    'drum and bass',
-    'jungle',
-    'trance',
-    'electronic ambient',
-    'experimental electronic',
-    'krautrock',
-    'synthwave',
-    'post punk',
-    'alternative rock',
-    'hip hop',
-    'jazz',
-    'soul'
+    // electronic / club
+    'techno','detroit techno','minimal techno','acid techno','ambient techno','industrial techno',
+    'house','deep house','chicago house','acid house','progressive house','garage house',
+    'electro','electroclash','idm electronic','breakbeat','big beat','downtempo','trip hop',
+    'drum and bass','jungle','dubstep','uk garage','grime','trance','goa trance','hardstyle',
+    'ambient','dark ambient','experimental electronic','synthwave','new wave','krautrock',
+
+    // pop / rock / indie
+    'pop','art pop','synth pop','dream pop','k pop','j pop',
+    'rock','classic rock','alternative rock','indie rock','post rock','garage rock','psychedelic rock',
+    'progressive rock','folk rock','soft rock','shoegaze','britpop','emo','post hardcore',
+
+    // punk / metal / goth
+    'punk','post punk','hardcore punk','garage punk','noise rock',
+    'metal','heavy metal','black metal','death metal','doom metal','thrash metal','industrial metal',
+    'gothic rock','darkwave','coldwave',
+
+    // hip-hop / r&b / soul
+    'hip hop','rap','underground hip hop','east coast hip hop','west coast hip hop','trap',
+    'r&b','contemporary r&b','neo soul','soul','funk','disco','motown',
+
+    // jazz / blues
+    'jazz','bebop','hard bop','cool jazz','free jazz','fusion jazz','vocal jazz',
+    'blues','delta blues','electric blues','soul blues',
+
+    // classical / score / avant-garde
+    'classical','baroque','romantic classical','modern classical','minimalism classical',
+    'opera','choral','piano','string quartet','orchestral',
+    'soundtrack','film score','video game soundtrack','musical theatre',
+    'avant garde','noise','musique concrete',
+
+    // folk / country / singer-songwriter
+    'folk','traditional folk','singer songwriter','americana','country','alt country','bluegrass',
+    'gospel','spirituals',
+
+    // latin / caribbean / african / global
+    'latin','salsa','bachata','reggaeton','latin pop','bossa nova','samba','tango',
+    'reggae','dub','ska','dancehall',
+    'afrobeat','afropop','highlife','mbalax',
+    'world music','flamenco','fado','qawwali','hindustani classical','carnatic','arabic music',
+    'klezmer','celtic','irish folk',
+
+    // mood / functional discovery lanes
+    'romantic music','sad songs','party music','meditation music','sleep music','workout music',
+    'lofi','chillout','dark music','cinematic music','experimental music'
   ];
   const seen=new Set();
   const out=[];
-  const per=Math.min(200,Math.max(60,Math.ceil(limit/2)));
+  const per=Math.min(200,Math.max(50,Math.ceil(limit/3)));
 
-  for(let i=0;i<lanes.length && out.length<limit;i++){
-    const lane=lanes[(i+corpusPageOffset+shuffleSeed)%lanes.length];
+  const laneIndexes=lanes.map((_,i)=>i).sort((a,b)=>{
+    const ax=(a*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
+    const bx=(b*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
+    return ax-bx;
+  });
+
+  for(let i=0;i<laneIndexes.length && out.length<limit;i++){
+    const lane=lanes[laneIndexes[i]];
     try{
       const rows=await fetchMusicAlbums(lane,per);
       for(const row of rows){
@@ -1901,7 +1930,7 @@ function finalizeCorpus(movies){
   const map=new Map();
   candidates.forEach((c,i)=>map.set(c,movies[i]));
   cache={movies,candidates,map};
-  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'albums':corpusMode==='mixed'?'mixed records':'films';
+  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'records':corpusMode==='mixed'?'mixed records':'films';
   setStatus(`${movies.length} ${label} loaded`);
   renderWall(movies);
   return cache;
@@ -2165,7 +2194,7 @@ function applyModeLabels(){
       corpusMode==='games' ? 'games' :
       corpusMode==='books' ? 'books' :
       corpusMode==='tv' ? 'tv shows' :
-      corpusMode==='music' ? 'albums' :
+      corpusMode==='music' ? 'records' :
       corpusMode==='mixed' ? 'films + games + books + tv + music' :
       'films';
     hint.textContent = `search ${n} ${modeLabel} by meaning`;
@@ -2184,7 +2213,7 @@ function applyModeLabels(){
 function corpusLoadLabel(prefix='loading'){
   const n=totalLimit();
   const d=searchDepth;
-  const m=corpusMode==='mixed'?'mixed records':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'albums':'films';
+  const m=corpusMode==='mixed'?'mixed records':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'records':'films';
   return `${prefix} ${n} ${m} · ${d}`;
 }
 
@@ -2251,6 +2280,15 @@ const TRACES={
   ],
   music:[
     'a techno record for walking through concrete at 3am',
+    'a salsa record playing through a city at dusk',
+    'a jazz album for a room full of ghosts',
+    'country music for leaving a place forever',
+    'a metal record that sounds like prophecy',
+    'a classical piece for a machine learning grief',
+    'a reggae track for sunlight after disaster',
+    'a folk song that knows too much history',
+    'hip hop for a city remembering itself',
+    'ambient music for an empty airport',
     'detroit machine music with human grief inside it',
     'acid house for a corrupted neon ritual',
     'minimal techno that feels like architecture breathing',
