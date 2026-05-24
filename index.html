@@ -1801,7 +1801,7 @@ async function loadCorpusWithRetry(attempts=2){
 
 function parse(data,map){
   const rows=Array.isArray(data?.all)?data.all:(Array.isArray(data?.top)?data.top:[]);
-  return rows.map(r=>{const m=map.get(r.text);return m?{...m,score:Number(r.score||0),candidate:r.text}:null}).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,RETURN_COUNT);
+  return rows.map(r=>{const m=map.get(r.text);return m?{...m,score:Number(r.score||0),candidate:r.text}:null}).filter(Boolean).slice(0,RETURN_COUNT);
 }
 
 async function search(text){
