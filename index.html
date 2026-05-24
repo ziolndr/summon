@@ -1412,40 +1412,14 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
 body[data-mode="signal"]:not(.has-results) .film-wall{
   grid-template-columns:repeat(3,minmax(180px,1fr)) !important;
   gap:2px !important;
+  min-height:100svh !important;
+  background:#151515 !important;
 }
 
 @media(max-width:980px){
   body[data-mode="signal"]:not(.has-results) .film-wall{
     grid-template-columns:repeat(2,minmax(0,1fr)) !important;
   }
-}
-
-
-/* signal blank-page guard */
-body[data-mode="signal"]:not(.has-results) .film-wall{
-  min-height:100svh !important;
-  background:#151515 !important;
-}
-
-body[data-mode="signal"]:not(.has-results) .wall-cell{
-  background:#111 !important;
-}
-
-body[data-mode="signal"]:not(.has-results) .wall-cell img[src^="data:image/svg+xml"]{
-  object-fit:cover !important;
-  filter:contrast(1.06) saturate(.94) brightness(.92) !important;
-}
-
-
-/* signal quality gate: only real article imagery should appear */
-body[data-mode="signal"]:not(.has-results) .wall-cell img[src^="data:image/svg+xml"],
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"] img[src^="data:image/svg+xml"]{
-  display:none !important;
-}
-
-body[data-mode="signal"]:not(.has-results) .wall-cell:has(img[src^="data:image/svg+xml"]),
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]:has(img[src^="data:image/svg+xml"]){
-  display:none !important;
 }
 
 </style>
@@ -1568,13 +1542,12 @@ const TVMAZE_URL='https://api.tvmaze.com/shows';
 const ITUNES_URL='https://itunes.apple.com/search';
 const CURRENTS_API_KEY='6leo9dON1EuYXb3edmMrZAFmzome8D3JHlYZqFgUcA-CAaoO';
 const CURRENTS_SEARCH_URL='https://api.currentsapi.services/v1/search';
-const CURRENTS_LATEST_URL='https://api.currentsapi.services/v1/latest-news';
 const RAWG_PAGE_SIZE=40;
 
 const DEPTHS={
-  surface:{film:80,games:80,books:80,tv:80,music:80,signal:80,mixedFilm:26,mixedGames:26,mixedBooks:26,mixedTv:26,mixedMusic:26,mixedSignal:26,rawgPages:3},
+  surface:{film:80,games:80,books:80,tv:80,music:80,signal:80,mixedFilm:25,mixedGames:25,mixedBooks:25,mixedTv:25,mixedMusic:25,mixedSignal:25,rawgPages:3},
   field:{film:220,games:140,books:160,tv:160,music:160,signal:160,mixedFilm:45,mixedGames:45,mixedBooks:45,mixedTv:45,mixedMusic:45,mixedSignal:45,rawgPages:5},
-  archive:{film:500,games:500,books:500,tv:500,music:500,signal:500,mixedFilm:84,mixedGames:84,mixedBooks:84,mixedTv:84,mixedMusic:84,mixedSignal:84,rawgPages:13}
+  archive:{film:500,games:500,books:500,tv:500,music:500,signal:500,mixedFilm:82,mixedGames:82,mixedBooks:82,mixedTv:82,mixedMusic:82,mixedSignal:82,rawgPages:13}
 };
 
 let corpusMode='film',searchDepth='field';
@@ -1636,22 +1609,8 @@ function candidate(m){
   if(m.type==='music'){
     return `${m.title}. ${(m.artists||m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,8).join(', ')}. ${m.musicSignal||''}. Scene/source: ${m.searchLane||''}. ${m.overview.substring(0,460)}`;
   }
-  if(m.type==='signal'){
-    return `${m.title}. ${m.domain||''}. ${m.sourceCountry||''}. ${m.language||''}. ${(m.subjects||[]).slice(0,10).join(', ')}. Lane: ${m.signalLane||''}. ${m.overview.substring(0,560)}`;
-  }
   return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,6).join(', ')}. ${(m.platforms||[]).join(', ')}. ${m.overview.substring(0,360)}`;
 }
-
-function corpusLabelPlural(){
-  return corpusMode==='games'?'games':
-    corpusMode==='books'?'books':
-    corpusMode==='tv'?'tv shows':
-    corpusMode==='music'?'records':
-    corpusMode==='signal'?'live signals':
-    corpusMode==='mixed'?'mixed records':
-    'films';
-}
-
 function setStatus(t){if(statusEl)statusEl.textContent=t}
 function toast(t){
   const el=document.createElement('div');el.className='toast';el.textContent=t;
@@ -1942,68 +1901,51 @@ async function loadMusic(limit){
 
 
 
-function fallbackSignalImage(title='', domain=''){
-  const safeTitle=String(title||'SIGNAL').slice(0,90);
-  const safeDomain=String(domain||'LIVE WORLD').slice(0,36);
-  const hue=[...safeTitle].reduce((a,c)=>a+c.charCodeAt(0),0)%360;
-  const svg=`
-  <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
-    <defs>
-      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="hsl(${hue},14%,13%)"/>
-        <stop offset="1" stop-color="hsl(${(hue+42)%360},16%,4%)"/>
-      </linearGradient>
-      <filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="3"/></filter>
-    </defs>
-    <rect width="1200" height="800" fill="url(#g)"/>
-    <rect width="1200" height="800" filter="url(#n)" opacity=".16"/>
-    <line x1="0" y1="580" x2="1200" y2="580" stroke="rgba(246,241,232,.12)" stroke-width="1"/>
-    <text x="64" y="84" font-family="IBM Plex Mono, Menlo, monospace" font-size="22" fill="rgba(246,241,232,.58)" letter-spacing="4">SUMMON / SIGNAL</text>
-    <foreignObject x="64" y="250" width="960" height="230">
-      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Arial,sans-serif;font-size:58px;line-height:.96;font-weight:600;letter-spacing:-2px;color:rgb(246,241,232);word-wrap:break-word;">
-        ${esc(safeTitle)}
-      </div>
-    </foreignObject>
-    <text x="64" y="642" font-family="IBM Plex Mono, Menlo, monospace" font-size="24" fill="rgba(246,241,232,.62)" letter-spacing="3">${esc(safeDomain)}</text>
-  </svg>`;
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-}
-
-
-
-
-
-
-
-const SIGNAL_BLOCKED_DOMAINS=[
-  'youtube.com','youtu.be','facebook.com','instagram.com','tiktok.com',
-  'x.com','twitter.com','reddit.com','pinterest.com','medium.com','substack.com',
-  'pressrelease','prnewswire','globenewswire','businesswire'
+const SIGNAL_LANES=[
+  'geopolitics',
+  'energy security',
+  'defense procurement',
+  'artificial intelligence regulation',
+  'semiconductors',
+  'shipping supply chain',
+  'central banks inflation',
+  'cybersecurity infrastructure',
+  'climate risk',
+  'water scarcity',
+  'migration border policy',
+  'elections democracy',
+  'space industry',
+  'nuclear energy',
+  'rare earth minerals',
+  'public health',
+  'labor unions strikes',
+  'housing affordability',
+  'antitrust technology',
+  'crypto regulation',
+  'surveillance technology',
+  'military drones',
+  'ports logistics',
+  'oil gas markets',
+  'food security'
 ];
 
 function signalImageLooksBad(url=''){
   const u=String(url||'').toLowerCase();
   if(!/^https?:\/\//i.test(u))return true;
-
-  const bad=[
-    'logo','icon','avatar','default','placeholder','spacer','transparent',
-    'blank','favicon','profile','fallback','no-image','no_image',
-    'missing','dummy','thumbnail-default','image-not-found'
-  ];
-
+  const bad=['logo','icon','avatar','default','placeholder','spacer','transparent','blank','favicon','profile','fallback','no-image','no_image','missing','dummy','thumbnail-default','image-not-found'];
   return bad.some(x=>u.includes(x));
 }
 
 function signalDomainLooksBad(domain=''){
   const d=String(domain||'').toLowerCase();
-  return SIGNAL_BLOCKED_DOMAINS.some(x=>d.includes(x));
+  const blocked=['youtube.com','youtu.be','facebook.com','instagram.com','tiktok.com','x.com','twitter.com','reddit.com','pinterest.com','medium.com','substack.com'];
+  return blocked.some(x=>d.includes(x));
 }
 
 async function fetchSignalBatch(query,maxrecords=100,timespan='3days'){
   const now=new Date();
   const days=timespan==='7days'?7:timespan==='3days'?3:1;
   const start=new Date(now.getTime()-days*24*60*60*1000).toISOString().slice(0,10);
-
   const p=new URLSearchParams({
     apiKey:CURRENTS_API_KEY,
     keywords:query,
@@ -2011,9 +1953,7 @@ async function fetchSignalBatch(query,maxrecords=100,timespan='3days'){
     start_date:start,
     page_size:String(Math.min(200,maxrecords))
   });
-
-  const url=`${CURRENTS_SEARCH_URL}?${p}`;
-  const res=await fetch(url,{cache:'no-store'});
+  const res=await fetch(`${CURRENTS_SEARCH_URL}?${p}`,{cache:'no-store'});
   if(!res.ok)throw new Error(`currents ${res.status}`);
   const data=await res.json();
   if(data.status&&data.status!=='ok')throw new Error(data.message||'currents failed');
@@ -2023,12 +1963,11 @@ async function fetchSignalBatch(query,maxrecords=100,timespan='3days'){
 function signalRecord(a,lane='live world'){
   const title=String(a?.title||'').trim();
   const url=String(a?.url||'').trim();
-  const domain=String(a?.source||'').trim() || (()=>{try{return new URL(url).hostname.replace(/^www\./,'')}catch(e){return ''}})();
   if(!title||!url)return null;
 
+  const domain=String(a?.source||'').trim() || (()=>{try{return new URL(url).hostname.replace(/^www\./,'')}catch(e){return ''}})();
   const rawImage=String(a?.image||'').replace(/^http:/,'https:').trim();
 
-  // Signal mode should feel editorial: image-backed articles only.
   if(signalImageLooksBad(rawImage))return null;
   if(signalDomainLooksBad(domain))return null;
 
@@ -2059,17 +1998,15 @@ function isQualitySignalRecord(rec){
   if(!rec||rec.type!=='signal')return false;
   if(signalImageLooksBad(rec.image))return false;
   if(signalDomainLooksBad(rec.domain))return false;
-  const title=String(rec.title||'').trim();
-  if(title.length<24)return false;
+  if(String(rec.title||'').trim().length<24)return false;
   return true;
 }
 
 async function loadSignal(limit){
   setCorpusLoading(true,`loading ${limit} live signals · ${searchDepth}`);
-
   const seen=new Set();
   const out=[];
-  const per=Math.min(200,Math.max(80,Math.ceil(limit/2)));
+  const per=Math.min(200,Math.max(70,Math.ceil(limit/2)));
   const span=searchDepth==='archive'?'7days':searchDepth==='field'?'3days':'24hours';
 
   const laneIndexes=SIGNAL_LANES.map((_,i)=>i).sort((a,b)=>{
@@ -2079,7 +2016,6 @@ async function loadSignal(limit){
   });
 
   let lastError=null;
-
   for(let i=0;i<laneIndexes.length && out.length<limit;i++){
     const lane=SIGNAL_LANES[laneIndexes[i]];
     try{
@@ -2097,61 +2033,17 @@ async function loadSignal(limit){
     }catch(e){
       lastError=e;
       console.warn('signal lane failed',lane,e);
-      continue;
     }
   }
 
   const cleaned=out.filter(isQualitySignalRecord);
-
   if(!cleaned.length){
     const message=lastError?.message||'Currents returned no quality image-backed live articles';
     setStatus(`signal failed · ${message}`);
     throw new Error(message);
   }
-
   return cleaned.slice(0,limit);
 }
-
-
-const SIGNAL_LANES=[
-  'geopolitics',
-  'energy security',
-  'defense procurement',
-  'artificial intelligence regulation',
-  'semiconductors',
-  'shipping supply chain',
-  'central banks inflation',
-  'cybersecurity infrastructure',
-  'climate risk',
-  'water scarcity',
-  'migration border policy',
-  'elections democracy',
-  'space industry',
-  'nuclear energy',
-  'rare earth minerals',
-  'public health',
-  'labor unions strikes',
-  'housing affordability',
-  'antitrust technology',
-  'crypto regulation',
-  'surveillance technology',
-  'military drones',
-  'ports logistics',
-  'oil gas markets',
-  'food security'
-];
-
-
-
-
-async 
-
-
-
-
-
-
-async 
 
 
 // ─── Corpus Loaders ───
@@ -2287,13 +2179,11 @@ function finalizeCorpus(movies){
   const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'records':corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':'films';
   setStatus(`${movies.length} ${label} loaded`);
   renderWall(movies);
-  setCorpusLoading(false);
   return cache;
 }
 
 async function loadCorpus(){
   if(cache)return cache;
-  setCorpusLoading(true,`loading ${corpusLabelPlural()} · ${searchDepth}`);
 
   if(corpusMode==='games') return finalizeCorpus(await loadGames(gameLimit()));
   if(corpusMode==='books') return finalizeCorpus(await loadBooks(bookLimit()));
@@ -2308,7 +2198,7 @@ async function loadCorpus(){
       loadBooks(bookLimit()),
       loadTV(tvLimit()),
       loadMusic(musicLimit()),
-      loadSignal(signalLimit())
+      loadSignal(signalLimit()).catch(()=>[])
     ]);
     const mixed=[];
     const mx=Math.max(f.length,g.length,b.length,t.length,m.length,s.length);
@@ -2517,33 +2407,26 @@ function syncResultQuery(){
 
 async function setCorpusMode(mode){
   if(!['film','games','books','tv','music','signal','mixed'].includes(mode)||corpusMode===mode)return;
-  corpusMode=mode;
-  cache=null;
-  results=[];
-  hasExecutedSearch=false;
-  active=0;
-  document.body.dataset.mode=corpusMode;
-  setCorpusLoading(true,`loading ${corpusLabelPlural()} · ${searchDepth}`);
+  corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;
   applyModeLabels();
-  loadCorpus().catch(e=>{
-    console.error(e);
-    toast(`${corpusLabelPlural()} failed`);
-    setCorpusLoading(false);
-  });
+  setCorpusLoading(true,corpusLoadLabel('loading'));
+  try{
+    await loadCorpusWithRetry(2);setCorpusLoading(false);
+  }catch(e){console.error(e);setCorpusLoading(false,'load failed');return}
+  if(document.body.classList.contains('has-results')){
+    document.body.classList.remove('has-results','searching','cutting');
+    history.replaceState(null,'',location.pathname+location.search);
+    window.scrollTo({top:0,behavior:'auto'});
+  }
 }
 
 async function setSearchDepth(depth){
   if(!DEPTHS[depth]||searchDepth===depth)return;
-  searchDepth=depth;
-  cache=null;
-  hasExecutedSearch=false;
-  setCorpusLoading(true,`loading ${corpusLabelPlural()} · ${searchDepth}`);
-  applyModeLabels();
-  loadCorpus().catch(e=>{
-    console.error(e);
-    toast(`${corpusLabelPlural()} failed`);
-    setCorpusLoading(false);
-  });
+  searchDepth=depth;cache=null;applyModeLabels();
+  setCorpusLoading(true,corpusLoadLabel('loading'));
+  try{
+    await loadCorpusWithRetry(2);setCorpusLoading(false);
+  }catch(e){console.error(e);setCorpusLoading(false,'load failed')}
 }
 
 function applyTheme(t){
@@ -2589,14 +2472,12 @@ function corpusLoadLabel(prefix='loading'){
   return `${prefix} ${n} ${m} · ${d}`;
 }
 
-function setCorpusLoading(isLoading,copy=''){
-  document.body.classList.toggle('corpus-loading',!!isLoading);
-  document.body.classList.toggle('corpus-ready',!isLoading);
-  const text=$('#corpusLoadText');
-  if(text){
-    if(isLoading) text.textContent=copy||`loading ${corpusLabelPlural()} · ${searchDepth}`;
-    else text.textContent=`${corpusLabelPlural()} ready · ${searchDepth}`;
-  }
+function setCorpusLoading(on,text=''){
+  const lt=$('#corpusLoadText');
+  document.body.classList.remove('corpus-loading','corpus-ready');
+  document.querySelectorAll('.toggle-btn').forEach(b=>{b.disabled=false;b.setAttribute('aria-busy',on?'true':'false')});
+  if(on){document.body.classList.add('corpus-loading');if(lt)lt.textContent=text||corpusLoadLabel('loading')}
+  else{document.body.classList.add('corpus-ready');if(lt)lt.textContent=text||corpusLoadLabel('ready')}
 }
 
 // ─── Resolve State ───
