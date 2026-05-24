@@ -1581,7 +1581,7 @@ function isolateCorpusByMode(items){
 
 function candidate(m){
   if(m.type==='music'){
-    return `${m.title}. ${(m.artists||m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,10).join(', ')}. ${m.searchLane||''}. ${m.musicSignal||''}. ${m.overview.substring(0,520)}`;
+    return `${m.title}. ${(m.artists||m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,8).join(', ')}. ${m.musicSignal||''}. Scene/source: ${m.searchLane||''}. ${m.overview.substring(0,460)}`;
   }
   return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,6).join(', ')}. ${(m.platforms||[]).join(', ')}. ${m.overview.substring(0,360)}`;
 }
@@ -1698,7 +1698,34 @@ async function fetchMusicAlbums(term,limit=100,offset=0){
   return data.results||[];
 }
 
+
+function isLowQualityMusicRecord(a){
+  const title=String(a?.collectionName||a?.trackName||'').toLowerCase();
+  const artist=String(a?.artistName||'').toLowerCase();
+  const genre=String(a?.primaryGenreName||'').toLowerCase();
+  const joined=`${title} ${artist} ${genre}`;
+
+  const bad=[
+    'artificial intelligence',
+    'ai music',
+    'ai generated',
+    'white noise',
+    'sleep sounds',
+    'therapy sounds',
+    'meditation music',
+    'relaxing music',
+    'karaoke',
+    'tribute to',
+    'sound effects',
+    'alarm tones',
+    'ringtone'
+  ];
+
+  return bad.some(x=>joined.includes(x));
+}
+
 function musicRecord(a,lane='music'){
+  if(isLowQualityMusicRecord(a))return null;
   const title=a.collectionName||'';
   const artist=a.artistName||'Unknown artist';
   const genre=a.primaryGenreName||'Music';
@@ -1714,10 +1741,10 @@ function musicRecord(a,lane='music'){
     authors:[artist],
     year,
     genres:[genre],
-    subjects:[genre,lane,'album','music','recording','artist','sound','rhythm'].filter(Boolean),
+    subjects:[genre,'album','music','recording','artist','sound','rhythm'].filter(Boolean),
     searchLane:lane,
-    musicSignal:`${genre}. ${lane}. ${artist}. ${title}`,
-    overview:`${title}. By ${artist}. ${year?'Released '+year+'. ':''}Genre: ${genre}. Discovery lane: ${lane}. A musical object indexed through artist, album, genre, source discovery lane, subculture, release era, mood, rhythm, production context, instrumentality, and cultural signal.`,
+    musicSignal:`${genre}. ${artist}. ${title}`,
+    overview:`${title}. By ${artist}. ${year?'Released '+year+'. ':''}Genre: ${genre}. A musical object indexed through artist, album, genre, scene, subculture, release era, mood, rhythm, production context, instrumentality, and cultural signal.`,
     image,
     cover:image,
     itunesUrl:a.collectionViewUrl||a.artistViewUrl||`https://music.apple.com/search?term=${encodeURIComponent(title+' '+artist)}`
@@ -1726,70 +1753,92 @@ function musicRecord(a,lane='music'){
 
 async function loadMusic(limit){
   const lanes=[
-    // electronic / club
-    'artificial intelligence',
-    'computer music',
-    'robot music',
-    'machine music',
-    'algorithmic music',
-    'cyberpunk electronic',
-    'futuristic electronic',
-    'synthesizer music',
-    'modular synthesizer',
-    'electronic experimental',
-    'glitch',
-    'braindance',
-    'warp records',
+    // canonical electronic / machine-adjacent but musically credible
+    'kraftwerk',
     'aphex twin',
     'autechre',
-    'kraftwerk',
-    'dopplereffekt',
+    'boards of canada',
     'drexciya',
-    'android music',
-    'techno','detroit techno','minimal techno','acid techno','ambient techno','industrial techno',
-    'house','deep house','chicago house','acid house','progressive house','garage house',
-    'electro','electroclash','idm electronic','breakbeat','big beat','downtempo','trip hop',
-    'drum and bass','jungle','dubstep','uk garage','grime','trance','goa trance','hardstyle',
-    'ambient','dark ambient','experimental electronic','synthwave','new wave','krautrock',
+    'dopplereffekt',
+    'jeff mills',
+    'juan atkins',
+    'cybotron',
+    'model 500',
+    'basic channel',
+    'burial',
+    'oneohtrix point never',
+    'arca',
+    'four tet',
+    'floating points',
+    'tim hecker',
+    'fennesz',
+    'laurie spiegel',
+    'suzanne ciani',
+    'wendy carlos',
+    'brian eno',
+    'tangerine dream',
+    'yellow magic orchestra',
 
-    // pop / rock / indie
-    'pop','art pop','synth pop','dream pop','k pop','j pop',
-    'rock','classic rock','alternative rock','indie rock','post rock','garage rock','psychedelic rock',
-    'progressive rock','folk rock','soft rock','shoegaze','britpop','emo','post hardcore',
+    // electronic / club genres
+    'techno',
+    'detroit techno',
+    'minimal techno',
+    'acid techno',
+    'ambient techno',
+    'industrial techno',
+    'house',
+    'deep house',
+    'chicago house',
+    'acid house',
+    'electro',
+    'idm',
+    'ambient',
+    'dark ambient',
+    'downtempo',
+    'trip hop',
+    'drum and bass',
+    'jungle',
+    'trance',
+    'experimental electronic',
+    'synth pop',
+    'new wave',
+    'krautrock',
 
-    // punk / metal / goth
-    'punk','post punk','hardcore punk','garage punk','noise rock',
-    'metal','heavy metal','black metal','death metal','doom metal','thrash metal','industrial metal',
-    'gothic rock','darkwave','coldwave',
-
-    // hip-hop / r&b / soul
-    'hip hop','rap','underground hip hop','east coast hip hop','west coast hip hop','trap',
-    'r&b','contemporary r&b','neo soul','soul','funk','disco','motown',
-
-    // jazz / blues
-    'jazz','bebop','hard bop','cool jazz','free jazz','fusion jazz','vocal jazz',
-    'blues','delta blues','electric blues','soul blues',
-
-    // classical / score / avant-garde
-    'classical','baroque','romantic classical','modern classical','minimalism classical',
-    'opera','choral','piano','string quartet','orchestral',
-    'soundtrack','film score','video game soundtrack','musical theatre',
-    'avant garde','noise','musique concrete',
-
-    // folk / country / singer-songwriter
-    'folk','traditional folk','singer songwriter','americana','country','alt country','bluegrass',
-    'gospel','spirituals',
-
-    // latin / caribbean / african / global
-    'latin','salsa','bachata','reggaeton','latin pop','bossa nova','samba','tango',
-    'reggae','dub','ska','dancehall',
-    'afrobeat','afropop','highlife','mbalax',
-    'world music','flamenco','fado','qawwali','hindustani classical','carnatic','arabic music',
-    'klezmer','celtic','irish folk',
-
-    // mood / functional discovery lanes
-    'romantic music','sad songs','party music','meditation music','sleep music','workout music',
-    'lofi','chillout','dark music','cinematic music','experimental music'
+    // broad quality lanes
+    'post punk',
+    'shoegaze',
+    'dream pop',
+    'art pop',
+    'alternative rock',
+    'indie rock',
+    'psychedelic rock',
+    'jazz',
+    'free jazz',
+    'fusion jazz',
+    'soul',
+    'funk',
+    'disco',
+    'r&b',
+    'hip hop',
+    'underground hip hop',
+    'punk',
+    'metal',
+    'black metal',
+    'folk',
+    'singer songwriter',
+    'country',
+    'reggae',
+    'dub',
+    'afrobeat',
+    'latin',
+    'salsa',
+    'bossa nova',
+    'classical',
+    'minimalism classical',
+    'film score',
+    'soundtrack',
+    'avant garde',
+    'experimental music'
   ];
   const seen=new Set();
   const out=[];
@@ -2303,11 +2352,11 @@ const TRACES={
     'a world older than the player'
   ],
   music:[
-    'music that sounds like artificial intelligence learning to dream',
-    'computer music with a pulse and a memory',
-    'a robot trying to become sensual through rhythm',
-    'synthetic music for a machine city at night',
-    'an album that sounds like code discovering grief',
+    'synthetic music that feels intelligent without saying so',
+    'electronic music with a pulse and a memory',
+    'machine-funk trying to become sensual through rhythm',
+    'synthetic music for a city at night',
+    'an album that sounds like circuitry discovering grief',
     'a techno record for walking through concrete at 3am',
     'a salsa record playing through a city at dusk',
     'a jazz album for a room full of ghosts',
