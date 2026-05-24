@@ -1974,6 +1974,44 @@ function fallbackSignalImage(title='', domain=''){
 
 
 
+
+const SIGNAL_QUALITY_SOURCES=[
+  'reuters','apnews','associated press','bbc','theguardian','guardian',
+  'aljazeera','npr','politico','axios','theverge','wired','arstechnica',
+  'ft.com','financial times','bloomberg','wsj','wall street journal',
+  'cnbc','cnn','nytimes','new york times','washingtonpost','washington post',
+  'latimes','nbcnews','abcnews','cbsnews','pbs','propublica',
+  'foreignpolicy','foreign affairs','defensenews','breakingdefense',
+  'technologyreview','mit technology review','nature','science.org',
+  'semafor','restofworld','theinformation','vox','theatlantic'
+];
+
+function signalSourceLooksEditorial(domain=''){
+  const d=String(domain||'').toLowerCase();
+  if(!d)return false;
+  return SIGNAL_QUALITY_SOURCES.some(s=>d.includes(s));
+}
+
+function signalImageLooksGeneric(url=''){
+  const u=String(url||'').toLowerCase();
+
+  const bad=[
+    'logo','icon','avatar','default','placeholder','spacer','transparent',
+    'blank','favicon','profile','stock','generic','fallback','no-image',
+    'no_image','missing','dummy','thumbnail-default','image-not-found',
+    'gettyimages','shutterstock','istockphoto','depositphotos','alamy',
+    'dreamstime','pixabay','pexels','unsplash','canva'
+  ];
+
+  if(bad.some(x=>u.includes(x)))return true;
+
+  // Common category-default/news-placeholder patterns.
+  if(/\/(default|placeholder|generic|logo|icon|avatar)[-_./]/i.test(u))return true;
+  if(/(news|world|business|technology|sports)[-_]?(default|placeholder|generic)/i.test(u))return true;
+
+  return false;
+}
+
 async function fetchSignalBatch(query,maxrecords=100,timespan='3days'){
   const now=new Date();
   const days=timespan==='7days'?7:timespan==='3days'?3:1;
@@ -2006,9 +2044,11 @@ function signalRecord(a,lane='live world'){
   // Signal mode should feel editorial: image-backed articles only.
   if(!rawImage || !/^https?:\/\//i.test(rawImage))return null;
 
-  const badImageHints=['logo','icon','avatar','default','placeholder','spacer','transparent','blank','favicon','profile'];
-  const lowerImage=rawImage.toLowerCase();
-  if(badImageHints.some(x=>lowerImage.includes(x)))return null;
+  if(signalImageLooksGeneric(rawImage))return null;
+
+  // Currents often returns generic/category art from weaker sources.
+  // Keep signal visually editorial by preferring recognized source domains.
+  if(!signalSourceLooksEditorial(domain))return null;
 
   const published=String(a?.published||'');
   const year=published?published.slice(0,4):'';
@@ -2041,10 +2081,13 @@ function isQualitySignalRecord(rec){
 
   const blockedDomains=[
     'youtube.com','youtu.be','facebook.com','instagram.com','tiktok.com',
-    'x.com','twitter.com','reddit.com','pinterest.com','medium.com','substack.com'
+    'x.com','twitter.com','reddit.com','pinterest.com','medium.com','substack.com',
+    'pressrelease','prnewswire','globenewswire','businesswire'
   ];
 
   if(blockedDomains.some(d=>domain.includes(d)))return false;
+  if(!signalSourceLooksEditorial(domain))return false;
+  if(signalImageLooksGeneric(rec.image))return false;
   if(title.length<24)return false;
   return true;
 }
@@ -2054,7 +2097,7 @@ async function loadSignal(limit){
 
   const seen=new Set();
   const out=[];
-  const per=Math.min(200,Math.max(50,Math.ceil(limit/2)));
+  const per=Math.min(200,Math.max(80,Math.ceil(limit/2)));
   const span=searchDepth==='archive'?'7days':searchDepth==='field'?'3days':'24hours';
 
   const laneIndexes=SIGNAL_LANES.map((_,i)=>i).sort((a,b)=>{
@@ -2089,7 +2132,7 @@ async function loadSignal(limit){
   const cleaned=out.filter(isQualitySignalRecord);
 
   if(!cleaned.length){
-    const message=lastError?.message||'Currents returned no quality image-backed live articles';
+    const message=lastError?.message||'Currents returned no editorial image-backed live articles';
     setStatus(`signal failed · ${message}`);
     throw new Error(message);
   }
