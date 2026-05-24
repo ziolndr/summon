@@ -1698,7 +1698,7 @@ function musicRecord(a){
     overview:`${title}. By ${artist}. ${year?'Released '+year+'. ':''}Genre: ${genre}. A musical object indexed through artist, album, genre, release era, mood, rhythm, and cultural signal.`,
     image,
     cover:image,
-    itunesUrl:a.collectionViewUrl||`https://music.apple.com/search?term=${encodeURIComponent(title+' '+artist)}`
+    itunesUrl:a.collectionViewUrl||a.artistViewUrl||`https://music.apple.com/search?term=${encodeURIComponent(title+' '+artist)}`
   };
 }
 
@@ -1967,6 +1967,25 @@ async function search(text){
 
 // ─── Result Rendering ───
 
+
+function sourceUrl(m){
+  if(!m)return '#';
+  if(m.type==='music')return m.itunesUrl||`https://music.apple.com/search?term=${encodeURIComponent((m.title||'')+' '+((m.artists||[])[0]||''))}`;
+  if(m.type==='game')return m.rawgSlug?`https://rawg.io/games/${m.rawgSlug}`:`https://rawg.io/search?query=${encodeURIComponent(m.title||'')}`;
+  if(m.type==='book')return m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title||'')}`;
+  if(m.type==='tv')return m.tvMazeUrl||`https://www.tvmaze.com/search?q=${encodeURIComponent(m.title||'')}`;
+  return `https://www.imdb.com/find?q=${encodeURIComponent(m.title||'')}`;
+}
+
+function sourceLabel(m){
+  if(!m)return 'open source ↗';
+  if(m.type==='music')return 'view on apple music ↗';
+  if(m.type==='game')return 'view on rawg ↗';
+  if(m.type==='book')return 'view on gutenberg ↗';
+  if(m.type==='tv')return 'view on tvmaze ↗';
+  return 'view on imdb ↗';
+}
+
 function renderResult(){
   if(!hasExecutedSearch||!results.length){document.body.classList.remove('has-results');return}
   const m=results[active];if(!m)return;
@@ -1998,14 +2017,8 @@ function renderResult(){
   applyModeLabels();
   syncResultQuery();
 
-  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':
-    m.type==='music'?'view on apple music ↗':'view on imdb ↗';
-  $('#imdb').onclick=()=>window.open(
-    m.type==='game'?`https://rawg.io/games/${m.rawgSlug||encodeURIComponent(m.title.toLowerCase().replaceAll(' ','-'))}`:
-    m.type==='book'?(m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title)}`):
-    m.type==='tv'?(m.tvMazeUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`):
-    `https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`,'_blank'
-  );
+  $('#imdb').textContent=sourceLabel(m);
+  $('#imdb').onclick=()=>window.open(sourceUrl(m),'_blank');
   $('#copyLink').onclick=()=>{
     const url=`${location.href.split('#')[0]}#${encodeURIComponent(currentQuery)}`;
     navigator.clipboard?.writeText(url).then(()=>toast('link copied'));
@@ -2207,11 +2220,28 @@ const TRACES={
     'hidden systems under pressure',
     'a world older than the player'
   ],
+  music:[
+    'an album for driving through sodium lights',
+    'music that feels like a city remembering rain',
+    'a record for grief with a pulse',
+    'something that sounds like neon and regret',
+    'a soundtrack for becoming someone else',
+    'an album that feels expensive and haunted',
+    'music for a machine learning desire',
+    'a record that sounds like late capitalism at midnight',
+    'songs for a room with no windows',
+    'music that turns loneliness into architecture',
+    'an album for a beautiful system failure',
+    'a sound between ritual and radio',
+    'music for walking away from the old version of yourself',
+    'a record that feels like surveillance becoming romance',
+    'songs that make the future feel used'
+  ],
   mixed:[
     'the square root of negative one wants culture',
     'a lonely satellite returns home',
     'a person made of equations',
-    'myth translated into media',
+    'myth translated into film, music, books, games, and tv',
     'one signal across every medium'
   ]
 };
