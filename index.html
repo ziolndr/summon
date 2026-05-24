@@ -1975,41 +1975,28 @@ function fallbackSignalImage(title='', domain=''){
 
 
 
-const SIGNAL_QUALITY_SOURCES=[
-  'reuters','apnews','associated press','bbc','theguardian','guardian',
-  'aljazeera','npr','politico','axios','theverge','wired','arstechnica',
-  'ft.com','financial times','bloomberg','wsj','wall street journal',
-  'cnbc','cnn','nytimes','new york times','washingtonpost','washington post',
-  'latimes','nbcnews','abcnews','cbsnews','pbs','propublica',
-  'foreignpolicy','foreign affairs','defensenews','breakingdefense',
-  'technologyreview','mit technology review','nature','science.org',
-  'semafor','restofworld','theinformation','vox','theatlantic'
+const SIGNAL_BLOCKED_DOMAINS=[
+  'youtube.com','youtu.be','facebook.com','instagram.com','tiktok.com',
+  'x.com','twitter.com','reddit.com','pinterest.com','medium.com','substack.com',
+  'pressrelease','prnewswire','globenewswire','businesswire'
 ];
 
-function signalSourceLooksEditorial(domain=''){
-  const d=String(domain||'').toLowerCase();
-  if(!d)return false;
-  return SIGNAL_QUALITY_SOURCES.some(s=>d.includes(s));
-}
-
-function signalImageLooksGeneric(url=''){
+function signalImageLooksBad(url=''){
   const u=String(url||'').toLowerCase();
+  if(!/^https?:\/\//i.test(u))return true;
 
   const bad=[
     'logo','icon','avatar','default','placeholder','spacer','transparent',
-    'blank','favicon','profile','stock','generic','fallback','no-image',
-    'no_image','missing','dummy','thumbnail-default','image-not-found',
-    'gettyimages','shutterstock','istockphoto','depositphotos','alamy',
-    'dreamstime','pixabay','pexels','unsplash','canva'
+    'blank','favicon','profile','fallback','no-image','no_image',
+    'missing','dummy','thumbnail-default','image-not-found'
   ];
 
-  if(bad.some(x=>u.includes(x)))return true;
+  return bad.some(x=>u.includes(x));
+}
 
-  // Common category-default/news-placeholder patterns.
-  if(/\/(default|placeholder|generic|logo|icon|avatar)[-_./]/i.test(u))return true;
-  if(/(news|world|business|technology|sports)[-_]?(default|placeholder|generic)/i.test(u))return true;
-
-  return false;
+function signalDomainLooksBad(domain=''){
+  const d=String(domain||'').toLowerCase();
+  return SIGNAL_BLOCKED_DOMAINS.some(x=>d.includes(x));
 }
 
 async function fetchSignalBatch(query,maxrecords=100,timespan='3days'){
@@ -2042,13 +2029,8 @@ function signalRecord(a,lane='live world'){
   const rawImage=String(a?.image||'').replace(/^http:/,'https:').trim();
 
   // Signal mode should feel editorial: image-backed articles only.
-  if(!rawImage || !/^https?:\/\//i.test(rawImage))return null;
-
-  if(signalImageLooksGeneric(rawImage))return null;
-
-  // Currents often returns generic/category art from weaker sources.
-  // Keep signal visually editorial by preferring recognized source domains.
-  if(!signalSourceLooksEditorial(domain))return null;
+  if(signalImageLooksBad(rawImage))return null;
+  if(signalDomainLooksBad(domain))return null;
 
   const published=String(a?.published||'');
   const year=published?published.slice(0,4):'';
@@ -2075,19 +2057,9 @@ function signalRecord(a,lane='live world'){
 
 function isQualitySignalRecord(rec){
   if(!rec||rec.type!=='signal')return false;
-  if(!rec.image || !/^https?:\/\//i.test(rec.image))return false;
-  const domain=String(rec.domain||'').toLowerCase();
-  const title=String(rec.title||'').toLowerCase();
-
-  const blockedDomains=[
-    'youtube.com','youtu.be','facebook.com','instagram.com','tiktok.com',
-    'x.com','twitter.com','reddit.com','pinterest.com','medium.com','substack.com',
-    'pressrelease','prnewswire','globenewswire','businesswire'
-  ];
-
-  if(blockedDomains.some(d=>domain.includes(d)))return false;
-  if(!signalSourceLooksEditorial(domain))return false;
-  if(signalImageLooksGeneric(rec.image))return false;
+  if(signalImageLooksBad(rec.image))return false;
+  if(signalDomainLooksBad(rec.domain))return false;
+  const title=String(rec.title||'').trim();
   if(title.length<24)return false;
   return true;
 }
@@ -2132,7 +2104,7 @@ async function loadSignal(limit){
   const cleaned=out.filter(isQualitySignalRecord);
 
   if(!cleaned.length){
-    const message=lastError?.message||'Currents returned no editorial image-backed live articles';
+    const message=lastError?.message||'Currents returned no quality image-backed live articles';
     setStatus(`signal failed · ${message}`);
     throw new Error(message);
   }
@@ -2545,8 +2517,11 @@ function syncResultQuery(){
 
 async function setCorpusMode(mode){
   if(!['film','games','books','tv','music','signal','mixed'].includes(mode)||corpusMode===mode)return;
-  const previousMode=corpusMode;
-  corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;
+  corpusMode=mode;
+  cache=null;
+  results=[];
+  hasExecutedSearch=false;
+  active=0;
   document.body.dataset.mode=corpusMode;
   setCorpusLoading(true,`loading ${corpusLabelPlural()} · ${searchDepth}`);
   applyModeLabels();
@@ -2554,11 +2529,6 @@ async function setCorpusMode(mode){
     console.error(e);
     toast(`${corpusLabelPlural()} failed`);
     setCorpusLoading(false);
-    if(corpusMode==='signal'){
-      const wall=$('#wall');
-      if(wall)wall.innerHTML='';
-      setStatus('signal failed · no quality live images');
-    }
   });
 }
 
