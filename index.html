@@ -1580,6 +1580,9 @@ function isolateCorpusByMode(items){
 }
 
 function candidate(m){
+  if(m.type==='music'){
+    return `${m.title}. ${(m.artists||m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,10).join(', ')}. ${m.searchLane||''}. ${m.musicSignal||''}. ${m.overview.substring(0,520)}`;
+  }
   return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,6).join(', ')}. ${(m.platforms||[]).join(', ')}. ${m.overview.substring(0,360)}`;
 }
 function setStatus(t){if(statusEl)statusEl.textContent=t}
@@ -1695,7 +1698,7 @@ async function fetchMusicAlbums(term,limit=100,offset=0){
   return data.results||[];
 }
 
-function musicRecord(a){
+function musicRecord(a,lane='music'){
   const title=a.collectionName||'';
   const artist=a.artistName||'Unknown artist';
   const genre=a.primaryGenreName||'Music';
@@ -1711,8 +1714,10 @@ function musicRecord(a){
     authors:[artist],
     year,
     genres:[genre],
-    subjects:[genre,'album','music','recording','artist'],
-    overview:`${title}. By ${artist}. ${year?'Released '+year+'. ':''}Genre: ${genre}. A musical object indexed through artist, album, genre, subculture, release era, mood, rhythm, club context, and cultural signal.`,
+    subjects:[genre,lane,'album','music','recording','artist','sound','rhythm'].filter(Boolean),
+    searchLane:lane,
+    musicSignal:`${genre}. ${lane}. ${artist}. ${title}`,
+    overview:`${title}. By ${artist}. ${year?'Released '+year+'. ':''}Genre: ${genre}. Discovery lane: ${lane}. A musical object indexed through artist, album, genre, source discovery lane, subculture, release era, mood, rhythm, production context, instrumentality, and cultural signal.`,
     image,
     cover:image,
     itunesUrl:a.collectionViewUrl||a.artistViewUrl||`https://music.apple.com/search?term=${encodeURIComponent(title+' '+artist)}`
@@ -1722,6 +1727,25 @@ function musicRecord(a){
 async function loadMusic(limit){
   const lanes=[
     // electronic / club
+    'artificial intelligence',
+    'computer music',
+    'robot music',
+    'machine music',
+    'algorithmic music',
+    'cyberpunk electronic',
+    'futuristic electronic',
+    'synthesizer music',
+    'modular synthesizer',
+    'electronic experimental',
+    'glitch',
+    'braindance',
+    'warp records',
+    'aphex twin',
+    'autechre',
+    'kraftwerk',
+    'dopplereffekt',
+    'drexciya',
+    'android music',
     'techno','detroit techno','minimal techno','acid techno','ambient techno','industrial techno',
     'house','deep house','chicago house','acid house','progressive house','garage house',
     'electro','electroclash','idm electronic','breakbeat','big beat','downtempo','trip hop',
@@ -1782,7 +1806,7 @@ async function loadMusic(limit){
     try{
       const rows=await fetchMusicAlbums(lane,per);
       for(const row of rows){
-        const rec=musicRecord(row);
+        const rec=musicRecord(row,lane);
         if(!rec)continue;
         const key=`${rec.title}|${rec.artists[0]}`;
         if(seen.has(key))continue;
@@ -2279,6 +2303,11 @@ const TRACES={
     'a world older than the player'
   ],
   music:[
+    'music that sounds like artificial intelligence learning to dream',
+    'computer music with a pulse and a memory',
+    'a robot trying to become sensual through rhythm',
+    'synthetic music for a machine city at night',
+    'an album that sounds like code discovering grief',
     'a techno record for walking through concrete at 3am',
     'a salsa record playing through a city at dusk',
     'a jazz album for a room full of ghosts',
