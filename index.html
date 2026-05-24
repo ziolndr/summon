@@ -1382,6 +1382,25 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="book"] img[src^=
   object-fit:cover !important;
 }
 
+
+/* music corpus: album art uses square native geometry */
+body[data-mode="music"]:not(.has-results) .wall-cell,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="music"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell.media-music{
+  aspect-ratio:1 / 1 !important;
+}
+
+body[data-mode="music"]:not(.has-results) .film-wall{
+  grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
+  gap:2px !important;
+}
+
+@media(max-width:980px){
+  body[data-mode="music"]:not(.has-results) .film-wall{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1403,6 +1422,7 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="book"] img[src^=
           <button type="button" class="toggle-btn" data-mode="games">games</button>
           <button type="button" class="toggle-btn" data-mode="books">books</button>
           <button type="button" class="toggle-btn" data-mode="tv">tv</button>
+          <button type="button" class="toggle-btn" data-mode="music">music</button>
           <button type="button" class="toggle-btn" data-mode="mixed">mix</button>
         </div>
         <div class="toggle-group" role="group" aria-label="Search depth">
@@ -1497,12 +1517,13 @@ const RAWG_URL='https://api.rawg.io/api/games';
 const OPENLIBRARY_URL=''; /* disabled for static book corpus */
 const OL_COVER='https://covers.openlibrary.org/b/id/';
 const TVMAZE_URL='https://api.tvmaze.com/shows';
+const ITUNES_URL='https://itunes.apple.com/search';
 const RAWG_PAGE_SIZE=40;
 
 const DEPTHS={
-  surface:{film:80,games:80,books:80,tv:80,mixedFilm:35,mixedGames:35,mixedBooks:35,mixedTv:35,rawgPages:3},
-  field:{film:220,games:140,books:160,tv:160,mixedFilm:65,mixedGames:65,mixedBooks:65,mixedTv:65,rawgPages:5},
-  archive:{film:500,games:500,books:500,tv:500,mixedFilm:125,mixedGames:125,mixedBooks:125,mixedTv:125,rawgPages:13}
+  surface:{film:80,games:80,books:80,tv:80,music:80,mixedFilm:30,mixedGames:30,mixedBooks:30,mixedTv:30,mixedMusic:30,rawgPages:3},
+  field:{film:220,games:140,books:160,tv:160,music:160,mixedFilm:55,mixedGames:55,mixedBooks:55,mixedTv:55,mixedMusic:55,rawgPages:5},
+  archive:{film:500,games:500,books:500,tv:500,music:500,mixedFilm:100,mixedGames:100,mixedBooks:100,mixedTv:100,mixedMusic:100,rawgPages:13}
 };
 
 let corpusMode='film',searchDepth='field';
@@ -1519,11 +1540,11 @@ function norm(p){return p?(String(p).startsWith('/')?String(p):'/'+String(p)):nu
 function img(p,size='original'){return p?`${IMG}${size}${norm(p)}`:''}
 
 function still(m,size='w780'){
-  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music') return m.image||m.cover||'';
   return img(m?.backdropPath||m?.posterPath,size);
 }
 function poster(m,size='w342'){
-  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music') return m.image||m.cover||'';
   return img(m?.posterPath,size);
 }
 function heroSrc(m){
@@ -1531,13 +1552,14 @@ function heroSrc(m){
   if(m.type==='game') return m.image||m.cover||'';
   if(m.type==='book') return m.cover||m.image||'';
   if(m.type==='tv') return m.cover||m.image||'';
+  if(m.type==='music') return m.cover||m.image||'';
   if(m.backdropPath) return img(m.backdropPath,'original')||img(m.backdropPath,'w1280');
   if(m.posterPath) return img(m.posterPath,'original')||img(m.posterPath,'w780');
   return '';
 }
 function thumbSrc(m){
   if(!m) return '';
-  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music') return m.image||m.cover||'';
   return img(m.backdropPath||m.posterPath,'w342')||img(m.posterPath,'w185');
 }
 function candidate(m){
@@ -1558,7 +1580,8 @@ function filmLimit(){return corpusMode==='mixed'?getLimit('mixedFilm'):getLimit(
 function gameLimit(){return corpusMode==='mixed'?getLimit('mixedGames'):getLimit('games')}
 function bookLimit(){return corpusMode==='mixed'?getLimit('mixedBooks'):getLimit('books')}
 function tvLimit(){return corpusMode==='mixed'?getLimit('mixedTv'):getLimit('tv')}
-function totalLimit(){return filmLimit()+gameLimit()+bookLimit()+tvLimit()}
+function musicLimit(){return corpusMode==='mixed'?getLimit('mixedMusic'):getLimit('music')}
+function totalLimit(){return filmLimit()+gameLimit()+bookLimit()+tvLimit()+musicLimit()}
 
 // ─── API Fetchers ───
 
@@ -1639,6 +1662,87 @@ function tvRecord(s){
     image,cover,tvMazeId:s.id,tvMazeUrl:s.url
   };
 }
+
+
+async function fetchMusicAlbums(term,limit=100,offset=0){
+  const p=new URLSearchParams({
+    term,
+    media:'music',
+    entity:'album',
+    limit:String(Math.min(200,limit)),
+    country:'US'
+  });
+  const res=await fetch(`${ITUNES_URL}?${p}`);
+  if(!res.ok)throw new Error(`itunes ${res.status}`);
+  const data=await res.json();
+  return data.results||[];
+}
+
+function musicRecord(a){
+  const title=a.collectionName||'';
+  const artist=a.artistName||'Unknown artist';
+  const genre=a.primaryGenreName||'Music';
+  const year=a.releaseDate?String(a.releaseDate).slice(0,4):'';
+  const image=String(a.artworkUrl100||'')
+    .replace(/^http:/,'https:')
+    .replace('100x100bb','1200x1200bb');
+  if(!title||!image)return null;
+  return {
+    type:'music',
+    title,
+    artists:[artist],
+    authors:[artist],
+    year,
+    genres:[genre],
+    subjects:[genre,'album','music','recording','artist'],
+    overview:`${title}. By ${artist}. ${year?'Released '+year+'. ':''}Genre: ${genre}. A musical object indexed through artist, album, genre, release era, mood, rhythm, and cultural signal.`,
+    image,
+    cover:image,
+    itunesUrl:a.collectionViewUrl||`https://music.apple.com/search?term=${encodeURIComponent(title+' '+artist)}`
+  };
+}
+
+async function loadMusic(limit){
+  const lanes=[
+    'alternative rock',
+    'electronic ambient',
+    'hip hop',
+    'jazz',
+    'soul',
+    'punk',
+    'metal',
+    'classical',
+    'indie rock',
+    'experimental',
+    'soundtrack',
+    'folk'
+  ];
+  const seen=new Set();
+  const out=[];
+  const per=Math.min(120,Math.max(40,Math.ceil(limit/2)));
+
+  for(let i=0;i<lanes.length && out.length<limit;i++){
+    const lane=lanes[(i+corpusPageOffset+shuffleSeed)%lanes.length];
+    try{
+      const rows=await fetchMusicAlbums(lane,per);
+      for(const row of rows){
+        const rec=musicRecord(row);
+        if(!rec)continue;
+        const key=`${rec.title}|${rec.artists[0]}`;
+        if(seen.has(key))continue;
+        seen.add(key);
+        out.push(rec);
+        if(out.length>=limit)break;
+      }
+    }catch(e){
+      console.warn('music api failed',e);
+      break;
+    }
+  }
+
+  return out;
+}
+
 
 // ─── Corpus Loaders ───
 
@@ -1769,7 +1873,7 @@ function finalizeCorpus(movies){
   const map=new Map();
   candidates.forEach((c,i)=>map.set(c,movies[i]));
   cache={movies,candidates,map};
-  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='mixed'?'mixed records':'films';
+  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'albums':corpusMode==='mixed'?'mixed records':'films';
   setStatus(`${movies.length} ${label} loaded`);
   renderWall(movies);
   return cache;
@@ -1780,10 +1884,24 @@ async function loadCorpus(){
   if(corpusMode==='games') return finalizeCorpus(await loadGames(gameLimit()));
   if(corpusMode==='books') return finalizeCorpus(await loadBooks(bookLimit()));
   if(corpusMode==='tv') return finalizeCorpus(await loadTV(tvLimit()));
+  if(corpusMode==='music') return finalizeCorpus(await loadMusic(musicLimit()));
   if(corpusMode==='mixed'){
-    const[f,g,b,t]=await Promise.all([loadFilms(filmLimit()),loadGames(gameLimit()),loadBooks(bookLimit()),loadTV(tvLimit())]);
-    const mixed=[];const mx=Math.max(f.length,g.length,b.length,t.length);
-    for(let i=0;i<mx;i++){if(f[i])mixed.push(f[i]);if(g[i])mixed.push(g[i]);if(b[i])mixed.push(b[i]);if(t[i])mixed.push(t[i])}
+    const [f,g,b,t,m]=await Promise.all([
+      loadFilms(filmLimit()),
+      loadGames(gameLimit()),
+      loadBooks(bookLimit()),
+      loadTV(tvLimit()),
+      loadMusic(musicLimit())
+    ]);
+    const mixed=[];
+    const mx=Math.max(f.length,g.length,b.length,t.length,m.length);
+    for(let i=0;i<mx;i++){
+      if(f[i])mixed.push(f[i]);
+      if(g[i])mixed.push(g[i]);
+      if(b[i])mixed.push(b[i]);
+      if(t[i])mixed.push(t[i]);
+      if(m[i])mixed.push(m[i]);
+    }
     return finalizeCorpus(mixed);
   }
   return finalizeCorpus(await loadFilms(filmLimit()));
@@ -1880,7 +1998,8 @@ function renderResult(){
   applyModeLabels();
   syncResultQuery();
 
-  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':'view on imdb ↗';
+  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':
+    m.type==='music'?'view on apple music ↗':'view on imdb ↗';
   $('#imdb').onclick=()=>window.open(
     m.type==='game'?`https://rawg.io/games/${m.rawgSlug||encodeURIComponent(m.title.toLowerCase().replaceAll(' ','-'))}`:
     m.type==='book'?(m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title)}`):
@@ -1920,7 +2039,7 @@ function renderRankList(){
 async function shuffleFilms(){
   corpusPageOffset=(corpusPageOffset+1+Math.floor(Math.random()*3))%4;
   shuffleSeed++;cache=null;
-  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='mixed'?'mix':'films';
+  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='music'?'music':corpusMode==='mixed'?'mix':'films';
   setStatus(`shuffling ${label}`);
   setCorpusLoading(true,corpusLoadLabel('loading'));
   try{
@@ -1962,7 +2081,7 @@ function syncResultQuery(){
 // ─── Mode / Depth / Theme ───
 
 async function setCorpusMode(mode){
-  if(!['film','games','books','tv','mixed'].includes(mode)||corpusMode===mode)return;
+  if(!['film','games','books','tv','music','mixed'].includes(mode)||corpusMode===mode)return;
   corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;
   applyModeLabels();
   setCorpusLoading(true,corpusLoadLabel('loading'));
@@ -2004,17 +2123,18 @@ function applyModeLabels(){
       corpusMode==='games' ? 'games' :
       corpusMode==='books' ? 'books' :
       corpusMode==='tv' ? 'tv shows' :
-      corpusMode==='mixed' ? 'films + games + books + tv' :
+      corpusMode==='music' ? 'albums' :
+      corpusMode==='mixed' ? 'films + games + books + tv + music' :
       'films';
     hint.textContent = `search ${n} ${modeLabel} by meaning`;
   }
   const pl=$('.prompt-label');
-  if(pl)pl.textContent=corpusMode==='games'?'find a game':corpusMode==='books'?'find a book':corpusMode==='tv'?'find a show':corpusMode==='mixed'?'find anything':'find a film';
+  if(pl)pl.textContent=corpusMode==='games'?'find a game':corpusMode==='books'?'find a book':corpusMode==='tv'?'find a show':corpusMode==='music'?'find music':corpusMode==='mixed'?'find anything':'find a film';
   const qi=$('#query');
-  if(qi)qi.placeholder=corpusMode==='games'?'describe the world, loop, mechanic, feeling, or system':corpusMode==='books'?'describe the voice, mood, idea, world, or wound':corpusMode==='tv'?'describe the world, episode, mood, institution, or obsession':corpusMode==='mixed'?'describe the signal, world, scene, mood, or system':'describe the scene, mood, memory, or idea';
+  if(qi)qi.placeholder=corpusMode==='games'?'describe the world, loop, mechanic, feeling, or system':corpusMode==='books'?'describe the voice, mood, idea, world, or wound':corpusMode==='tv'?'describe the world, episode, mood, institution, or obsession':corpusMode==='music'?'describe the mood, era, rhythm, artist, or memory':corpusMode==='mixed'?'describe the signal, world, scene, mood, or system':'describe the scene, mood, memory, or idea';
   const rm=$('#resultMode');
   if(rm)rm.textContent=`${n}-${corpusMode==='mixed'?'mixed':corpusMode} corpus · ${searchDepth}`;
-  const sl=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='mixed'?'mix':'films';
+  const sl=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='music'?'music':corpusMode==='mixed'?'mix':'films';
   const hb=$('#shuffleFilms');if(hb)hb.textContent=`shuffle ${sl}`;
   const rb=$('#shuffleFilmsResult');if(rb)rb.textContent=`shuffle ${sl}`;
 }
@@ -2022,7 +2142,7 @@ function applyModeLabels(){
 function corpusLoadLabel(prefix='loading'){
   const n=totalLimit();
   const d=searchDepth;
-  const m=corpusMode==='mixed'?'mixed records':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':'films';
+  const m=corpusMode==='mixed'?'mixed records':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'albums':'films';
   return `${prefix} ${n} ${m} · ${d}`;
 }
 
