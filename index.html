@@ -2163,10 +2163,11 @@ function finalizeCorpus(movies){
 }
 
 
-async function loadCorpus(){
+async function loadCorpus(requestToken=null){
   if(cache && cache.mode===corpusMode && cache.depth===searchDepth)return cache;
 
-  const requestId=++corpusRequestId;
+  const requestId=requestToken ?? ++corpusRequestId;
+  if(requestToken!=null && requestToken!==corpusRequestId)throw new Error('stale corpus load ignored');
   const requestedMode=corpusMode;
   const requestedDepth=searchDepth;
   const requestedTotal=totalLimit(requestedMode);
@@ -2223,10 +2224,10 @@ async function loadCorpus(){
   return cache;
 }
 
-async function loadCorpusWithRetry(tries=2){
+async function loadCorpusWithRetry(tries=2,requestToken=null){
   let last;
   for(let i=0;i<tries;i++){
-    try{return await loadCorpus()}
+    try{return await loadCorpus(requestToken)}
     catch(e){last=e; await new Promise(r=>setTimeout(r,250))}
   }
   throw last;
@@ -2362,7 +2363,7 @@ async function shuffleFilms(){
   if(!document.body.classList.contains('has-results'))renderLoadingWall(corpusMode);
   setCorpusLoading(true,corpusLoadLabel('loading'));
   try{
-    await loadCorpusWithRetry(2);
+    await loadCorpusWithRetry(2,requestId);
     if(requestId===corpusRequestId)setCorpusLoading(false);
   }catch(e){
     if(requestId!==corpusRequestId)return;
@@ -2413,7 +2414,7 @@ async function setCorpusMode(mode){
   setCorpusLoading(true,corpusLoadLabel('loading'));
   window.scrollTo({top:0,behavior:'auto'});
   try{
-    await loadCorpusWithRetry(2);
+    await loadCorpusWithRetry(2,requestId);
     if(requestId===corpusRequestId)setCorpusLoading(false);
   }catch(e){
     if(requestId!==corpusRequestId)return;
@@ -2430,7 +2431,7 @@ async function setSearchDepth(depth){
   if(!document.body.classList.contains('has-results'))renderLoadingWall(corpusMode);
   setCorpusLoading(true,corpusLoadLabel('loading'));
   try{
-    await loadCorpusWithRetry(2);
+    await loadCorpusWithRetry(2,requestId);
     if(requestId===corpusRequestId)setCorpusLoading(false);
   }catch(e){
     if(requestId!==corpusRequestId)return;
