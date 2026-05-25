@@ -1478,8 +1478,8 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
           <button type="button" class="toggle-btn" data-mode="games">games</button>
           <button type="button" class="toggle-btn" data-mode="books">books</button>
           <button type="button" class="toggle-btn" data-mode="tv">tv</button>
+          <button type="button" class="toggle-btn" data-mode="signal">signal</button>
           <button type="button" class="toggle-btn" data-mode="mixed">mix</button>
-        <button type="button" class="toggle-btn" data-mode="signal">signal</button>
         </div>
         <div class="toggle-group" role="group" aria-label="Search depth">
           <button type="button" class="toggle-btn active" data-depth="surface">surface</button>
@@ -1575,6 +1575,9 @@ const OL_COVER='https://covers.openlibrary.org/b/id/';
 const TVMAZE_URL='https://api.tvmaze.com/shows';
 const RAWG_PAGE_SIZE=40;
 
+const CORPUS_MODES=['film','games','books','tv','signal','mixed'];
+const MIXED_CORPUS_MODES=CORPUS_MODES.filter(mode=>mode!=='mixed');
+
 const DEPTHS={
   surface:{film:80,games:80,books:80,tv:80,mixedFilm:35,mixedGames:35,mixedBooks:35,mixedTv:35,rawgPages:3},
   field:{film:220,games:140,books:160,tv:160,mixedFilm:65,mixedGames:65,mixedBooks:65,mixedTv:65,rawgPages:5},
@@ -1650,7 +1653,7 @@ function tvLimit(){return corpusMode==='mixed'?getLimit('mixedTv'):getLimit('tv'
 function totalLimit(){
   if(corpusMode==='signal')return signalLimit();
   if(corpusMode==='mixed'){
-    return searchDepth==='archive'?500:searchDepth==='field'?260:120;
+    return searchDepth==='archive'?720:searchDepth==='field'?360:160;
   }
   if(corpusMode==='books')return bookLimit();
   if(corpusMode==='games')return gameLimit();
@@ -1931,7 +1934,7 @@ async function loadTV(limit){
 function renderWall(movies){
   const wallTarget=corpusMode==='signal'
     ?signalWallTarget()
-    :(corpusMode==='mixed'?72:48);
+    :(corpusMode==='mixed'?(searchDepth==='archive'?180:searchDepth==='field'?128:96):48);
   const sample=[...movies]
     .map((m,i)=>({...m,wallIndex:i,src:still(m,'w780')||poster(m,'w500')}))
     .filter(m=>m.src&&m.src.length>15)
@@ -1976,15 +1979,22 @@ async function loadCorpus(){
   }else if(corpusMode==='tv'){
     items=await loadTV(totalLimit());
   }else if(corpusMode==='mixed'){
-    const per=Math.max(20,Math.ceil(totalLimit()/5));
-    const pools=await Promise.all([
-      loadFilms(per),
-      loadGames(per),
-      loadBooks(per),
-      loadTV(per),
-      loadSignals(per)
-    ]);
-    items=pools.flat().slice(0,totalLimit());
+    const target=totalLimit();
+    const per=Math.max(24,Math.ceil(target/MIXED_CORPUS_MODES.length));
+    const loaders={
+      film:()=>loadFilms(per),
+      games:()=>loadGames(per),
+      books:()=>loadBooks(per),
+      tv:()=>loadTV(per),
+      signal:()=>loadSignals(per)
+    };
+    const pools=await Promise.all(
+      MIXED_CORPUS_MODES.map(mode=>loaders[mode]().catch(err=>{
+        console.warn(`mixed ${mode} load failed`,err);
+        return [];
+      }))
+    );
+    items=pools.flat().slice(0,target);
   }else{
     corpusMode='film';
     items=await loadFilms(totalLimit());
@@ -2182,7 +2192,7 @@ function syncResultQuery(){
 // ─── Mode / Depth / Theme ───
 
 async function setCorpusMode(mode){
-  if(!['film','games','books','tv','mixed','signal'].includes(mode)||corpusMode===mode)return;
+  if(!CORPUS_MODES.includes(mode)||corpusMode===mode)return;
   corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;
   applyModeLabels();
   setCorpusLoading(true,corpusLoadLabel('loading'));
@@ -2221,7 +2231,7 @@ function applyModeLabels(){
   const n=totalLimit();
   const corpusLabel =
     corpusMode==='signal'?'signal corpus':
-    corpusMode==='mixed'?'mixed corpus':
+    corpusMode==='mixed'?'all-section mix':
     corpusMode==='games'?'games':
     corpusMode==='books'?'books':
     corpusMode==='tv'?'tv shows':
@@ -2243,7 +2253,7 @@ function applyModeLabels(){
 
   const placeholders = {
     signal: 'describe a geopolitical pattern, risk, actor, region, or system pressure',
-    mixed: 'describe the scene, system, mood, memory, or idea',
+    mixed: 'describe a film, game, book, show, signal, system, mood, memory, or idea',
     games: 'describe the world, mechanic, feeling, or system',
     books: 'describe the theme, voice, era, symbol, or idea',
     tv: 'describe the premise, tone, character dynamic, or world',
@@ -2685,28 +2695,42 @@ const NEWSDATA_API_KEY=window.NEWSDATA_API_KEY||'';
 const NEWSDATA_API_URL='https://newsdata.io/api/1/latest';
 const CURRENTS_API_KEY=window.CURRENTS_API_KEY||'';
 const CURRENTS_API_URL='https://api.currentsapi.services/v1/search';
-const SIGNAL_CACHE_TTL_MS=12*60*1000;
-const SIGNAL_MAX_DIRECT_REQUESTS=searchDepth==='archive'?10:searchDepth==='field'?7:4;
+const SIGNAL_CACHE_TTL_MS=20*60*1000;
+const SIGNAL_PROVIDER_DELAY_MS=120;
+const SIGNAL_MAX_CACHE_ROWS=2200;
+function signalDirectLaneCount(){
+  return searchDepth==='archive'?18:searchDepth==='field'?14:8;
+}
 
 const GEOPOLITICAL_SIGNAL_LANES=[
   {label:'Geopolitics', q:'geopolitics OR diplomacy OR sanctions OR election OR intelligence OR statecraft', section:'world'},
-  {label:'War + Defense', q:'war OR military OR defense OR drone OR missile OR NATO OR Pentagon', section:'world'},
-  {label:'China + Taiwan', q:'China OR Taiwan OR South China Sea OR semiconductor controls', section:'world'},
-  {label:'Russia + Europe', q:'Russia OR Ukraine OR NATO OR Europe security OR sanctions', section:'world'},
-  {label:'Middle East', q:'Iran OR Israel OR Gaza OR Red Sea OR Houthis OR Saudi OR oil security', section:'world'},
-  {label:'India + Indo-Pacific', q:'India OR Pakistan OR Strait of Hormuz OR Indo-Pacific OR maritime security', section:'world'},
-  {label:'Energy + Infrastructure', q:'energy security OR grid OR oil OR gas OR nuclear OR infrastructure', section:'business'},
-  {label:'Cyber + Platforms', q:'cybersecurity OR cyberwar OR surveillance OR platform regulation OR data center', section:'technology'},
-  {label:'Markets + Supply Chain', q:'supply chain OR semiconductors OR shipping OR rare earths OR markets', section:'business'},
-  {label:'Climate Risk', q:'climate risk OR water security OR disaster OR food security OR migration', section:'environment'}
+  {label:'War + Defense', q:'war OR military OR defence OR drone OR missile OR NATO OR Pentagon OR weapons', section:'world'},
+  {label:'China + Taiwan', q:'China OR Taiwan OR South China Sea OR semiconductor controls OR Beijing OR Philippines', section:'world'},
+  {label:'Russia + Europe', q:'Russia OR Ukraine OR NATO OR Europe security OR sanctions OR Kremlin OR Kyiv', section:'world'},
+  {label:'Middle East', q:'Iran OR Israel OR Gaza OR Red Sea OR Houthis OR Saudi OR oil security OR Yemen', section:'world'},
+  {label:'India + Indo-Pacific', q:'India OR Pakistan OR Strait of Hormuz OR Indo-Pacific OR maritime security OR Indian Ocean', section:'world'},
+  {label:'Africa + Critical Minerals', q:'Africa OR Sahel OR Sudan OR Congo OR critical minerals OR Wagner OR mining security', section:'world'},
+  {label:'Latin America', q:'Latin America OR Mexico OR Venezuela OR Brazil OR cartels OR migration OR lithium', section:'world'},
+  {label:'Arctic + Maritime', q:'Arctic OR shipping lane OR maritime security OR port OR undersea cable OR chokepoint', section:'world'},
+  {label:'Energy + Infrastructure', q:'energy security OR grid OR oil OR gas OR nuclear OR infrastructure OR LNG OR OPEC', section:'business'},
+  {label:'Cyber + Platforms', q:'cybersecurity OR cyberwar OR surveillance OR platform regulation OR data center OR spyware', section:'technology'},
+  {label:'Markets + Supply Chain', q:'supply chain OR semiconductors OR shipping OR rare earths OR markets OR tariffs', section:'business'},
+  {label:'AI + Compute', q:'artificial intelligence OR AI safety OR data centers OR chips OR compute OR export controls', section:'technology'},
+  {label:'Space + Defense Tech', q:'space technology OR satellite OR hypersonic OR missile defense OR military space', section:'technology'},
+  {label:'Trade + Industrial Policy', q:'trade war OR tariffs OR industrial policy OR reshoring OR export controls', section:'business'},
+  {label:'Food + Water Security', q:'food security OR water security OR drought OR grain OR agriculture OR migration', section:'environment'},
+  {label:'Climate Risk', q:'climate risk OR water security OR disaster OR food security OR migration OR extreme heat', section:'environment'},
+  {label:'Institutions + Law', q:'international court OR United Nations OR election interference OR regulation OR antitrust', section:'world'}
 ];
 
+const GUARDIAN_SWEEP_SECTIONS=['world','business','technology','environment','global-development','us-news'];
+
 function signalLimit(){
-  return searchDepth==='archive'?700:searchDepth==='field'?360:140;
+  return searchDepth==='archive'?1600:searchDepth==='field'?900:240;
 }
 
 function signalWallTarget(){
-  return searchDepth==='archive'?260:searchDepth==='field'?168:108;
+  return searchDepth==='archive'?520:searchDepth==='field'?320:160;
 }
 
 function stripHtml(value=''){
@@ -2768,7 +2792,7 @@ function normalizeDate(value=''){
 }
 
 function signalCacheKey(provider='guardian'){
-  return `summon:${provider}:geo-signals:${searchDepth}:v15`;
+  return `summon:${provider}:geo-signals:${searchDepth}:v16-more`;
 }
 
 function readSignalCache(provider='guardian'){
@@ -2784,7 +2808,7 @@ function readSignalCache(provider='guardian'){
 
 function writeSignalCache(rows,provider='guardian'){
   try{
-    localStorage.setItem(signalCacheKey(provider),JSON.stringify({time:Date.now(),rows:rows.slice(0,900)}));
+    localStorage.setItem(signalCacheKey(provider),JSON.stringify({time:Date.now(),rows:rows.slice(0,SIGNAL_MAX_CACHE_ROWS)}));
   }catch(e){}
 }
 
@@ -2932,16 +2956,32 @@ async function fetchGuardianSignals(limit){
     return cached.slice(0,target).map((row,i)=>guardianSignalRecord(row,i,row._laneLabel));
   }
 
-  const lanes=GEOPOLITICAL_SIGNAL_LANES.slice(0,SIGNAL_MAX_DIRECT_REQUESTS);
-  const perLane=Math.max(24,Math.ceil(target/lanes.length));
-  const pageSize=Math.min(50,perLane);
+  const laneCount=Math.min(signalDirectLaneCount(),GEOPOLITICAL_SIGNAL_LANES.length);
+  const lanes=Array.from({length:laneCount},(_,i)=>GEOPOLITICAL_SIGNAL_LANES[(i+Math.abs(corpusPageOffset+shuffleSeed))%GEOPOLITICAL_SIGNAL_LANES.length]);
+  const perLane=Math.max(searchDepth==='archive'?90:searchDepth==='field'?70:30,Math.ceil(target/Math.max(1,lanes.length)));
+  const pageSize=50;
   const rows=[];
   const seen=new Set();
 
-  for(let i=0;i<lanes.length;i++){
-    const lane=lanes[(i+Math.abs(corpusPageOffset+shuffleSeed))%lanes.length];
+  async function pullGuardianPage(params,laneLabel,statusLabel){
+    const res=await fetch(`${GUARDIAN_API_URL}?${params.toString()}`);
+    if(!res.ok)throw new Error(`guardian ${res.status}`);
+    const data=await res.json();
+    const results=Array.isArray(data?.response?.results)?data.response.results:[];
+    for(const item of results){
+      const key=String(item.webUrl||item.webTitle||'').toLowerCase();
+      if(!key||seen.has(key))continue;
+      seen.add(key);
+      rows.push({...item,_laneLabel:laneLabel||statusLabel});
+      if(rows.length>=target)break;
+    }
+    return results.length;
+  }
+
+  for(let i=0;i<lanes.length&&rows.length<target;i++){
+    const lane=lanes[i];
     const pages=Math.max(1,Math.ceil(perLane/pageSize));
-    for(let page=1;page<=pages;page++){
+    for(let page=1;page<=pages&&rows.length<target;page++){
       const p=new URLSearchParams({
         'api-key':GUARDIAN_API_KEY,
         'q':lane.q,
@@ -2953,22 +2993,48 @@ async function fetchGuardianSignals(limit){
         'show-tags':'keyword',
         'use-date':'published'
       });
-      setStatus(`loading ${lane.label.toLowerCase()} signals ${i+1}/${lanes.length}`);
-      const res=await fetch(`${GUARDIAN_API_URL}?${p.toString()}`);
-      if(!res.ok)throw new Error(`guardian ${res.status}`);
-      const data=await res.json();
-      const results=Array.isArray(data?.response?.results)?data.response.results:[];
-      for(const item of results){
-        const key=String(item.webUrl||item.webTitle||'').toLowerCase();
-        if(!key||seen.has(key))continue;
-        seen.add(key);
-        rows.push({...item,_laneLabel:lane.label});
-        if(rows.length>=target)break;
+      setStatus(`loading ${lane.label.toLowerCase()} signals ${i+1}/${lanes.length} · ${rows.length}/${target}`);
+      try{
+        const found=await pullGuardianPage(p,lane.label,lane.label);
+        if(!found)break;
+      }catch(err){
+        console.warn('guardian lane skipped',lane.label,err);
+        break;
       }
-      if(rows.length>=target||!results.length)break;
-      await new Promise(r=>setTimeout(r,90));
+      await new Promise(r=>setTimeout(r,SIGNAL_PROVIDER_DELAY_MS));
     }
-    if(rows.length>=target)break;
+  }
+
+  /* Second pass: if the targeted lanes under-fill, sweep broad Guardian sections.
+     This keeps signal mode dense without duplicating padding or inventing articles. */
+  if(rows.length<target){
+    const sweepQuery='geopolitics OR war OR defense OR sanctions OR China OR Taiwan OR Russia OR Ukraine OR Iran OR India OR energy OR cyber OR semiconductors OR climate OR trade';
+    const maxSweepPages=searchDepth==='archive'?5:searchDepth==='field'?3:2;
+    for(const section of GUARDIAN_SWEEP_SECTIONS){
+      for(let page=1;page<=maxSweepPages&&rows.length<target;page++){
+        const p=new URLSearchParams({
+          'api-key':GUARDIAN_API_KEY,
+          'q':sweepQuery,
+          'section':section,
+          'order-by':'newest',
+          'page-size':'50',
+          'page':String(page),
+          'show-fields':'thumbnail,trailText,shortUrl,lastModified,bodyText',
+          'show-tags':'keyword',
+          'use-date':'published'
+        });
+        setStatus(`sweeping ${section} signals · ${rows.length}/${target}`);
+        try{
+          const found=await pullGuardianPage(p,section,section);
+          if(!found)break;
+        }catch(err){
+          console.warn('guardian sweep skipped',section,err);
+          break;
+        }
+        await new Promise(r=>setTimeout(r,SIGNAL_PROVIDER_DELAY_MS));
+      }
+      if(rows.length>=target)break;
+    }
   }
 
   if(!rows.length)throw new Error('guardian returned zero articles');
