@@ -1540,9 +1540,7 @@ const OPENLIBRARY_URL=''; /* disabled for static book corpus */
 const OL_COVER='https://covers.openlibrary.org/b/id/';
 const TVMAZE_URL='https://api.tvmaze.com/shows';
 const ITUNES_URL='https://itunes.apple.com/search';
-const CURRENTS_API_KEY='6leo9dON1EuYXb3edmMrZAFmzome8D3JHlYZqFgUcA-CAaoO';
-const CURRENTS_SEARCH_URL='https://api.currentsapi.services/v1/search';
-const CURRENTS_LATEST_URL='https://api.currentsapi.services/v1/latest-news';
+const GDELT_URL='https://api.gdeltproject.org/api/v2/doc/doc';
 const RAWG_PAGE_SIZE=40;
 
 const DEPTHS={
@@ -1644,7 +1642,7 @@ async function fetchAlgoliaPage(n){
 }
 
 async function fetchRawgPage(page=1){
-  const p=new URLSearchParams({key:RAWG_KEY,page:String(page),page_size:String(RAWG_PAGE_SIZE),ordering:'-metacritic',dates:'1998-01-01,2026-12-31'});
+  const p=new URLSearchParams({key:RAWG_KEY,page:String(page),ordering:'-metacritic',dates:'1998-01-01,2026-12-31'});
   const res=await fetch(`${RAWG_URL}?${p}`);
   if(!res.ok)throw new Error(`rawg ${res.status}`);
   return res.json();
@@ -1934,7 +1932,9 @@ function signalImageLooksBad(url=''){
   const u=String(url||'').toLowerCase();
   if(!/^https?:\/\//i.test(u))return true;
   const bad=['logo','icon','avatar','default','placeholder','spacer','transparent','blank','favicon','profile','fallback','no-image','no_image','missing','dummy','thumbnail-default','image-not-found'];
-  return bad.some(x=>u.includes(x));
+  if(bad.some(x=>u.includes(x)))return true;
+  if(/-\d{2,3}x\d{2,3}\.(jpg|jpeg|png|webp)/i.test(u))return true;
+  return false;
 }
 
 function signalDomainLooksBad(domain=''){
@@ -1943,40 +1943,30 @@ function signalDomainLooksBad(domain=''){
   return blocked.some(x=>d.includes(x));
 }
 
-async function fetchSignalBatch(query,maxrecords=100,timespan='3days'){
-  const pageSize=String(Math.min(100,Math.max(25,maxrecords)));
 
-  const searchParams=new URLSearchParams({
-    apiKey:CURRENTS_API_KEY,
-    keywords:query,
-    language:'en',
-    page_size:pageSize
+
+
+
+async function fetchSignalBatch(query,maxrecords=75,timespan='24h'){
+  // GDELT timespan format: 15min, 60min, 24h, 3d, 7d, 1w, 2w, 1m
+  const span=timespan==='24hours'?'24h':timespan==='3days'?'3d':timespan==='7days'?'7d':timespan;
+
+  const p=new URLSearchParams({
+    query:`${query} sourcelang:english`,
+    mode:'artlist',
+    format:'json',
+    maxrecords:String(Math.min(250,Math.max(25,maxrecords))),
+    sort:'datedesc',
+    timespan:span
   });
 
-  const searchUrl=`${CURRENTS_SEARCH_URL}?${searchParams}`;
+  const res=await fetch(`${GDELT_URL}?${p}`,{cache:'no-store'});
+  if(!res.ok)throw new Error(`gdelt ${res.status}`);
 
-  try{
-    const res=await fetch(searchUrl,{cache:'no-store'});
-    if(!res.ok)throw new Error(`currents search ${res.status}`);
-    const data=await res.json();
-    if(data.status&&data.status!=='ok')throw new Error(data.message||'currents search failed');
-    if(Array.isArray(data.news)&&data.news.length)return data;
-  }catch(e){
-    console.warn('currents search failed, trying latest-news',e);
-  }
-
-  const latestParams=new URLSearchParams({
-    apiKey:CURRENTS_API_KEY,
-    language:'en',
-    page_size:pageSize
-  });
-
-  const latestUrl=`${CURRENTS_LATEST_URL}?${latestParams}`;
-  const latest=await fetch(latestUrl,{cache:'no-store'});
-  if(!latest.ok)throw new Error(`currents latest ${latest.status}`);
-  const latestData=await latest.json();
-  if(latestData.status&&latestData.status!=='ok')throw new Error(latestData.message||'currents latest failed');
-  return latestData;
+  // GDELT can occasionally return empty/non-JSON on cold lanes. Guard parse.
+  const text=await res.text();
+  if(!text||!text.trim().startsWith('{'))return {articles:[]};
+  try{return JSON.parse(text)}catch(e){return {articles:[]}}
 }
 
 function signalRecord(a,lane='live world'){
@@ -1984,28 +1974,30 @@ function signalRecord(a,lane='live world'){
   const url=String(a?.url||'').trim();
   if(!title||!url)return null;
 
-  const domain=String(a?.source||'').trim() || (()=>{try{return new URL(url).hostname.replace(/^www\./,'')}catch(e){return ''}})();
-  const rawImage=String(a?.image||'').replace(/^http:/,'https:').trim();
+  const domain=String(a?.domain||'').trim()||(()=>{try{return new URL(url).hostname.replace(/^www\./,'')}catch(e){return ''}})();
+  const rawImage=String(a?.socialimage||'').replace(/^http:/,'https:').trim();
 
   if(signalImageLooksBad(rawImage))return null;
   if(signalDomainLooksBad(domain))return null;
 
-  const published=String(a?.published||'');
-  const year=published?published.slice(0,4):'';
-  const category=Array.isArray(a?.category)?a.category.join(', '):String(a?.category||'');
-  const description=String(a?.description||'').replace(/\s+/g,' ').trim();
+  // GDELT seendate format: 20260524T120000Z
+  const seen=String(a?.seendate||'');
+  const year=seen.length>=4?seen.slice(0,4):'';
+  const published=seen.length>=8?`${seen.slice(0,4)}-${seen.slice(4,6)}-${seen.slice(6,8)}`:'';
+  const country=String(a?.sourcecountry||'').trim();
+  const language=String(a?.language||'English').trim();
 
   return {
     type:'signal',
     title,
     year,
     domain,
-    sourceCountry:'',
-    language:'en',
+    sourceCountry:country,
+    language,
     seenDate:published,
     genres:[domain||'Live signal'].filter(Boolean),
-    subjects:[lane,domain,category,'news','current events','live signal','world state'].filter(Boolean),
-    overview:`${title}. Source: ${domain||'unknown source'}. ${published?'Published: '+published+'. ':''}${category?'Category: '+category+'. ':''}${description||'Live public article metadata indexed through source, category, recency, event context, and narrative signal.'} Discovery lane: ${lane}.`,
+    subjects:[lane,domain,country,language,'news','current events','live signal','world state'].filter(Boolean),
+    overview:`${title}. Source: ${domain||'unknown source'}.${published?' Published: '+published+'.':''}${country?' Country: '+country+'.':''} A live public article indexed through source, country, recency, event context, and narrative signal. Discovery lane: ${lane}.`,
     image:rawImage,
     cover:rawImage,
     sourceUrl:url,
@@ -2025,8 +2017,8 @@ async function loadSignal(limit){
   setCorpusLoading(true,`loading ${limit} live signals · ${searchDepth}`);
   const seen=new Set();
   const out=[];
-  const per=Math.min(100,Math.max(40,Math.ceil(limit/3)));
-  const span=searchDepth==='archive'?'7days':searchDepth==='field'?'3days':'24hours';
+  const per=Math.min(150,Math.max(40,Math.ceil(limit/4)));
+  const span=searchDepth==='archive'?'7d':searchDepth==='field'?'3d':'24h';
 
   const laneIndexes=SIGNAL_LANES.map((_,i)=>i).sort((a,b)=>{
     const ax=(a*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
@@ -2039,7 +2031,7 @@ async function loadSignal(limit){
     const lane=SIGNAL_LANES[laneIndexes[i]];
     try{
       const data=await fetchSignalBatch(lane,per,span);
-      const articles=Array.isArray(data?.news)?data.news:[];
+      const articles=Array.isArray(data?.articles)?data.articles:[];
       for(const article of articles){
         const rec=signalRecord(article,lane);
         if(!rec)continue;
@@ -2057,11 +2049,10 @@ async function loadSignal(limit){
 
   const cleaned=out.filter(isQualitySignalRecord);
   const imageBacked=out.filter(x=>x&&x.type==='signal'&&x.image&&!signalImageLooksBad(x.image));
-
   const finalRows=cleaned.length?cleaned:imageBacked;
 
   if(!finalRows.length){
-    const message=lastError?.message||'Currents returned no image-backed live articles';
+    const message=lastError?.message||'GDELT returned no image-backed live articles';
     setStatus(`signal failed · ${message}`);
     throw new Error(message);
   }
