@@ -1550,29 +1550,41 @@ const statusEl=$('#status');
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function norm(p){return p?(String(p).startsWith('/')?String(p):'/'+String(p)):null}
-function img(p,size='original'){return p?`${IMG}${size}${norm(p)}`:''}
-
-function still(m,size='w780'){
-  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
-  return img(m?.backdropPath||m?.posterPath,size);
+function isUrl(v){return /^https?:\/\//i.test(String(v||''))||String(v||'').startsWith('data:image')}
+function img(p,size='original'){
+  if(!p)return '';
+  const s=String(p).trim();
+  if(!s)return '';
+  if(isUrl(s))return s.replace(/^http:/i,'https:');
+  return `${IMG}${size}${norm(s)}`;
 }
-function poster(m,size='w342'){
-  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
-  return img(m?.posterPath,size);
-}
-function heroSrc(m){
-  if(!m) return '';
-  if(m.type==='game') return m.image||m.cover||'';
-  if(m.type==='book') return m.cover||m.image||'';
-  if(m.type==='tv') return m.cover||m.image||'';
-  if(m.backdropPath) return img(m.backdropPath,'original')||img(m.backdropPath,'w1280');
-  if(m.posterPath) return img(m.posterPath,'original')||img(m.posterPath,'w780');
+function firstImage(values=[],size='w780'){
+  for(const v of values){
+    const out=img(v,size);
+    if(out)return out;
+  }
   return '';
 }
+
+function still(m,size='w780'){
+  if(!m)return '';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='signal')return m.image||m.cover||m.src||'';
+  return firstImage([m.backdropPath,m.backdrop_path,m.image,m.cover,m.posterPath,m.poster_path],size);
+}
+function poster(m,size='w342'){
+  if(!m)return '';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='signal')return m.cover||m.image||m.src||'';
+  return firstImage([m.posterPath,m.poster_path,m.image,m.cover,m.backdropPath,m.backdrop_path],size);
+}
+function heroSrc(m){
+  if(!m)return '';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='signal')return m.cover||m.image||m.src||'';
+  return firstImage([m.backdropPath,m.backdrop_path,m.image,m.cover,m.posterPath,m.poster_path],'original');
+}
 function thumbSrc(m){
-  if(!m) return '';
-  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
-  return img(m.backdropPath||m.posterPath,'w342')||img(m.posterPath,'w185');
+  if(!m)return '';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='signal')return m.image||m.cover||m.src||'';
+  return firstImage([m.backdropPath,m.backdrop_path,m.image,m.cover,m.posterPath,m.poster_path],'w342');
 }
 function candidate(m){
   return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,6).join(', ')}. ${(m.platforms||[]).join(', ')}. ${m.overview.substring(0,360)}`;
@@ -1605,6 +1617,105 @@ function totalLimit(){
 }
 
 
+async function fetchAlgoliaPage(page=0){
+  const params=new URLSearchParams({
+    query:'',
+    hitsPerPage:String(HITS),
+    page:String(Math.max(0,page||0)),
+    attributesToRetrieve:['title','name','overview','description','plot','release_date','year','poster_path','backdrop_path','posterPath','backdropPath','image','poster','poster_url','image_url','genres','genre','actors','director','rating'].join(',')
+  });
+
+  const res=await fetch(ALGOLIA_URL,{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'X-Algolia-Application-Id':ALGOLIA_APP_ID,
+      'X-Algolia-API-Key':ALGOLIA_API_KEY
+    },
+    body:JSON.stringify({params:params.toString()})
+  });
+
+  if(!res.ok)throw new Error(`algolia ${res.status}`);
+  return res.json();
+}
+
+const STATIC_FILMS=[
+  ['Heat','1995',['Crime','Drama','Los Angeles'],'A disciplined thief and an obsessive detective circle each other across Los Angeles. Professional codes, loneliness, surveillance, and violence become the same geometry.'],
+  ['In the Mood for Love','2000',['Romance','Drama','Memory'],'Two neighbors discover parallel betrayals and turn restraint into atmosphere. Hallways, fabric, rain, and repetition carry the emotional signal.'],
+  ['The Conversation','1974',['Thriller','Surveillance','Paranoia'],'A surveillance expert records a conversation and slowly loses confidence in what the signal means. Listening becomes guilt.'],
+  ['Persona','1966',['Drama','Identity','Psychological'],'A nurse and an actress dissolve into each other through silence, projection, and cinematic rupture.'],
+  ['Stalker','1979',['Science Fiction','Philosophy','Zone'],'A guide leads two men through a forbidden zone where desire, faith, and decay distort reality.'],
+  ['Paris, Texas','1984',['Drama','Road','Family'],'A lost man returns from the desert and tries to reconstruct a broken family through distance, silence, and confession.'],
+  ['Blade Runner','1982',['Science Fiction','Noir','Identity'],'A future detective hunts synthetic humans while the city itself becomes memory, rain, commerce, and doubt.'],
+  ['Mulholland Drive','2001',['Mystery','Dream','Hollywood'],'Hollywood fractures into dream logic, desire, humiliation, and identity collapse.'],
+  ['No Country for Old Men','2007',['Crime','Western','Fate'],'A desert crime pattern becomes an encounter with chance, aging, violence, and moral exhaustion.'],
+  ['The Master','2012',['Drama','Cult','Power'],'A traumatized drifter and a charismatic leader test control, dependency, charisma, and animal force.'],
+  ['Children of Men','2006',['Dystopia','War','Hope'],'A sterile world turns one pregnancy into a corridor through state collapse, faith, and survival.'],
+  ['Under the Skin','2013',['Science Fiction','Alienation','Body'],'An alien presence moves through human desire and discovers the terror of embodiment.'],
+  ['Eyes Wide Shut','1999',['Mystery','Ritual','Marriage'],'A marriage argument opens into nocturnal ritual, class secrecy, erotic panic, and social performance.'],
+  ['Zodiac','2007',['Crime','Obsession','Archive'],'A serial-killer investigation becomes paperwork, signal loss, obsession, and institutional drift.'],
+  ['The Tree of Life','2011',['Memory','Family','Cosmos'],'A childhood in Texas opens into grief, grace, cosmic scale, and the texture of remembered light.'],
+  ['Brazil','1985',['Bureaucracy','Dystopia','Absurdism'],'A bureaucratic machine converts fantasy, paperwork, terrorism, and romance into a malfunctioning state dream.'],
+  ['La Jetée','1962',['Time','Memory','Science Fiction'],'A man is sent through memory after catastrophe, chasing one image that becomes fate.'],
+  ['Solaris','1972',['Science Fiction','Memory','Grief'],'A planet returns human memory as living presence, forcing grief and knowledge into the same room.'],
+  ['The Third Man','1949',['Noir','Postwar','Betrayal'],'Postwar Vienna becomes a tilted map of friendship, black markets, and moral rot.'],
+  ['Lost in Translation','2003',['Loneliness','Tokyo','Connection'],'Two displaced people find a temporary signal in hotel rooms, insomnia, and urban drift.']
+];
+
+function fallbackFilmStill(title='',year='',genres=[]){
+  const safeTitle=String(title||'FILM').slice(0,72);
+  const safeMeta=[year,(genres||[]).slice(0,2).join(' / ')].filter(Boolean).join(' · ');
+  const hue=[...safeTitle].reduce((a,c)=>a+c.charCodeAt(0),0)%360;
+  const svg=`
+  <svg xmlns="http://www.w3.org/2000/svg" width="900" height="1350" viewBox="0 0 900 1350">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="hsl(${hue},18%,14%)"/>
+        <stop offset="1" stop-color="hsl(${(hue+42)%360},20%,5%)"/>
+      </linearGradient>
+      <filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="4"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .20"/></feComponentTransfer></filter>
+    </defs>
+    <rect width="900" height="1350" fill="url(#g)"/>
+    <rect width="900" height="1350" filter="url(#n)" opacity=".38"/>
+    <rect x="54" y="54" width="792" height="1242" fill="none" stroke="rgba(246,241,232,.17)" stroke-width="2"/>
+    <text x="74" y="124" font-family="IBM Plex Mono, Menlo, monospace" font-size="26" fill="rgba(246,241,232,.52)" letter-spacing="5">SUMMON / FILM</text>
+    <foreignObject x="74" y="430" width="752" height="430">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Georgia,serif;font-size:76px;line-height:.92;font-weight:600;letter-spacing:-3px;color:rgb(246,241,232);word-wrap:break-word;">
+        ${esc(safeTitle)}
+      </div>
+    </foreignObject>
+    <foreignObject x="74" y="1070" width="752" height="120">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:IBM Plex Mono,Menlo,monospace;font-size:24px;line-height:1.35;color:rgba(246,241,232,.62);text-transform:uppercase;letter-spacing:3px;word-wrap:break-word;">
+        ${esc(safeMeta)}
+      </div>
+    </foreignObject>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function fallbackFilmCorpus(limit=filmLimit()){
+  const offset=(Math.abs((corpusPageOffset||0)+(shuffleSeed||0)))%STATIC_FILMS.length;
+  const rotated=STATIC_FILMS.slice(offset).concat(STATIC_FILMS.slice(0,offset));
+  const out=[];
+  while(out.length<limit){
+    for(const [title,year,genres,overview] of rotated){
+      out.push({
+        type:'film',
+        title,
+        year:String(year||''),
+        genres,
+        overview,
+        image:fallbackFilmStill(title,year,genres),
+        cover:fallbackFilmStill(title,year,genres),
+        externalUrl:`https://www.imdb.com/find?q=${encodeURIComponent(title)}`
+      });
+      if(out.length>=limit)break;
+    }
+  }
+  return out.slice(0,limit);
+}
+
+
 async function fetchRawgPage(page=1){
   const p=new URLSearchParams({key:RAWG_KEY,page:String(page),page_size:String(RAWG_PAGE_SIZE),ordering:'-metacritic',dates:'1998-01-01,2026-12-31'});
   const res=await fetch(`${RAWG_URL}?${p}`);
@@ -1628,9 +1739,38 @@ async function fetchTVPage(page=0){
 // ─── Record Builders ───
 
 function filmRecord(h){
-  let genres=[];
-  if(Array.isArray(h.genres)) genres=h.genres.map(g=>typeof g==='object'?(g.name||''):g).filter(Boolean);
-  return {type:'film',title:h.title,overview:h.overview||'',year:h.release_date?String(h.release_date).slice(0,4):'',posterPath:norm(h.poster_path),backdropPath:norm(h.backdrop_path),genres};
+  const title=h.title||h.name||'';
+  const rawGenres=Array.isArray(h.genres)?h.genres:(Array.isArray(h.genre)?h.genre:[]);
+  const genres=rawGenres.map(g=>typeof g==='object'?(g.name||''):g).filter(Boolean);
+  const actors=(Array.isArray(h.actors)?h.actors:[]).map(a=>typeof a==='object'?(a.name||''):a).filter(Boolean).slice(0,5);
+  const year=h.release_date?String(h.release_date).slice(0,4):(h.year?String(h.year):'');
+  const posterPath=norm(h.poster_path||h.posterPath||'');
+  const backdropPath=norm(h.backdrop_path||h.backdropPath||'');
+  const directImage=firstImage([h.image,h.poster,h.poster_url,h.image_url], 'w500');
+  const overview=String(
+    h.overview||h.description||h.plot||[
+      title,
+      year?`Released ${year}`:'',
+      genres.length?genres.join(', '):'',
+      actors.length?`Actors: ${actors.join(', ')}`:''
+    ].filter(Boolean).join('. ')
+  ).trim();
+
+  return {
+    type:'film',
+    title,
+    overview:overview||`${title}. Film indexed by title, genre, cast, era, and visual signal.`,
+    year,
+    posterPath,
+    backdropPath,
+    image:directImage,
+    cover:directImage,
+    genres,
+    actors,
+    director:h.director||'',
+    rating:h.rating||null,
+    externalUrl:`https://www.imdb.com/find?q=${encodeURIComponent(title)}`
+  };
 }
 
 function gameRecord(g){
@@ -1676,17 +1816,36 @@ function tvRecord(s){
 // ─── Corpus Loaders ───
 
 async function loadFilms(limit){
-  const pages=await Promise.all(Array.from({length:Math.max(1,Math.ceil(limit/HITS))},(_,i)=>fetchAlgoliaPage((corpusPageOffset+i)%4).catch(()=>({hits:[]}))));
-  const seen=new Set(),out=[];
+  const pageCount=Math.max(1,Math.ceil(limit/HITS));
+  const pages=await Promise.all(
+    Array.from({length:pageCount},(_,i)=>
+      fetchAlgoliaPage((corpusPageOffset+i)%8).catch(err=>{
+        console.warn('Algolia film page failed',err);
+        return {hits:[]};
+      })
+    )
+  );
+
+  const seen=new Set();
+  const out=[];
   for(const page of pages){
     for(const h of(page.hits||[])){
-      if(!h.title||!h.overview?.trim()||seen.has(h.title))continue;
-      seen.add(h.title);out.push(filmRecord(h));
+      const rec=filmRecord(h||{});
+      if(!rec.title)continue;
+      const key=rec.title.toLowerCase();
+      if(seen.has(key))continue;
+      seen.add(key);
+      if(!heroSrc(rec)&&!thumbSrc(rec)){
+        rec.image=fallbackFilmStill(rec.title,rec.year,rec.genres);
+        rec.cover=rec.image;
+      }
+      out.push(rec);
       if(out.length>=limit)break;
     }
     if(out.length>=limit)break;
   }
-  return out;
+
+  return out.length?out.slice(0,limit):fallbackFilmCorpus(limit);
 }
 
 async function loadGames(limit){
@@ -1705,55 +1864,6 @@ async function loadGames(limit){
     if(out.length>=limit)break;
   }
   return out;
-}
-
-
-async function loadBooks(limit=bookLimit()){
-  const base='';
-  const fields='title,author_name,first_publish_year,subject,cover_i,edition_count';
-  const queries=[
-    'subject:fiction OR subject:literature OR subject:science_fiction OR subject:fantasy',
-    'subject:classic_literature OR subject:science_fiction OR subject:fantasy',
-    'subject:dystopia OR subject:robots OR subject:philosophy'
-  ];
-
-  const docs=[];
-  for(const q of queries){
-    if(docs.length>=limit)break;
-    const url=`${base}?q=${encodeURIComponent(q)}&limit=${Math.min(100,limit)}&fields=${encodeURIComponent(fields)}`;
-    try{
-      const data=await (url);
-      docs.push(...(data.docs||[]));
-    }catch(e){
-      console.warn('Open Library blocked, using fallback books', e);
-      break;
-    }
-  }
-
-  const seen=new Set();
-  const books=[];
-  for(const d of docs){
-    const title=d.title||'';
-    if(!title||seen.has(title))continue;
-    seen.add(title);
-    const author=(d.author_name||[])[0]||'Unknown author';
-    const subjects=(d.subject||[]).slice(0,8).filter(Boolean);
-    const cover=d.cover_i?`https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg`:'';
-    books.push({
-      type:'book',
-      title,
-      author,
-      year:d.first_publish_year?String(d.first_publish_year):'',
-      subjects,
-      genres:subjects.slice(0,2),
-      overview:`${title}. By ${author}. Subjects: ${subjects.join(', ') || 'Literature'}. A literary object indexed through authorship, subject, era, and thematic signal.`,
-      src:cover || `https://covers.openlibrary.org/b/title/${encodeURIComponent(title)}-L.jpg`,
-      externalUrl:`https://openlibrary.org/search?q=${encodeURIComponent(title+' '+author)}`
-    });
-    if(books.length>=limit)break;
-  }
-
-  return books.length ? books : fallbackBookCorpus(limit);
 }
 
 
@@ -1777,7 +1887,6 @@ async function loadTV(limit){
 // ─── Wall Rendering ───
 
 function renderWall(movies){
-  // Strict filter: only tiles with real, non-empty image URLs
   const sample=[...movies]
     .map(m=>({...m,src:still(m,'w780')||poster(m,'w500')}))
     .filter(m=>m.src&&m.src.length>15)
@@ -1785,9 +1894,9 @@ function renderWall(movies){
     .slice(0,48);
 
   $('#wall').innerHTML=sample.map(m=>
-    `<div class="wall-cell media-${esc(m.type||'film')}" data-type="${esc(m.type||'film')}" data-title="${esc(m.title)}" data-author="${esc((m.authors||[])[0]||m.author||'')}">
+    `<div class="wall-cell media-${esc(m.type||'film')}" data-type="${esc(m.type||'film')}" data-title="${esc(m.title)}" data-author="${esc((m.authors||[])[0]||m.author||'')}" data-year="${esc(m.year||'')}" data-genres="${esc((m.genres||[]).join(', '))}">
       <img src="${m.src}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"
-           onerror="this.onerror=null;const c=this.closest('.wall-cell');if(c?.dataset?.type==='book'){this.src=fallbackBookCover(c.dataset.title,c.dataset.author||'')}else{c?.remove()}">
+           onerror="this.onerror=null;const c=this.closest('.wall-cell');const t=c?.dataset?.type;if(t==='book'){this.src=fallbackBookCover(c.dataset.title,c.dataset.author||'')}else if(t==='film'){this.src=fallbackFilmStill(c.dataset.title,c.dataset.year||'',String(c.dataset.genres||'').split(',').map(s=>s.trim()).filter(Boolean))}else{c?.remove()}">
     </div>`
   ).join('');
 
@@ -1843,7 +1952,10 @@ async function loadCorpus(){
     return text;
   });
 
+  if(!items.length)throw new Error(`empty ${corpusMode} corpus`);
   cache={mode:corpusMode,depth:searchDepth,items,map,candidates};
+  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':'films';
+  setStatus(`${items.length} ${label} loaded`);
   renderWall(items);
   return cache;
 }
@@ -1941,13 +2053,14 @@ function renderResult(){
   applyModeLabels();
   syncResultQuery();
 
-  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='signal'?`${m.title}. ${m.overview||''}`:m.type==='signal'?'open article ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':'view on imdb ↗';
-  $('#imdb').onclick=()=>window.open(
-    m.type==='game'?`https://rawg.io/games/${m.rawgSlug||encodeURIComponent(m.title.toLowerCase().replaceAll(' ','-'))}`:
-    m.type==='signal'?`${m.title}. ${m.overview||''}`:m.type==='signal'?(m.externalUrl||`https://www.google.com/search?q=${encodeURIComponent(m.title)}`):m.type==='book'?(m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title)}`):
+  const sourceUrl =
+    m.type==='game'?`https://rawg.io/games/${m.rawgSlug||encodeURIComponent(String(m.title||'').toLowerCase().replaceAll(' ','-'))}`:
+    m.type==='signal'?(m.externalUrl||`https://www.google.com/search?q=${encodeURIComponent(m.title)}`):
+    m.type==='book'?(m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title)}`):
     m.type==='tv'?(m.tvMazeUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`):
-    `https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`,'_blank'
-  );
+    (m.externalUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`);
+  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='signal'?'open source ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':'view on imdb ↗';
+  $('#imdb').onclick=()=>window.open(sourceUrl,'_blank','noopener,noreferrer');
   $('#copyLink').onclick=()=>{
     const url=`${location.href.split('#')[0]}#${encodeURIComponent(currentQuery)}`;
     navigator.clipboard?.writeText(url).then(()=>toast('link copied'));
@@ -2486,6 +2599,7 @@ function signalLimit(){return searchDepth==='archive'?3000:1000}
 function candidateText(m){
   if(m.type==='signal')return `${m.title}. ${m.section||''}. ${m.source||''}. ${m.overview||''}`;
   if(m.type==='book')return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.subjects||[]).join(', ')}. ${m.overview||''}`;
+  if(m.type==='film')return `${m.title}. ${m.year||''}. ${(m.genres||[]).join(', ')}. ${(m.actors||[]).join(', ')}. ${m.director||''}. ${m.overview||''}`;
   return `${m.title}. ${m.year||''}. ${(m.genres||[]).join(' ')}. ${m.overview||''}`;
 }
 
