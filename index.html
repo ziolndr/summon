@@ -1396,6 +1396,25 @@ body[data-mode="signal"]:not(.has-results) .film-wall{
   }
 }
 
+
+/* signal mode actual restore */
+body[data-mode="signal"]:not(.has-results) .film-wall{
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:2px !important;
+}
+body[data-mode="signal"]:not(.has-results) .wall-cell{
+  aspect-ratio:16 / 10 !important;
+}
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
+  aspect-ratio:16 / 10 !important;
+}
+@media(max-width:980px){
+  body[data-mode="signal"]:not(.has-results) .film-wall{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1418,6 +1437,7 @@ body[data-mode="signal"]:not(.has-results) .film-wall{
           <button type="button" class="toggle-btn" data-mode="books">books</button>
           <button type="button" class="toggle-btn" data-mode="tv">tv</button>
           <button type="button" class="toggle-btn" data-mode="mixed">mix</button>
+        <button type="button" class="toggle-btn" data-mode="signal">signal</button>
         </div>
         <div class="toggle-group" role="group" aria-label="Search depth">
           <button type="button" class="toggle-btn active" data-depth="surface">surface</button>
@@ -1572,18 +1592,13 @@ function filmLimit(){return corpusMode==='mixed'?getLimit('mixedFilm'):getLimit(
 function gameLimit(){return corpusMode==='mixed'?getLimit('mixedGames'):getLimit('games')}
 function bookLimit(){return corpusMode==='mixed'?getLimit('mixedBooks'):getLimit('books')}
 function tvLimit(){return corpusMode==='mixed'?getLimit('mixedTv'):getLimit('tv')}
-function totalLimit(){return filmLimit()+gameLimit()+bookLimit()+tvLimit()}
-
-// ─── API Fetchers ───
-
-async function fetchAlgoliaPage(n){
-  const res=await fetch(ALGOLIA_URL,{
-    method:'POST',
-    headers:{'Content-Type':'application/json','X-Algolia-Application-Id':ALGOLIA_APP_ID,'X-Algolia-API-Key':ALGOLIA_API_KEY},
-    body:JSON.stringify({query:'',hitsPerPage:HITS,page:n,attributesToRetrieve:['title','overview','poster_path','backdrop_path','release_date','genres']})
-  });
-  if(!res.ok)throw new Error(`algolia ${res.status}`);
-  return res.json();
+function totalLimit(){
+  if(corpusMode==='signal')return searchDepth==='archive'?3000:1000;
+  if(corpusMode==='mixed')return mixedLimit();
+  if(corpusMode==='books')return bookLimit();
+  if(corpusMode==='games')return gameLimit();
+  if(corpusMode==='tv')return tvLimit();
+  return filmLimit();
 }
 
 async function fetchRawgPage(page=1){
@@ -1790,19 +1805,36 @@ function finalizeCorpus(movies){
 }
 
 async function loadCorpus(){
-  if(cache)return cache;
-  if(corpusMode==='games') return finalizeCorpus(await loadGames(gameLimit()));
-  if(corpusMode==='signal')return await loadSignals(totalLimit());
-  if(corpusMode==='books') return finalizeCorpus(await loadBooks(bookLimit()));
-  if(corpusMode==='tv') return finalizeCorpus(await loadTV(tvLimit()));
-  if(corpusMode==='signal')return await loadSignals(totalLimit());
-  if(corpusMode==='mixed'){
-    const[f,g,b,t]=await Promise.all([loadFilms(filmLimit()),loadGames(gameLimit()),loadBooks(bookLimit()),loadTV(tvLimit())]);
-    const mixed=[];const mx=Math.max(f.length,g.length,b.length,t.length);
-    for(let i=0;i<mx;i++){if(f[i])mixed.push(f[i]);if(g[i])mixed.push(g[i]);if(b[i])mixed.push(b[i]);if(t[i])mixed.push(t[i])}
-    return finalizeCorpus(mixed);
+  if(cache && cache.mode===corpusMode && cache.depth===searchDepth)return cache;
+
+  let items=[];
+  if(corpusMode==='signal')items=await loadSignals(totalLimit());
+  else if(corpusMode==='books')items=await loadBooks(totalLimit());
+  else if(corpusMode==='games')items=await loadGames(totalLimit());
+  else if(corpusMode==='tv')items=await loadTV(totalLimit());
+  else if(corpusMode==='mixed'){
+    const pools=await Promise.all([
+      loadFilms(Math.ceil(totalLimit()/5)),
+      loadGames(Math.ceil(totalLimit()/5)),
+      loadBooks(Math.ceil(totalLimit()/5)),
+      loadTV(Math.ceil(totalLimit()/5)),
+      loadSignals(Math.ceil(totalLimit()/5))
+    ]);
+    items=pools.flat();
+  }else{
+    items=await loadFilms(totalLimit());
   }
-  return finalizeCorpus(await loadFilms(filmLimit()));
+
+  const map=new Map();
+  const candidates=items.map((m,i)=>{
+    const text=candidateText(m);
+    map.set(text,m);
+    return text;
+  });
+
+  cache={mode:corpusMode,depth:searchDepth,items,map,candidates};
+  renderWall(items);
+  return cache;
 }
 
 async function loadCorpusWithRetry(attempts=2){
@@ -2010,29 +2042,41 @@ function toggleTheme(){
 }
 
 function applyModeLabels(){
-    document.body.dataset.mode=corpusMode;
+  document.body.dataset.mode=corpusMode;
   document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===corpusMode));
   document.querySelectorAll('[data-depth]').forEach(b=>b.classList.toggle('active',b.dataset.depth===searchDepth));
+
   const n=totalLimit();
-  const hint=$('#modeHint');
-  if(hint){
-    const modeLabel =
-      corpusMode==='games' ? 'games' :
-      corpusMode==='books' ? 'books' :
-      corpusMode==='tv' ? 'tv shows' :
-      corpusMode==='mixed' ? 'films + games + books + tv' :
-      'films';
-    hint.textContent = `search ${n} ${modeLabel} by meaning`;
-  }
-  const pl=$('.prompt-label');
-  if(pl)pl.textContent=corpusMode==='games'?'find a game':corpusMode==='books'?'find a book':corpusMode==='tv'?'find a show':corpusMode==='mixed'?'find anything':'find a film';
-  const qi=$('#query');
-  if(qi)qi.placeholder=corpusMode==='games'?'describe the world, loop, mechanic, feeling, or system':corpusMode==='books'?'describe the voice, mood, idea, world, or wound':corpusMode==='tv'?'describe the world, episode, mood, institution, or obsession':corpusMode==='mixed'?'describe the signal, world, scene, mood, or system':'describe the scene, mood, memory, or idea';
-  const rm=$('#resultMode');
-  if(rm)rm.textContent=`${n}-${corpusMode==='mixed'?'mixed':corpusMode} corpus · ${searchDepth}`;
-  const sl=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='mixed'?'mix':'films';
-  const hb=$('#shuffleFilms');if(hb)hb.textContent=`shuffle ${sl}`;
-  const rb=$('#shuffleFilmsResult');if(rb)rb.textContent=`shuffle ${sl}`;
+  const corpusLabel =
+    corpusMode==='signal'?'signal corpus':
+    corpusMode==='mixed'?'mixed corpus':
+    corpusMode==='games'?'games':
+    corpusMode==='books'?'books':
+    corpusMode==='tv'?'tv shows':
+    'films';
+
+  const actionLabel =
+    corpusMode==='signal'?'find a signal':
+    corpusMode==='mixed'?'find anything':
+    corpusMode==='games'?'find a game':
+    corpusMode==='books'?'find a book':
+    corpusMode==='tv'?'find a show':
+    'find a film';
+
+  const hint = document.querySelector('#modeHint');
+  if(hint) hint.textContent = `search ${n} ${corpusLabel} by meaning`;
+
+  const eyebrow = document.querySelector('#eyebrow');
+  if(eyebrow) eyebrow.textContent = actionLabel;
+
+  const ready = document.querySelector('#readyLine');
+  if(ready) ready.textContent = `ready ${n} ${corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':corpusLabel} · ${searchDepth}`;
+
+  const shuffleLabel = corpusMode==='signal'?'signals':corpusMode==='mixed'?'mix':corpusMode==='tv'?'tv':corpusMode;
+  document.querySelectorAll('[data-action="shuffle-corpus"]').forEach(b=>b.textContent=`shuffle ${shuffleLabel}`);
+
+  const resultMeta = document.querySelector('#resultMeta');
+  if(resultMeta && currentQuery) resultMeta.textContent = `${n}-${corpusMode==='signal'?'signal':corpusMode} corpus · ${searchDepth}`;
 }
 
 function corpusLoadLabel(prefix='loading'){
@@ -2424,6 +2468,12 @@ async function loadSignals(limit){
 
 
 function signalLimit(){return searchDepth==='archive'?3000:1000}
+
+function candidateText(m){
+  if(m.type==='signal')return `${m.title}. ${m.section||''}. ${m.overview||''}`;
+  if(m.type==='book')return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.subjects||[]).join(', ')}. ${m.overview||''}`;
+  return `${m.title}. ${m.year||''}. ${(m.genres||[]).join(' ')}. ${m.overview||''}`;
+}
 </script>
 </body>
 </html>
