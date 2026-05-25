@@ -1560,6 +1560,8 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
 </section>
 
 <script>
+// Local prototype TMDb integration. Move this behind FILM_API_PROXY_URL before committing/deploying publicly.
+window.TMDB_API_KEY = window.TMDB_API_KEY || '1616a31a4f3bbcb387e74cbe0ae3c7b6';
 const ALGOLIA_APP_ID='C3XKD4DFTX';
 const ALGOLIA_API_KEY='af8f49e765acc850e83ae75c64303cf3';
 const ALGOLIA_INDEX='algolia_movie_sample_dataset';
@@ -1696,41 +1698,12 @@ async function fetchAlgoliaPage(page=0,queryText='',hits=HITS){
   return res.json();
 }
 
-const STATIC_FILMS=[
-  ['Heat','1995',['Crime','Drama','Los Angeles'],'A disciplined thief and an obsessive detective circle each other across Los Angeles. Professional codes, loneliness, surveillance, and violence become the same geometry.'],
-  ['In the Mood for Love','2000',['Romance','Drama','Memory'],'Two neighbors discover parallel betrayals and turn restraint into atmosphere. Hallways, fabric, rain, and repetition carry the emotional signal.'],
-  ['The Conversation','1974',['Thriller','Surveillance','Paranoia'],'A surveillance expert records a conversation and slowly loses confidence in what the signal means. Listening becomes guilt.'],
-  ['Persona','1966',['Drama','Identity','Psychological'],'A nurse and an actress dissolve into each other through silence, projection, and cinematic rupture.'],
-  ['Stalker','1979',['Science Fiction','Philosophy','Zone'],'A guide leads two men through a forbidden zone where desire, faith, and decay distort reality.'],
-  ['Paris, Texas','1984',['Drama','Road','Family'],'A lost man returns from the desert and tries to reconstruct a broken family through distance, silence, and confession.'],
-  ['Blade Runner','1982',['Science Fiction','Noir','Identity'],'A future detective hunts synthetic humans while the city itself becomes memory, rain, commerce, and doubt.'],
-  ['Mulholland Drive','2001',['Mystery','Dream','Hollywood'],'Hollywood fractures into dream logic, desire, humiliation, and identity collapse.'],
-  ['No Country for Old Men','2007',['Crime','Western','Fate'],'A desert crime pattern becomes an encounter with chance, aging, violence, and moral exhaustion.'],
-  ['The Master','2012',['Drama','Cult','Power'],'A traumatized drifter and a charismatic leader test control, dependency, charisma, and animal force.'],
-  ['Children of Men','2006',['Dystopia','War','Hope'],'A sterile world turns one pregnancy into a corridor through state collapse, faith, and survival.'],
-  ['Under the Skin','2013',['Science Fiction','Alienation','Body'],'An alien presence moves through human desire and discovers the terror of embodiment.'],
-  ['Eyes Wide Shut','1999',['Mystery','Ritual','Marriage'],'A marriage argument opens into nocturnal ritual, class secrecy, erotic panic, and social performance.'],
-  ['Zodiac','2007',['Crime','Obsession','Archive'],'A serial-killer investigation becomes paperwork, signal loss, obsession, and institutional drift.'],
-  ['The Tree of Life','2011',['Memory','Family','Cosmos'],'A childhood in Texas opens into grief, grace, cosmic scale, and the texture of remembered light.'],
-  ['Brazil','1985',['Bureaucracy','Dystopia','Absurdism'],'A bureaucratic machine converts fantasy, paperwork, terrorism, and romance into a malfunctioning state dream.'],
-  ['La Jetée','1962',['Time','Memory','Science Fiction'],'A man is sent through memory after catastrophe, chasing one image that becomes fate.'],
-  ['Solaris','1972',['Science Fiction','Memory','Grief'],'A planet returns human memory as living presence, forcing grief and knowledge into the same room.'],
-  ['The Third Man','1949',['Noir','Postwar','Betrayal'],'Postwar Vienna becomes a tilted map of friendship, black markets, and moral rot.'],
-  ['Lost in Translation','2003',['Loneliness','Tokyo','Connection'],'Two displaced people find a temporary signal in hotel rooms, insomnia, and urban drift.']
-];
-
-const BLACK_CINEMA_PERSON_TERMS=[
-  'Jordan Peele','Spike Lee','Ryan Coogler','Barry Jenkins','Ava DuVernay','John Singleton',
-  'Julie Dash','Kasi Lemmons','Dee Rees','Gina Prince-Bythewood','F. Gary Gray','Charles Burnett',
-  'Gordon Parks','Nia DaCosta','Boots Riley','Robert Townsend','Melina Matsoukas','Steve McQueen',
-  'Reginald Hudlin','Malcolm D. Lee','George Tillman Jr.','Mati Diop','RaMell Ross','Tina Mabry'
-];
-
-const BLACK_CINEMA_DISCOVERY_TERMS=[
-  'Black cinema','African American cinema','Black horror','Black romance','Black coming of age',
-  'civil rights film','Black southern gothic','Afrofuturism','Black independent film',
-  'Black family drama','Black music film','Black political thriller','Black western','Black satire'
-];
+// Film corpus is provider-backed only. No hand-curated title lists, no query-specific lanes, no penalties.
+// A diverse result set comes from broad provider ingestion across popularity, rating, date, and vote-count surfaces.
+const FILM_PROVIDER_CACHE_MS=10*60*1000;
+const TMDB_DETAIL_CACHE_MS=7*24*60*60*1000;
+const TMDB_DISCOVER_SORTS=['popularity.desc','vote_count.desc','vote_average.desc','primary_release_date.desc'];
+let tmdbGenreMapPromise=null;
 
 function tmdbBearerToken(){return String(window.TMDB_BEARER_TOKEN||window.TMDB_ACCESS_TOKEN||'').trim()}
 function tmdbApiKey(){return String(window.TMDB_API_KEY||'').trim()}
@@ -1759,6 +1732,20 @@ function tmdbImage(path,size='w780'){
   if(isUrl(s))return s.replace(/^http:/i,'https:');
   return `${IMG}${size}${norm(s)}`;
 }
+async function tmdbGenreMap(){
+  if(!tmdbEnabled())return {};
+  if(!tmdbGenreMapPromise){
+    tmdbGenreMapPromise=fetchTmdbJson('/genre/movie/list',{language:'en-US'})
+      .then(data=>Object.fromEntries((data.genres||[]).map(g=>[String(g.id),g.name]).filter(x=>x[0]&&x[1])))
+      .catch(err=>{console.warn('tmdb genre map failed',err);return {}});
+  }
+  return tmdbGenreMapPromise;
+}
+function tmdbGenres(m={},genreMap={}){
+  const names=asArray(m.genres).map(g=>typeof g==='object'?g.name:g).filter(Boolean);
+  const ids=asArray(m.genre_ids).map(id=>genreMap[String(id)]).filter(Boolean);
+  return [...new Set([...names,...ids])].slice(0,8);
+}
 function filmKey(m){
   const title=String(m?.title||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
   const year=String(m?.year||'').trim();
@@ -1772,24 +1759,24 @@ function addFilmIfNew(out,seen,m){
   out.push(m);
   return true;
 }
-function tmdbMovieRecord(m={},source='TMDB',extraTags=[]){
+function tmdbMovieRecord(m={},source='TMDB',genreMap={}){
   const title=String(m.title||m.name||m.original_title||'').trim();
   if(!title)return null;
   const year=String(m.release_date||m.first_air_date||'').slice(0,4);
   const image=tmdbImage(m.backdrop_path||m.poster_path,'w780');
   const cover=tmdbImage(m.poster_path||m.backdrop_path,'w500');
   if(!image&&!cover)return null;
-  const overview=String(m.overview||'').trim()||`${title}. Film record returned by ${source}.`;
+  const overview=String(m.overview||'').trim()||`${title}. Provider-backed film record returned by ${source}.`;
   return {
     type:'film',
     title,
     year,
     overview,
-    genres:[],
+    genres:tmdbGenres(m,genreMap),
     actors:[],
     director:'',
     rating:m.vote_average?Number(m.vote_average).toFixed(1):null,
-    corpusTags:[...new Set(['API film discovery','Black cinema discovery','African American cinema discovery',...extraTags].filter(Boolean))],
+    corpusTags:[...new Set(['provider-backed film',source].filter(Boolean))],
     corpusSource:source,
     posterPath:m.poster_path||'',
     backdropPath:m.backdrop_path||'',
@@ -1799,49 +1786,177 @@ function tmdbMovieRecord(m={},source='TMDB',extraTags=[]){
     externalUrl:m.id?`${TMDB_WEB}${m.id}`:`https://www.imdb.com/find?q=${encodeURIComponent(title+' '+year)}`
   };
 }
-async function fetchTmdbMovieSearch(query,limit=12){
-  if(!tmdbEnabled())return [];
-  const data=await fetchTmdbJson('/search/movie',{query,include_adult:'false',language:'en-US',page:1});
-  return (data.results||[])
-    .map(m=>tmdbMovieRecord(m,`TMDB movie search: ${query}`,[query]))
+function compactTmdbDetails(d={}){
+  const crew=asArray(d.credits?.crew)
+    .filter(p=>['Director','Writer','Screenplay','Story','Producer'].includes(p.job))
+    .slice(0,24)
+    .map(p=>({name:p.name||'',job:p.job||'',department:p.department||''}));
+  const cast=asArray(d.credits?.cast)
+    .slice(0,12)
+    .map(p=>({name:p.name||'',character:p.character||''}));
+  const keywords=asArray(d.keywords?.keywords||d.keywords?.results)
+    .map(k=>k.name||k)
     .filter(Boolean)
-    .slice(0,limit);
+    .slice(0,24);
+  return {
+    id:d.id,
+    title:d.title||d.name||'',
+    overview:d.overview||'',
+    tagline:d.tagline||'',
+    runtime:d.runtime||'',
+    original_language:d.original_language||'',
+    popularity:d.popularity||'',
+    vote_count:d.vote_count||'',
+    production_countries:asArray(d.production_countries).map(c=>c.name||c.iso_3166_1).filter(Boolean).slice(0,8),
+    production_companies:asArray(d.production_companies).map(c=>c.name).filter(Boolean).slice(0,8),
+    credits:{crew,cast},
+    keywords:{keywords:keywords.map(name=>({name}))}
+  };
 }
-async function fetchTmdbPersonFilmography(name,limit=18){
+function tmdbDetailCacheKey(id){return `summon:tmdb:movie:${id}:v2`}
+function readTmdbDetailCache(id){
+  try{
+    const raw=localStorage.getItem(tmdbDetailCacheKey(id));
+    if(!raw)return null;
+    const payload=JSON.parse(raw);
+    if(!payload||Date.now()-payload.t>TMDB_DETAIL_CACHE_MS)return null;
+    return payload.v||null;
+  }catch(_){return null}
+}
+function writeTmdbDetailCache(id,value){
+  try{localStorage.setItem(tmdbDetailCacheKey(id),JSON.stringify({t:Date.now(),v:compactTmdbDetails(value)}))}
+  catch(_){/* localStorage can fill; enrichment should still continue */}
+}
+async function fetchTmdbMovieDetails(id){
+  if(!id||!tmdbEnabled())return null;
+  const cached=readTmdbDetailCache(id);
+  if(cached)return cached;
+  const data=await fetchTmdbJson(`/movie/${id}`,{language:'en-US',append_to_response:'credits,keywords'});
+  writeTmdbDetailCache(id,data);
+  return compactTmdbDetails(data);
+}
+function mergeTmdbDetailsIntoFilm(rec,details){
+  if(!rec||!details)return rec;
+  const crew=asArray(details.credits?.crew);
+  const directors=crew.filter(p=>p.job==='Director').map(p=>p.name).filter(Boolean);
+  const writers=crew.filter(p=>['Writer','Screenplay','Story'].includes(p.job)).map(p=>p.name).filter(Boolean);
+  const producers=crew.filter(p=>p.job==='Producer').map(p=>p.name).filter(Boolean);
+  const cast=asArray(details.credits?.cast).map(p=>p.name).filter(Boolean);
+  const characters=asArray(details.credits?.cast).map(p=>p.character).filter(Boolean).slice(0,8);
+  const keywords=asArray(details.keywords?.keywords||details.keywords?.results).map(k=>k.name||k).filter(Boolean);
+  const richerOverview=[details.tagline,details.overview||rec.overview].filter(Boolean).join(' ').trim();
+  return {
+    ...rec,
+    overview:richerOverview||rec.overview,
+    actors:cast.length?cast.slice(0,10):asArray(rec.actors),
+    characters,
+    director:directors.join(', ')||rec.director||'',
+    writers:writers.slice(0,6),
+    producers:producers.slice(0,6),
+    runtime:details.runtime||rec.runtime||'',
+    productionCountries:asArray(details.production_countries).slice(0,8),
+    productionCompanies:asArray(details.production_companies).slice(0,8),
+    originalLanguage:details.original_language||rec.originalLanguage||'',
+    tmdbPopularity:details.popularity||rec.tmdbPopularity||'',
+    tmdbVoteCount:details.vote_count||rec.tmdbVoteCount||'',
+    corpusTags:[...new Set([...asArray(rec.corpusTags),...keywords.slice(0,18)].filter(Boolean))]
+  };
+}
+function tmdbEnrichCap(requested){
+  const fallback=searchDepth==='archive'?900:searchDepth==='field'?620:260;
+  return Math.min(Number(requested)||fallback,fallback);
+}
+async function enrichTmdbFilms(rows=[],requested=filmLimit()){
+  if(!tmdbEnabled()||!rows.length)return rows;
+  const cap=tmdbEnrichCap(requested);
+  const out=[...rows];
+  const targets=out
+    .map((rec,i)=>({rec,i}))
+    .filter(x=>x.rec?.tmdbId)
+    .slice(0,cap);
+  const concurrency=5;
+  let cursor=0;
+  async function worker(){
+    while(cursor<targets.length){
+      const item=targets[cursor++];
+      try{
+        const details=await fetchTmdbMovieDetails(item.rec.tmdbId);
+        out[item.i]=mergeTmdbDetailsIntoFilm(item.rec,details);
+      }catch(err){
+        console.warn('tmdb detail enrichment failed',item.rec.title,err);
+      }
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(concurrency,targets.length)},()=>worker()));
+  return out;
+}
+function buildTmdbBroadSources(genreMap={}){
+  const sourceList=[
+    {path:'/movie/popular',params:{},name:'TMDB popular'},
+    {path:'/movie/top_rated',params:{},name:'TMDB top rated'},
+    {path:'/movie/now_playing',params:{},name:'TMDB now playing'},
+    {path:'/discover/movie',params:{sort_by:'popularity.desc','vote_count.gte':10},name:'TMDB broad popularity'},
+    {path:'/discover/movie',params:{sort_by:'revenue.desc','vote_count.gte':10},name:'TMDB broad box office'},
+    {path:'/discover/movie',params:{sort_by:'vote_count.desc','vote_count.gte':10},name:'TMDB broad vote count'},
+    {path:'/discover/movie',params:{sort_by:'vote_average.desc','vote_count.gte':40},name:'TMDB broad critical'},
+    {path:'/discover/movie',params:{sort_by:'primary_release_date.desc','vote_count.gte':5},name:'TMDB recent release'}
+  ];
+
+  Object.entries(genreMap||{}).forEach(([id,name])=>{
+    if(!id||!name)return;
+    sourceList.push({
+      path:'/discover/movie',
+      params:{with_genres:id,sort_by:'popularity.desc','vote_count.gte':5},
+      name:`TMDB genre taxonomy: ${name}`
+    });
+  });
+
+  const now=new Date().getFullYear();
+  for(let start=1950;start<=now;start+=10){
+    const end=Math.min(start+9,now);
+    sourceList.push({
+      path:'/discover/movie',
+      params:{
+        sort_by:'popularity.desc',
+        'vote_count.gte':8,
+        'primary_release_date.gte':`${start}-01-01`,
+        'primary_release_date.lte':`${end}-12-31`
+      },
+      name:`TMDB decade surface: ${start}s`
+    });
+  }
+
+  return sourceList;
+}
+async function fetchTmdbMoviePage(path,params={},page=1,source='TMDB',genreMap={}){
+  const data=await fetchTmdbJson(path,{language:'en-US',include_adult:'false',page,...params});
+  return (data.results||[]).map(m=>tmdbMovieRecord(m,source,genreMap)).filter(Boolean);
+}
+async function loadTmdbBroadFilms(limit=filmLimit()){
   if(!tmdbEnabled())return [];
-  const people=await fetchTmdbJson('/search/person',{query:name,include_adult:'false',language:'en-US',page:1});
-  const person=(people.results||[]).find(p=>String(p.known_for_department||'').match(/Acting|Directing|Writing|Production/i))||(people.results||[])[0];
-  if(!person?.id)return [];
-  const out=[];
+  const requested=Math.max(1,Number(limit)||filmLimit());
+  const genreMap=await tmdbGenreMap();
   const seen=new Set();
-  for(const item of (person.known_for||[])){
-    if(item.media_type==='movie')addFilmIfNew(out,seen,tmdbMovieRecord(item,`TMDB known-for: ${person.name||name}`,[name]));
+  const out=[];
+  const addMany=rows=>rows.forEach(row=>addFilmIfNew(out,seen,row));
+  const pagesNeeded=Math.max(4,Math.ceil(requested/20));
+  const pageSpan=Math.min(40,pagesNeeded+8);
+  const basePage=1+(((corpusPageOffset||0)*pageSpan)%400);
+  const sources=buildTmdbBroadSources(genreMap);
+
+  for(let round=0;round<pageSpan&&out.length<requested;round++){
+    for(const src of sources){
+      const page=((basePage+round-1)%500)+1;
+      try{
+        addMany(await fetchTmdbMoviePage(src.path,src.params,page,src.name,genreMap));
+      }catch(err){
+        console.warn('tmdb broad film page failed',src.name,page,err);
+      }
+      if(out.length>=requested)break;
+      await new Promise(r=>setTimeout(r,25));
+    }
   }
-  try{
-    const credits=await fetchTmdbJson(`/person/${person.id}/movie_credits`,{language:'en-US'});
-    const movies=[...(credits.crew||[]),...(credits.cast||[])];
-    movies
-      .filter(m=>m&&m.id&&(m.poster_path||m.backdrop_path))
-      .sort((a,b)=>(Number(b.popularity||0)-Number(a.popularity||0)))
-      .forEach(m=>{
-        const rec=tmdbMovieRecord(m,`TMDB person credits: ${person.name||name}`,[name,m.job||m.character||'']);
-        if(rec&&m.job&&/director|writer|producer|screenplay/i.test(m.job))rec.director=/director/i.test(m.job)?(person.name||name):'';
-        addFilmIfNew(out,seen,rec);
-      });
-  }catch(err){console.warn('tmdb person credits failed',name,err)}
-  return out.slice(0,limit);
-}
-async function fetchAlgoliaFilmSearch(query,page=0,hits=60){
-  try{
-    const data=await fetchAlgoliaPage(page,query,hits);
-    return (data.hits||[])
-      .map(h=>filmRecord(h))
-      .map(rec=>rec?{...rec,corpusSource:`Algolia movie search: ${query}`,corpusTags:[...new Set(['API film discovery','Black cinema discovery','African American cinema discovery',query,...asArray(rec.corpusTags)])]}:null)
-      .filter(rec=>rec&&rec.title&&(heroSrc(rec)||thumbSrc(rec)));
-  }catch(err){
-    console.warn('algolia film search failed',query,err);
-    return [];
-  }
+  return enrichTmdbFilms(out.slice(0,requested),requested);
 }
 function normalizeProxyFilmRecord(row={},source='film proxy'){
   const rec=filmRecord(row);
@@ -1853,7 +1968,7 @@ function normalizeProxyFilmRecord(row={},source='film proxy'){
     image,
     cover,
     corpusSource:row.corpusSource||source,
-    corpusTags:[...new Set(['API film discovery','Black cinema discovery','African American cinema discovery',...asArray(row.tags),...asArray(row.corpusTags)])],
+    corpusTags:[...new Set(['provider-backed film',...asArray(row.tags),...asArray(row.corpusTags)])],
     externalUrl:row.externalUrl||row.url||rec.externalUrl
   };
 }
@@ -1862,63 +1977,33 @@ async function loadFilmDiscoveryProxy(limit){
   if(!endpoint)return [];
   try{
     const url=new URL(endpoint,location.href);
-    url.searchParams.set('mode','black-cinema');
+    url.searchParams.set('mode','film');
     url.searchParams.set('limit',String(limit));
+    url.searchParams.set('depth',searchDepth);
+    url.searchParams.set('offset',String(corpusPageOffset||0));
     const res=await fetch(url.toString(),{headers:{Accept:'application/json'}});
     if(!res.ok)throw new Error(`film proxy ${res.status}`);
     const data=await res.json();
     const rows=Array.isArray(data)?data:(data.results||data.items||data.movies||[]);
     return rows.map(row=>normalizeProxyFilmRecord(row,'film proxy')).filter(Boolean).slice(0,limit);
   }catch(err){
-    console.warn('film proxy enrichment failed',err);
+    console.warn('film proxy failed',err);
     return [];
   }
 }
-async function loadApiDiscoveredBlackCinema(limit=Math.ceil(filmLimit()*.22)){
-  const requested=Math.max(0,Number(limit)||0);
-  if(!requested)return [];
-  const out=[];
-  const seen=new Set();
-  const addMany=rows=>rows.forEach(row=>addFilmIfNew(out,seen,row));
-
-  addMany(await loadFilmDiscoveryProxy(Math.min(requested,180)));
-  if(out.length>=requested)return out.slice(0,requested);
-
-  const depthMultiplier=searchDepth==='archive'?1:searchDepth==='field'?.72:.42;
-  const personTerms=BLACK_CINEMA_PERSON_TERMS.slice(0,Math.max(6,Math.ceil(BLACK_CINEMA_PERSON_TERMS.length*depthMultiplier)));
-  const discoveryTerms=BLACK_CINEMA_DISCOVERY_TERMS.slice(0,Math.max(4,Math.ceil(BLACK_CINEMA_DISCOVERY_TERMS.length*depthMultiplier)));
-
-  for(const term of personTerms){
-    if(tmdbEnabled())addMany(await fetchTmdbPersonFilmography(term,searchDepth==='archive'?24:14));
-    addMany(await fetchAlgoliaFilmSearch(term,0,50));
-    if(out.length>=requested)break;
-    await new Promise(r=>setTimeout(r,20));
-  }
-
-  for(const term of discoveryTerms){
-    addMany(await fetchAlgoliaFilmSearch(term,0,70));
-    if(tmdbEnabled())addMany(await fetchTmdbMovieSearch(term,10));
-    if(out.length>=requested)break;
-    await new Promise(r=>setTimeout(r,20));
-  }
-
-  return out.slice(0,requested);
-}
-function mergeFilmEnrichment(apiRows=[],enrichmentRows=[],requested=filmLimit()){
+function mergeProviderFilms(groups=[],requested=filmLimit()){
   const want=Math.max(1,Number(requested)||filmLimit());
   const seen=new Set();
   const out=[];
-  const api=(apiRows||[]).filter(Boolean);
-  const enrich=(enrichmentRows||[]).filter(Boolean);
-  let ei=0,ai=0;
-
-  // Interleave API-discovered Black cinema records through the regular provider corpus.
-  while(out.length<want&&(ei<enrich.length||ai<api.length)){
-    if(ei<enrich.length)addFilmIfNew(out,seen,enrich[ei++]);
-    for(let n=0;n<3&&ai<api.length&&out.length<want;n++)addFilmIfNew(out,seen,api[ai++]);
+  const lists=(groups||[]).map(g=>(g||[]).filter(Boolean));
+  let cursor=0;
+  while(out.length<want&&lists.some((list,i)=>cursor<list.length)){
+    for(const list of lists){
+      if(cursor<list.length)addFilmIfNew(out,seen,list[cursor]);
+      if(out.length>=want)break;
+    }
+    cursor++;
   }
-  while(out.length<want&&ai<api.length)addFilmIfNew(out,seen,api[ai++]);
-  while(out.length<want&&ei<enrich.length)addFilmIfNew(out,seen,enrich[ei++]);
   return out.slice(0,want);
 }
 
@@ -1954,32 +2039,8 @@ function fallbackFilmStill(title='',year='',genres=[]){
 }
 
 function fallbackFilmCorpus(limit=filmLimit()){
-  const requested=Math.max(1,Number(limit)||filmLimit());
-  const offset=(Math.abs((corpusPageOffset||0)+(shuffleSeed||0)))%STATIC_FILMS.length;
-  const rotated=STATIC_FILMS.slice(offset).concat(STATIC_FILMS.slice(0,offset));
-  const base=[];
-  for(const [title,year,genres,overview] of rotated){
-    base.push({
-      type:'film',
-      title,
-      year:String(year||''),
-      genres,
-      corpusTags:['emergency editorial fallback','cinema canon'],
-      corpusSource:'Emergency local fallback',
-      overview,
-      image:fallbackFilmStill(title,year,genres),
-      cover:fallbackFilmStill(title,year,genres),
-      externalUrl:`https://www.imdb.com/find?q=${encodeURIComponent(title)}`
-    });
-  }
-  const out=[];
-  while(out.length<requested){
-    for(const m of base){
-      out.push({...m});
-      if(out.length>=requested)break;
-    }
-  }
-  return out.slice(0,requested);
+  // No local title fallback. Empty means the configured providers did not return usable film media.
+  return [];
 }
 
 
@@ -2085,53 +2146,62 @@ function tvRecord(s){
 
 async function loadFilms(limit){
   const requested=Math.max(1,Number(limit)||filmLimit());
-  const pageCount=Math.max(1,Math.ceil(requested/HITS));
-  const meta=await fetchAlgoliaPage(0,'',HITS).catch(err=>{
-    console.warn('Algolia film metadata failed',err);
-    return null;
+
+  const proxyRows=await loadFilmDiscoveryProxy(requested).catch(err=>{
+    console.warn('film proxy corpus failed',err);
+    return [];
   });
 
-  const nbPages=Math.max(0,Number(meta?.nbPages||0));
-  const rawBase=Math.max(0,(corpusPageOffset||0)*pageCount);
-  const base=nbPages?rawBase%nbPages:rawBase;
-  const pageNums=Array.from({length:pageCount},(_,i)=>nbPages?(base+i)%nbPages:base+i);
+  const tmdbTarget=proxyRows.length>=requested?0:requested;
+  const tmdbRows=tmdbTarget?await loadTmdbBroadFilms(tmdbTarget).catch(err=>{
+    console.warn('tmdb broad corpus failed',err);
+    return [];
+  }):[];
 
-  const pages=[];
-  for(const pageNum of pageNums){
-    if(pageNum===0&&meta){
-      pages.push(meta);
-      continue;
-    }
-    try{
-      pages.push(await fetchAlgoliaPage(pageNum,'',HITS));
-      // Keep Algolia responsive and avoid burst failures when archive mode asks for many pages.
-      if(pageCount>4)await new Promise(r=>setTimeout(r,45));
-    }catch(err){
-      console.warn('Algolia film page failed',pageNum,err);
-      pages.push({hits:[]});
+  const algoliaTarget=Math.max(0,requested-(proxyRows.length+tmdbRows.length));
+  const algoliaRows=[];
+
+  if(algoliaTarget>0){
+    const pageCount=Math.max(1,Math.ceil(algoliaTarget/HITS));
+    const meta=await fetchAlgoliaPage(0,'',HITS).catch(err=>{
+      console.warn('Algolia film metadata failed',err);
+      return null;
+    });
+
+    const nbPages=Math.max(0,Number(meta?.nbPages||0));
+    const rawBase=Math.max(0,(corpusPageOffset||0)*pageCount);
+    const base=nbPages?rawBase%nbPages:rawBase;
+    const pageNums=Array.from({length:pageCount},(_,i)=>nbPages?(base+i)%nbPages:base+i);
+    const algoliaSeen=new Set();
+
+    for(const pageNum of pageNums){
+      let page=null;
+      if(pageNum===0&&meta)page=meta;
+      else{
+        try{
+          page=await fetchAlgoliaPage(pageNum,'',HITS);
+          if(pageCount>4)await new Promise(r=>setTimeout(r,45));
+        }catch(err){
+          console.warn('Algolia film page failed',pageNum,err);
+          page={hits:[]};
+        }
+      }
+      for(const h of(page?.hits||[])){
+        const rec=filmRecord(h||{});
+        if(!rec.title)continue;
+        if(!heroSrc(rec)&&!thumbSrc(rec))continue;
+        rec.corpusSource=rec.corpusSource||'Algolia movie sample dataset';
+        rec.corpusTags=[...new Set(['provider-backed film',...asArray(rec.corpusTags)])];
+        addFilmIfNew(algoliaRows,algoliaSeen,rec);
+        if(algoliaRows.length>=algoliaTarget)break;
+      }
+      if(algoliaRows.length>=algoliaTarget)break;
     }
   }
 
-  const seen=new Set();
-  const out=[];
-  for(const page of pages){
-    for(const h of(page.hits||[])){
-      const rec=filmRecord(h||{});
-      if(!rec.title)continue;
-      // Do not manufacture visual placeholders for provider-backed film records.
-      // Records without usable media can still exist upstream, but they should not define the wall.
-      if(!heroSrc(rec)&&!thumbSrc(rec))continue;
-      if(addFilmIfNew(out,seen,rec)&&out.length>=requested)break;
-    }
-    if(out.length>=requested)break;
-  }
-
-  const enrichmentTarget=Math.min(searchDepth==='archive'?420:searchDepth==='field'?260:120,Math.ceil(requested*.28));
-  const discovered=await loadApiDiscoveredBlackCinema(enrichmentTarget);
-  if(out.length||discovered.length)return mergeFilmEnrichment(out,discovered,requested);
-
-  // Only used when every live provider fails. This is not used for Black cinema enrichment.
-  return fallbackFilmCorpus(Math.min(requested,240));
+  const merged=mergeProviderFilms([proxyRows,tmdbRows,algoliaRows],requested);
+  if(!merged.length)setStatus('film providers returned no usable media');
+  return merged;
 }
 
 
@@ -3479,11 +3549,18 @@ function candidateText(m){
       field('Title',title),
       field('Release year',m.year),
       field('Genres / moods',asArray(m.genres).slice(0,10)),
-      field('Cultural / canon tags',asArray(m.corpusTags).slice(0,10)),
+      field('Provider tags / keywords',asArray(m.corpusTags).slice(0,18)),
       field('Corpus source',m.corpusSource),
-      field('Cast',asArray(m.actors).slice(0,6)),
+      field('Cast',asArray(m.actors).slice(0,10)),
+      field('Characters',asArray(m.characters).slice(0,8)),
       field('Director',m.director),
+      field('Writers',asArray(m.writers).slice(0,6)),
+      field('Production countries',asArray(m.productionCountries).slice(0,6)),
+      field('Production companies',asArray(m.productionCompanies).slice(0,6)),
+      field('Original language',m.originalLanguage),
+      field('Runtime minutes',m.runtime),
       field('Rating',m.rating),
+      field('TMDb popularity / votes',[m.tmdbPopularity?`popularity ${m.tmdbPopularity}`:'',m.tmdbVoteCount?`${m.tmdbVoteCount} votes`:''].filter(Boolean)),
       field('Film synopsis / semantic surface',overview)
     ],1400);
   }
