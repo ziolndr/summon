@@ -1382,6 +1382,20 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="book"] img[src^=
   object-fit:cover !important;
 }
 
+
+/* signal mode restored */
+body[data-mode="signal"]:not(.has-results) .wall-cell{
+  aspect-ratio:16 / 10 !important;
+}
+body[data-mode="signal"]:not(.has-results) .film-wall{
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+}
+@media(max-width:980px){
+  body[data-mode="signal"]:not(.has-results) .film-wall{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1769,7 +1783,7 @@ function finalizeCorpus(movies){
   const map=new Map();
   candidates.forEach((c,i)=>map.set(c,movies[i]));
   cache={movies,candidates,map};
-  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='mixed'?'mixed records':'films';
+  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':'films';
   setStatus(`${movies.length} ${label} loaded`);
   renderWall(movies);
   return cache;
@@ -1778,8 +1792,10 @@ function finalizeCorpus(movies){
 async function loadCorpus(){
   if(cache)return cache;
   if(corpusMode==='games') return finalizeCorpus(await loadGames(gameLimit()));
+  if(corpusMode==='signal')return await loadSignals(totalLimit());
   if(corpusMode==='books') return finalizeCorpus(await loadBooks(bookLimit()));
   if(corpusMode==='tv') return finalizeCorpus(await loadTV(tvLimit()));
+  if(corpusMode==='signal')return await loadSignals(totalLimit());
   if(corpusMode==='mixed'){
     const[f,g,b,t]=await Promise.all([loadFilms(filmLimit()),loadGames(gameLimit()),loadBooks(bookLimit()),loadTV(tvLimit())]);
     const mixed=[];const mx=Math.max(f.length,g.length,b.length,t.length);
@@ -1880,10 +1896,10 @@ function renderResult(){
   applyModeLabels();
   syncResultQuery();
 
-  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':'view on imdb ↗';
+  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='signal'?`${m.title}. ${m.overview||''}`:m.type==='signal'?'open article ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':'view on imdb ↗';
   $('#imdb').onclick=()=>window.open(
     m.type==='game'?`https://rawg.io/games/${m.rawgSlug||encodeURIComponent(m.title.toLowerCase().replaceAll(' ','-'))}`:
-    m.type==='book'?(m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title)}`):
+    m.type==='signal'?`${m.title}. ${m.overview||''}`:m.type==='signal'?(m.externalUrl||`https://www.google.com/search?q=${encodeURIComponent(m.title)}`):m.type==='book'?(m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title)}`):
     m.type==='tv'?(m.tvMazeUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`):
     `https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`,'_blank'
   );
@@ -1962,7 +1978,7 @@ function syncResultQuery(){
 // ─── Mode / Depth / Theme ───
 
 async function setCorpusMode(mode){
-  if(!['film','games','books','tv','mixed'].includes(mode)||corpusMode===mode)return;
+  if(!['film','games','books','tv','mixed','signal'].includes(mode)||corpusMode===mode)return;
   corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;
   applyModeLabels();
   setCorpusLoading(true,corpusLoadLabel('loading'));
@@ -2022,7 +2038,7 @@ function applyModeLabels(){
 function corpusLoadLabel(prefix='loading'){
   const n=totalLimit();
   const d=searchDepth;
-  const m=corpusMode==='mixed'?'mixed records':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':'films';
+  const m=corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':'films';
   return `${prefix} ${n} ${m} · ${d}`;
 }
 
@@ -2093,7 +2109,8 @@ const TRACES={
     'a person made of equations',
     'myth translated into media',
     'one signal across every medium'
-  ]
+  ],
+  signal:['what the tech giants are hiding','coherence gradient in the news cycle','platform capture under policy language','capital moving through infrastructure','the story behind the headline']
 };
 
 let traceTimer=null,traceIdx=0,tracePaused=false;
@@ -2405,6 +2422,8 @@ async function loadSignals(limit){
   return out.slice(0,limit);
 }
 
+
+function signalLimit(){return searchDepth==='archive'?3000:1000}
 </script>
 </body>
 </html>
