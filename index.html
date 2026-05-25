@@ -1454,6 +1454,46 @@ body[data-mode="images"]:not(.has-results) .film-wall{
   }
 }
 
+
+/* hard stop: controls cannot bleed into media wall */
+.search-pane{
+  overflow:hidden !important;
+  z-index:5 !important;
+}
+
+.mode-row{
+  max-width:100% !important;
+  width:100% !important;
+  overflow:hidden !important;
+}
+
+.toggle-group{
+  max-width:100% !important;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  white-space:nowrap !important;
+  scrollbar-width:none !important;
+  -webkit-overflow-scrolling:touch !important;
+}
+
+.toggle-group::-webkit-scrollbar{
+  display:none !important;
+}
+
+.toggle-btn{
+  flex:0 0 auto !important;
+}
+
+@media(min-width:981px){
+  .search-pane{
+    contain:layout paint !important;
+  }
+
+  .film-wall-pane{
+    z-index:1 !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1652,6 +1692,58 @@ function candidate(m){
   }
   return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,6).join(', ')}. ${(m.platforms||[]).join(', ')}. ${m.overview.substring(0,360)}`;
 }
+
+function worldLoadingTile(label='loading live world'){
+  const text=String(label||'loading live world').slice(0,80);
+  const svg=`
+  <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#161616"/>
+        <stop offset="1" stop-color="#050505"/>
+      </linearGradient>
+      <filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3"/></filter>
+    </defs>
+    <rect width="1200" height="800" fill="url(#g)"/>
+    <rect width="1200" height="800" filter="url(#n)" opacity=".11"/>
+    <line x1="0" y1="580" x2="1200" y2="580" stroke="rgba(246,241,232,.10)" stroke-width="1"/>
+    <text x="64" y="86" font-family="IBM Plex Mono, Menlo, monospace" font-size="22" fill="rgba(246,241,232,.45)" letter-spacing="4">SUMMON / LIVE</text>
+    <foreignObject x="64" y="310" width="940" height="180">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Arial,sans-serif;font-size:56px;line-height:.96;font-weight:600;letter-spacing:-2px;color:rgba(246,241,232,.86);word-wrap:break-word;">
+        ${esc(text)}
+      </div>
+    </foreignObject>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function clearWallForLoading(label='loading live corpus'){
+  const wall=$('#wall');
+  if(!wall)return;
+  const type=corpusMode==='mixed'?'signal':corpusMode;
+  const tiles=Array.from({length:12},(_,i)=>
+    `<div class="wall-cell media-${esc(type)}" data-type="${esc(type)}">
+       <img src="${worldLoadingTile(i===0?label:'loading')}" alt="" loading="eager" decoding="async">
+     </div>`
+  ).join('');
+  wall.innerHTML=tiles;
+}
+
+
+function corpusLabelPlural(){
+  return corpusMode==='games'?'games':
+    corpusMode==='books'?'books':
+    corpusMode==='tv'?'tv shows':
+    corpusMode==='music'?'records':
+    corpusMode==='signal'?'live signals':
+    corpusMode==='events'?'world events':
+    corpusMode==='themes'?'world themes':
+    corpusMode==='actors'?'world actors':
+    corpusMode==='images'?'world images':
+    corpusMode==='mixed'?'mixed records':
+    'films';
+}
+
 function setStatus(t){if(statusEl)statusEl.textContent=t}
 function toast(t){
   const el=document.createElement('div');el.className='toast';el.textContent=t;
@@ -2001,7 +2093,7 @@ function fetchJsonp(url, callbackParam='callback', timeoutMs=15000){
 
     const timer=setTimeout(()=>{
       cleanup();
-      reject(new Error('gdelt jsonp timeout'));
+      reject(new Error(`gdelt jsonp timeout via ${callbackParam}`));
     },timeoutMs);
 
     function cleanup(){
@@ -2024,11 +2116,20 @@ function fetchJsonp(url, callbackParam='callback', timeoutMs=15000){
       if(settled)return;
       settled=true;
       cleanup();
-      reject(new Error('gdelt jsonp failed'));
+      reject(new Error(`gdelt jsonp failed via ${callbackParam}`));
     };
 
     document.head.appendChild(script);
   });
+}
+
+async function fetchGdeltJsonp(url){
+  try{
+    return await fetchJsonp(url,'callback',15000);
+  }catch(e){
+    console.warn('gdelt callback JSONP failed, trying jsonp param',e);
+    return fetchJsonp(url,'jsonp',15000);
+  }
 }
 
 
@@ -2052,7 +2153,7 @@ async function fetchSignalBatch(query,maxrecords=75,timespan='24h'){
   });
 
   const url=`${GDELT_URL}?${p}`;
-  const data=await fetchJsonp(url,'callback',15000);
+  const data=await fetchGdeltJsonp(url);
   return data&&Array.isArray(data.articles)?data:{articles:[]};
 }
 
@@ -2667,25 +2768,34 @@ function syncResultQuery(){
 async function setCorpusMode(mode){
   if(!['film','games','books','tv','music','signal','events','themes','actors','images','mixed'].includes(mode)||corpusMode===mode)return;
   corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;
+  document.body.dataset.mode=corpusMode;
+  setCorpusLoading(true,`loading ${corpusLabelPlural()} · ${searchDepth}`);
+  if(['signal','events','themes','actors','images'].includes(corpusMode))clearWallForLoading(`loading ${corpusLabelPlural()} · ${searchDepth}`);
   applyModeLabels();
-  setCorpusLoading(true,corpusLoadLabel('loading'));
-  try{
-    await loadCorpusWithRetry(2);setCorpusLoading(false);
-  }catch(e){console.error(e);setCorpusLoading(false,'load failed');return}
-  if(document.body.classList.contains('has-results')){
-    document.body.classList.remove('has-results','searching','cutting');
-    history.replaceState(null,'',location.pathname+location.search);
-    window.scrollTo({top:0,behavior:'auto'});
-  }
+  loadCorpus().catch(e=>{
+    console.error(e);
+    toast(`${corpusLabelPlural()} failed`);
+    setStatus(`${corpusLabelPlural()} failed`);
+    setCorpusLoading(false);
+    applyModeLabels();
+  });
 }
 
 async function setSearchDepth(depth){
   if(!DEPTHS[depth]||searchDepth===depth)return;
-  searchDepth=depth;cache=null;applyModeLabels();
-  setCorpusLoading(true,corpusLoadLabel('loading'));
-  try{
-    await loadCorpusWithRetry(2);setCorpusLoading(false);
-  }catch(e){console.error(e);setCorpusLoading(false,'load failed')}
+  searchDepth=depth;
+  cache=null;
+  hasExecutedSearch=false;
+  setCorpusLoading(true,`loading ${corpusLabelPlural()} · ${searchDepth}`);
+  if(['signal','events','themes','actors','images'].includes(corpusMode))clearWallForLoading(`loading ${corpusLabelPlural()} · ${searchDepth}`);
+  applyModeLabels();
+  loadCorpus().catch(e=>{
+    console.error(e);
+    toast(`${corpusLabelPlural()} failed`);
+    setStatus(`${corpusLabelPlural()} failed`);
+    setCorpusLoading(false);
+    applyModeLabels();
+  });
 }
 
 function applyTheme(t){
@@ -3130,3 +3240,5 @@ async function loadBooks(limit){
 </script>
 </body>
 </html>
+
+so corpus is failing to load for gdelt - can you fix it also the ribbon is expanding into the tiles where it is signals, events, etc, that needs to be fixed
