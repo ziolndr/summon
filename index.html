@@ -1581,9 +1581,9 @@ const MODE_TYPE={film:'film',games:'game',books:'book',tv:'tv',signal:'signal'};
 const MODE_LABEL={film:'films',games:'games',books:'books',tv:'tv shows',signal:'signals',mixed:'mixed records'};
 
 const DEPTHS={
-  surface:{film:80,games:80,books:80,tv:80,mixedFilm:35,mixedGames:35,mixedBooks:35,mixedTv:35,rawgPages:3},
-  field:{film:220,games:140,books:160,tv:160,mixedFilm:65,mixedGames:65,mixedBooks:65,mixedTv:65,rawgPages:5},
-  archive:{film:500,games:500,books:500,tv:500,mixedFilm:125,mixedGames:125,mixedBooks:125,mixedTv:125,rawgPages:13}
+  surface:{film:240,games:80,books:80,tv:80,mixedFilm:60,mixedGames:35,mixedBooks:35,mixedTv:35,rawgPages:3},
+  field:{film:900,games:140,books:160,tv:160,mixedFilm:140,mixedGames:65,mixedBooks:65,mixedTv:65,rawgPages:5},
+  archive:{film:1600,games:500,books:500,tv:500,mixedFilm:240,mixedGames:125,mixedBooks:125,mixedTv:125,rawgPages:13}
 };
 
 let corpusMode='film',searchDepth='field';
@@ -1870,15 +1870,33 @@ function tvRecord(s){
 // ─── Corpus Loaders ───
 
 async function loadFilms(limit){
-  const pageCount=Math.max(1,Math.ceil(limit/HITS));
-  const pages=await Promise.all(
-    Array.from({length:pageCount},(_,i)=>
-      fetchAlgoliaPage((corpusPageOffset+i)%8).catch(err=>{
-        console.warn('Algolia film page failed',err);
-        return {hits:[]};
-      })
-    )
-  );
+  const requested=Math.max(1,Number(limit)||filmLimit());
+  const pageCount=Math.max(1,Math.ceil(requested/HITS));
+  const meta=await fetchAlgoliaPage(0).catch(err=>{
+    console.warn('Algolia film metadata failed',err);
+    return null;
+  });
+
+  const nbPages=Math.max(0,Number(meta?.nbPages||0));
+  const rawBase=Math.max(0,(corpusPageOffset||0)*pageCount);
+  const base=nbPages?rawBase%nbPages:rawBase;
+  const pageNums=Array.from({length:pageCount},(_,i)=>nbPages?(base+i)%nbPages:base+i);
+
+  const pages=[];
+  for(const pageNum of pageNums){
+    if(pageNum===0&&meta){
+      pages.push(meta);
+      continue;
+    }
+    try{
+      pages.push(await fetchAlgoliaPage(pageNum));
+      // Keep Algolia responsive and avoid burst failures when archive mode asks for many pages.
+      if(pageCount>4)await new Promise(r=>setTimeout(r,45));
+    }catch(err){
+      console.warn('Algolia film page failed',pageNum,err);
+      pages.push({hits:[]});
+    }
+  }
 
   const seen=new Set();
   const out=[];
@@ -1886,7 +1904,7 @@ async function loadFilms(limit){
     for(const h of(page.hits||[])){
       const rec=filmRecord(h||{});
       if(!rec.title)continue;
-      const key=rec.title.toLowerCase();
+      const key=`${rec.title}`.toLowerCase().trim()+`::${rec.year||''}`;
       if(seen.has(key))continue;
       seen.add(key);
       if(!heroSrc(rec)&&!thumbSrc(rec)){
@@ -1894,12 +1912,13 @@ async function loadFilms(limit){
         rec.cover=rec.image;
       }
       out.push(rec);
-      if(out.length>=limit)break;
+      if(out.length>=requested)break;
     }
-    if(out.length>=limit)break;
+    if(out.length>=requested)break;
   }
 
-  return out.length?out.slice(0,limit):fallbackFilmCorpus(limit);
+  // Only use fallback if Algolia is completely unavailable; never pad real film results with fake duplicates.
+  return out.length?out.slice(0,requested):fallbackFilmCorpus(Math.min(requested,240));
 }
 
 async function loadGames(limit){
@@ -1944,7 +1963,9 @@ function renderWall(movies,mode=corpusMode){
   const visibleItems=isolateCorpusItems(Array.isArray(movies)?movies:[],mode);
   const wallTarget=mode==='signal'
     ?signalWallTarget()
-    :(mode==='mixed'?(searchDepth==='archive'?260:searchDepth==='field'?180:120):48);
+    :(mode==='film'
+      ?filmWallTarget()
+      :(mode==='mixed'?(searchDepth==='archive'?320:searchDepth==='field'?220:140):48));
   const sample=[...visibleItems]
     .map((m,i)=>({...m,wallIndex:i,src:still(m,'w780')||poster(m,'w500')}))
     .filter(m=>m.src&&m.src.length>15)
@@ -2168,7 +2189,7 @@ function renderRankList(){
 // ─── Actions ───
 
 async function shuffleFilms(){
-  corpusPageOffset=(corpusPageOffset+1+Math.floor(Math.random()*3))%4;
+  corpusPageOffset=(corpusPageOffset+1+Math.floor(Math.random()*7))%48;
   shuffleSeed++;cache=null;corpusRequestId++;
   const label=corpusMode==='signal'?'signals':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='mixed'?'mix':'films';
   setStatus(`shuffling ${label}`);
@@ -2750,6 +2771,10 @@ function signalLimit(){
 }
 
 function signalWallTarget(){
+  return searchDepth==='archive'?520:searchDepth==='field'?320:160;
+}
+
+function filmWallTarget(){
   return searchDepth==='archive'?520:searchDepth==='field'?320:160;
 }
 
