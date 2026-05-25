@@ -1908,7 +1908,7 @@ async function loadTV(limit){
 
 function renderWall(movies){
   const wallTarget=corpusMode==='signal'
-    ?(searchDepth==='archive'?240:searchDepth==='field'?144:96)
+    ?signalWallTarget()
     :(corpusMode==='mixed'?72:48);
   const sample=[...movies]
     .map((m,i)=>({...m,wallIndex:i,src:still(m,'w780')||poster(m,'w500')}))
@@ -2630,25 +2630,47 @@ function fallbackSignalCard(title='',section='',source='',i=0){
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-/* Live signal corpus — fast, keyless default provider.
-   Primary default: Hacker News Algolia Search API.
-   Why: no API key, CORS-friendly JSON, quick responses, real story URLs,
-   and enough density for a signal wall without stock images or fake padding.
+/* Live signal corpus — geopolitical/news-first, image-aware.
+   Primary preview provider: The Guardian Open Platform.
+   Why: free signup, real journalism corpus, CORS-friendly JSON, thumbnails via
+   show-fields=thumbnail/trailText, and good geopolitical/world/business coverage.
 
-   Optional production paths:
-   - window.NEWS_API_PROXY_URL: preferred broad-news backend proxy.
-   - window.CURRENTS_API_KEY: direct Currents API key for broader world news.
-     For production, proxy the key server-side instead of exposing it in HTML.
+   Production path:
+   - window.NEWS_API_PROXY_URL: preferred. Hide keys server-side and aggregate
+     Guardian, NewsData, Currents, RSS, or paid providers behind one endpoint.
+   - window.GUARDIAN_API_KEY: direct Guardian key. Defaults to "test" for preview.
+   - window.NEWSDATA_API_KEY: optional broader global provider with image_url.
+   - window.CURRENTS_API_KEY: optional broad provider with free daily quota.
 */
 const NEWS_API_PROXY_URL=window.NEWS_API_PROXY_URL||'';
+const GUARDIAN_API_KEY=window.GUARDIAN_API_KEY||'test';
+const GUARDIAN_API_URL='https://content.guardianapis.com/search';
+const NEWSDATA_API_KEY=window.NEWSDATA_API_KEY||'';
+const NEWSDATA_API_URL='https://newsdata.io/api/1/latest';
 const CURRENTS_API_KEY=window.CURRENTS_API_KEY||'';
 const CURRENTS_API_URL='https://api.currentsapi.services/v1/search';
-const HN_ALGOLIA_URL='https://hn.algolia.com/api/v1/search_by_date';
-const HN_STORY_URL='https://news.ycombinator.com/item?id=';
-const SIGNAL_CACHE_TTL_MS=6*60*1000;
+const SIGNAL_CACHE_TTL_MS=12*60*1000;
+const SIGNAL_MAX_DIRECT_REQUESTS=searchDepth==='archive'?10:searchDepth==='field'?7:4;
+
+const GEOPOLITICAL_SIGNAL_LANES=[
+  {label:'Geopolitics', q:'geopolitics OR diplomacy OR sanctions OR election OR intelligence OR statecraft', section:'world'},
+  {label:'War + Defense', q:'war OR military OR defense OR drone OR missile OR NATO OR Pentagon', section:'world'},
+  {label:'China + Taiwan', q:'China OR Taiwan OR South China Sea OR semiconductor controls', section:'world'},
+  {label:'Russia + Europe', q:'Russia OR Ukraine OR NATO OR Europe security OR sanctions', section:'world'},
+  {label:'Middle East', q:'Iran OR Israel OR Gaza OR Red Sea OR Houthis OR Saudi OR oil security', section:'world'},
+  {label:'India + Indo-Pacific', q:'India OR Pakistan OR Strait of Hormuz OR Indo-Pacific OR maritime security', section:'world'},
+  {label:'Energy + Infrastructure', q:'energy security OR grid OR oil OR gas OR nuclear OR infrastructure', section:'business'},
+  {label:'Cyber + Platforms', q:'cybersecurity OR cyberwar OR surveillance OR platform regulation OR data center', section:'technology'},
+  {label:'Markets + Supply Chain', q:'supply chain OR semiconductors OR shipping OR rare earths OR markets', section:'business'},
+  {label:'Climate Risk', q:'climate risk OR water security OR disaster OR food security OR migration', section:'environment'}
+];
 
 function signalLimit(){
-  return searchDepth==='archive'?600:searchDepth==='field'?300:120;
+  return searchDepth==='archive'?700:searchDepth==='field'?360:140;
+}
+
+function signalWallTarget(){
+  return searchDepth==='archive'?260:searchDepth==='field'?168:108;
 }
 
 function stripHtml(value=''){
@@ -2657,6 +2679,7 @@ function stripHtml(value=''){
     .replace(/&amp;/g,'&')
     .replace(/&quot;/g,'"')
     .replace(/&#39;/g,"'")
+    .replace(/&apos;/g,"'")
     .replace(/&lt;/g,'<')
     .replace(/&gt;/g,'>')
     .replace(/\s+/g,' ')
@@ -2681,16 +2704,17 @@ function sectionFromSignal(title='',url='',fallback='Signal'){
   const t=String(title||'').toLowerCase();
   const d=String(domainFromUrl(url)||'').toLowerCase();
   const hay=`${t} ${d}`;
-  if(/\b(ai|artificial intelligence|llm|openai|anthropic|model|agent|inference)\b/.test(hay))return 'AI';
-  if(/\b(cyber|security|breach|ransomware|vulnerability|exploit|zero-day|malware)\b/.test(hay))return 'Cyber';
-  if(/\b(defense|military|war|drone|missile|nato|army|navy|pentagon)\b/.test(hay))return 'Defense';
-  if(/\b(chip|semiconductor|nvidia|tsmc|intel|gpu|asml|cuda)\b/.test(hay))return 'Semiconductors';
-  if(/\b(energy|grid|nuclear|solar|oil|gas|battery|power|electricity)\b/.test(hay))return 'Energy';
-  if(/\b(market|fund|capital|startup|ipo|stock|bank|finance|crypto|bitcoin)\b/.test(hay))return 'Markets';
-  if(/\b(policy|regulation|law|court|antitrust|privacy|compliance|eu|sec|ftc)\b/.test(hay))return 'Policy';
-  if(/\b(infrastructure|cloud|compute|kubernetes|database|linux|open source|server|datacenter)\b/.test(hay))return 'Infrastructure';
-  if(/\b(robot|robotics|autonomous|vehicle|sensor|lidar|manufacturing)\b/.test(hay))return 'Robotics';
-  if(/\b(space|satellite|rocket|orbit|nasa|spacex)\b/.test(hay))return 'Space';
+  if(/\b(ukraine|russia|nato|moscow|kremlin|kyiv|europe security)\b/.test(hay))return 'Russia / Europe';
+  if(/\b(china|taiwan|beijing|south china sea|indo-pacific|philippines)\b/.test(hay))return 'China / Pacific';
+  if(/\b(iran|israel|gaza|hamas|red sea|houthi|saudi|yemen|iraq|syria|lebanon)\b/.test(hay))return 'Middle East';
+  if(/\b(india|pakistan|modi|delhi|hormuz|indian ocean)\b/.test(hay))return 'India / Ocean';
+  if(/\b(war|military|defense|defence|drone|missile|navy|army|pentagon|weapons)\b/.test(hay))return 'Defense';
+  if(/\b(cyber|security|breach|surveillance|ransomware|vulnerability|spyware|platform)\b/.test(hay))return 'Cyber';
+  if(/\b(energy|grid|nuclear|oil|gas|battery|power|electricity|lng|opec)\b/.test(hay))return 'Energy';
+  if(/\b(chip|semiconductor|nvidia|tsmc|asml|rare earth|supply chain|shipping)\b/.test(hay))return 'Supply Chain';
+  if(/\b(market|bank|trade|tariff|bond|currency|dollar|sanction|finance)\b/.test(hay))return 'Markets';
+  if(/\b(climate|water|migration|food|heat|flood|fire|storm|disaster)\b/.test(hay))return 'Climate Risk';
+  if(/\b(ai|artificial intelligence|llm|openai|anthropic|model|agent|data center)\b/.test(hay))return 'AI / Compute';
   return fallback||'Signal';
 }
 
@@ -2701,11 +2725,17 @@ function formatDateYear(value=''){
   return String(value).slice(0,4);
 }
 
-function signalCacheKey(provider='hn'){
-  return `summon:${provider}:signals:${searchDepth}:v9`;
+function normalizeDate(value=''){
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return '';
+  return d.toISOString();
 }
 
-function readSignalCache(provider='hn'){
+function signalCacheKey(provider='guardian'){
+  return `summon:${provider}:geo-signals:${searchDepth}:v15`;
+}
+
+function readSignalCache(provider='guardian'){
   try{
     const raw=localStorage.getItem(signalCacheKey(provider));
     if(!raw)return null;
@@ -2716,9 +2746,9 @@ function readSignalCache(provider='hn'){
   }catch(e){return null}
 }
 
-function writeSignalCache(rows,provider='hn'){
+function writeSignalCache(rows,provider='guardian'){
   try{
-    localStorage.setItem(signalCacheKey(provider),JSON.stringify({time:Date.now(),rows:rows.slice(0,800)}));
+    localStorage.setItem(signalCacheKey(provider),JSON.stringify({time:Date.now(),rows:rows.slice(0,900)}));
   }catch(e){}
 }
 
@@ -2739,12 +2769,16 @@ function safeClearHash(){
   safeReplaceHistory(location.pathname+location.search);
 }
 
+function signalFallbackCard(title,section,source,i){
+  return fallbackSignalCard(title,section,source,i);
+}
+
 function newsApiUnavailableRecord(error){
-  const message=String(error?.message||error||'news api unavailable').slice(0,160);
+  const message=String(error?.message||error||'news api unavailable').slice(0,180);
   const title='Signal provider unavailable';
   const section='API';
-  const source='Live Signal Provider';
-  const card=fallbackSignalCard(title,section,source,0);
+  const source='Live News Provider';
+  const card=signalFallbackCard(title,section,source,0);
   return {
     type:'signal',
     title,
@@ -2752,60 +2786,76 @@ function newsApiUnavailableRecord(error){
     year:new Date().getFullYear().toString(),
     source,
     genres:['API','Unavailable'],
-    overview:`${title}. ${message}. Signal mode is configured for live sources and will not substitute fake headlines, stock images, or duplicated filler.`,
+    overview:`${title}. ${message}. Signal mode is configured for live geopolitical/news sources and will not substitute fake headlines, stock images, or duplicated filler. Configure NEWS_API_PROXY_URL, GUARDIAN_API_KEY, NEWSDATA_API_KEY, or CURRENTS_API_KEY.`,
     image:card,
     cover:card,
     src:card,
-    externalUrl:'https://hn.algolia.com/api'
+    externalUrl:'https://open-platform.theguardian.com/documentation/'
   };
 }
 
 function proxySignalRecord(article,i=0){
-  const title=stripHtml(article.title||article.webTitle||article.headline||'Untitled signal');
-  const url=article.url||article.webUrl||article.shortUrl||article.link||'';
-  const section=stripHtml(article.section||article.sectionName||article.category||sectionFromSignal(title,url,'News'));
-  const source=stripHtml(article.source||article.publication||article.publisher||article.domain||domainFromUrl(url)||'News API');
-  const date=article.publishedAt||article.webPublicationDate||article.date||article.published||'';
+  const title=stripHtml(article.title||article.webTitle||article.headline||article.name||'Untitled signal');
+  const url=article.url||article.webUrl||article.shortUrl||article.link||article.href||'';
+  const rawSection=article.section||article.sectionName||article.category||article.country||article.region||'';
+  const section=stripHtml(rawSection||sectionFromSignal(title,url,'News'));
+  const source=stripHtml(article.source||article.source_name||article.publication||article.publisher||article.domain||domainFromUrl(url)||'News');
+  const date=article.publishedAt||article.pubDate||article.webPublicationDate||article.date||article.published||'';
   const year=formatDateYear(date);
-  const summary=stripHtml(article.summary||article.description||article.trailText||article.content||'');
-  const tags=Array.isArray(article.tags)?article.tags.map(t=>typeof t==='string'?t:(t.webTitle||t.name||'')).filter(Boolean).slice(0,6):[];
-  const image=normalizeNewsImage(article.image||article.urlToImage||article.thumbnail||article.image_url||article.socialimage)||fallbackSignalCard(title,section,source,i);
+  const summary=stripHtml(article.summary||article.description||article.trailText||article.content||article.bodyText||'');
+  const tags=Array.isArray(article.tags)?article.tags.map(t=>typeof t==='string'?t:(t.webTitle||t.name||t.label||'')).filter(Boolean).slice(0,7):[];
+  const realImage=normalizeNewsImage(article.image||article.urlToImage||article.thumbnail||article.image_url||article.socialimage||article.imageUrl||article.media);
+  const image=realImage||signalFallbackCard(title,section,source,i);
   return {
     type:'signal',title,section,year,source,
-    genres:tags.length?tags:[section],
+    publishedAt:normalizeDate(date),
+    genres:tags.length?tags:[section,source].filter(Boolean).slice(0,4),
     overview:`${title}. Source: ${source}. ${year?'Published: '+year+'. ':''}Section: ${section}. ${summary}`.trim(),
     image,cover:image,src:image,
     externalUrl:url
   };
 }
 
-function hnSignalRecord(hit,i=0){
-  const title=stripHtml(hit.title||hit.story_title||hit.comment_text||'Untitled signal');
-  const url=hit.url||hit.story_url||`${HN_STORY_URL}${hit.objectID}`;
-  const source=domainFromUrl(url)||'news.ycombinator.com';
-  const section=sectionFromSignal(title,url,'Hacker News');
-  const year=formatDateYear(hit.created_at);
-  const points=Number.isFinite(Number(hit.points))?Number(hit.points):0;
-  const comments=Number.isFinite(Number(hit.num_comments))?Number(hit.num_comments):0;
-  const author=stripHtml(hit.author||'');
-  const hnUrl=`${HN_STORY_URL}${hit.objectID}`;
-  const image=fallbackSignalCard(title,section,source,i);
+function guardianSignalRecord(item,i=0,laneLabel='World'){
+  const fields=item.fields||{};
+  const title=stripHtml(item.webTitle||item.title||'Untitled signal');
+  const url=item.webUrl||fields.shortUrl||'';
+  const rawSection=item.sectionName||laneLabel||'World';
+  const section=sectionFromSignal(title,url,rawSection);
+  const source='The Guardian';
+  const date=item.webPublicationDate||fields.lastModified||'';
+  const year=formatDateYear(date);
+  const tagNames=Array.isArray(item.tags)?item.tags.map(t=>stripHtml(t.webTitle||t.id||'')).filter(Boolean):[];
+  const trail=stripHtml(fields.trailText||fields.bodyText||fields.standfirst||'');
+  const image=normalizeNewsImage(fields.thumbnail||fields.main||fields.bylineImageUrl)||signalFallbackCard(title,section,source,i);
   return {
     type:'signal',
     title,
     section,
     year,
     source,
-    genres:[section,source].filter(Boolean).slice(0,4),
-    overview:`${title}. Source: ${source}. Hacker News signal. ${points?points+' points. ':''}${comments?comments+' comments. ':''}${author?'Submitted by '+author+'. ':''}${hit.created_at?'Published: '+hit.created_at+'. ':''}Discussion: ${hnUrl}`,
+    publishedAt:normalizeDate(date),
+    genres:[section,...tagNames].filter(Boolean).slice(0,7),
+    overview:`${title}. Source: ${source}. ${year?'Published: '+year+'. ':''}Section: ${section}. ${trail}`.trim(),
     image,
     cover:image,
     src:image,
-    externalUrl:url||hnUrl,
-    discussionUrl:hnUrl,
-    points,
-    comments
+    externalUrl:url
   };
+}
+
+function newsDataSignalRecord(article,i=0){
+  return proxySignalRecord({
+    title:article.title,
+    url:article.link,
+    image_url:article.image_url,
+    description:article.description||article.content,
+    pubDate:article.pubDate,
+    source_name:article.source_name,
+    category:Array.isArray(article.category)?article.category[0]:article.category,
+    country:Array.isArray(article.country)?article.country.join(', '):article.country,
+    tags:article.keywords||article.category||[]
+  },i);
 }
 
 async function fetchProxySignals(limit){
@@ -2813,22 +2863,116 @@ async function fetchProxySignals(limit){
   const pageSize=100;
   const pages=Math.ceil(target/pageSize);
   const basePage=1+Math.abs((corpusPageOffset||0)+(shuffleSeed||0));
-  const out=[];
+  const rows=[];
 
   for(let page=0;page<pages;page++){
-    const p=new URLSearchParams({limit:String(Math.min(pageSize,target-out.length)),pageSize:String(pageSize),depth:searchDepth,page:String(basePage+page)});
+    const p=new URLSearchParams({
+      limit:String(Math.min(pageSize,target-rows.length)),
+      pageSize:String(pageSize),
+      depth:searchDepth,
+      page:String(basePage+page),
+      vertical:'geopolitics',
+      includeImages:'true'
+    });
     const res=await fetch(`${NEWS_API_PROXY_URL}${NEWS_API_PROXY_URL.includes('?')?'&':'?'}${p.toString()}`);
     if(!res.ok)throw new Error(`news proxy ${res.status}`);
     const data=await res.json();
-    const rows=Array.isArray(data)?data:(data.articles||data.results||data.news||[]);
-    for(const row of rows){
-      out.push(row);
-      if(out.length>=target)break;
+    const batch=Array.isArray(data)?data:(data.articles||data.results||data.news||data.items||[]);
+    for(const row of batch){
+      rows.push(row);
+      if(rows.length>=target)break;
     }
-    if(out.length>=target||!rows.length)break;
+    if(rows.length>=target||!batch.length)break;
   }
 
-  return out.map(proxySignalRecord);
+  return rows.map(proxySignalRecord);
+}
+
+async function fetchGuardianSignals(limit){
+  const target=Math.max(1,Number(limit)||signalLimit());
+  const cached=readSignalCache('guardian');
+  if(cached?.length){
+    setStatus(`${Math.min(cached.length,target)} cached geopolitical signals`);
+    return cached.slice(0,target).map((row,i)=>guardianSignalRecord(row,i,row._laneLabel));
+  }
+
+  const lanes=GEOPOLITICAL_SIGNAL_LANES.slice(0,SIGNAL_MAX_DIRECT_REQUESTS);
+  const perLane=Math.max(24,Math.ceil(target/lanes.length));
+  const pageSize=Math.min(50,perLane);
+  const rows=[];
+  const seen=new Set();
+
+  for(let i=0;i<lanes.length;i++){
+    const lane=lanes[(i+Math.abs(corpusPageOffset+shuffleSeed))%lanes.length];
+    const pages=Math.max(1,Math.ceil(perLane/pageSize));
+    for(let page=1;page<=pages;page++){
+      const p=new URLSearchParams({
+        'api-key':GUARDIAN_API_KEY,
+        'q':lane.q,
+        'section':lane.section,
+        'order-by':'newest',
+        'page-size':String(pageSize),
+        'page':String(page),
+        'show-fields':'thumbnail,trailText,shortUrl,lastModified,bodyText',
+        'show-tags':'keyword',
+        'use-date':'published'
+      });
+      setStatus(`loading ${lane.label.toLowerCase()} signals ${i+1}/${lanes.length}`);
+      const res=await fetch(`${GUARDIAN_API_URL}?${p.toString()}`);
+      if(!res.ok)throw new Error(`guardian ${res.status}`);
+      const data=await res.json();
+      const results=Array.isArray(data?.response?.results)?data.response.results:[];
+      for(const item of results){
+        const key=String(item.webUrl||item.webTitle||'').toLowerCase();
+        if(!key||seen.has(key))continue;
+        seen.add(key);
+        rows.push({...item,_laneLabel:lane.label});
+        if(rows.length>=target)break;
+      }
+      if(rows.length>=target||!results.length)break;
+      await new Promise(r=>setTimeout(r,90));
+    }
+    if(rows.length>=target)break;
+  }
+
+  if(!rows.length)throw new Error('guardian returned zero articles');
+  writeSignalCache(rows,'guardian');
+  return rows.slice(0,target).map((row,i)=>guardianSignalRecord(row,i,row._laneLabel));
+}
+
+async function fetchNewsDataSignals(limit){
+  if(!NEWSDATA_API_KEY)throw new Error('newsdata api key missing');
+  const target=Math.max(1,Number(limit)||signalLimit());
+  const cached=readSignalCache('newsdata');
+  if(cached?.length){
+    setStatus(`${Math.min(cached.length,target)} cached newsdata signals`);
+    return cached.slice(0,target).map(newsDataSignalRecord);
+  }
+
+  const rows=[];
+  let pageToken='';
+  const query='geopolitics OR defense OR sanctions OR China OR Taiwan OR Russia OR Ukraine OR Iran OR India OR energy security OR semiconductors OR cyber';
+  for(let i=0;i<8&&rows.length<target;i++){
+    const p=new URLSearchParams({
+      apikey:NEWSDATA_API_KEY,
+      q:query,
+      language:'en',
+      category:'politics,business,technology,world',
+      image:'1'
+    });
+    if(pageToken)p.set('page',pageToken);
+    setStatus(`loading newsdata signals ${i+1}`);
+    const res=await fetch(`${NEWSDATA_API_URL}?${p.toString()}`);
+    if(!res.ok)throw new Error(`newsdata ${res.status}`);
+    const data=await res.json();
+    const batch=Array.isArray(data?.results)?data.results:[];
+    rows.push(...batch);
+    pageToken=data?.nextPage||'';
+    if(!pageToken||!batch.length)break;
+  }
+  if(!rows.length)throw new Error('newsdata returned zero articles');
+  writeSignalCache(rows,'newsdata');
+  return rows.slice(0,target).map(newsDataSignalRecord);
 }
 
 async function fetchCurrentsSignals(limit){
@@ -2840,7 +2984,7 @@ async function fetchCurrentsSignals(limit){
     return cached.slice(0,target).map(proxySignalRecord);
   }
 
-  const keyword='AI OR cybersecurity OR defense OR energy OR semiconductors OR markets OR infrastructure OR regulation';
+  const keyword='geopolitics OR defense OR sanctions OR China OR Taiwan OR Russia OR Ukraine OR Iran OR India OR energy security OR semiconductors OR cyber';
   const pageSize=100;
   const pages=Math.ceil(target/pageSize);
   const rows=[];
@@ -2852,16 +2996,14 @@ async function fetchCurrentsSignals(limit){
       page_size:String(Math.min(pageSize,target-rows.length)),
       page_number:String(page)
     });
+    setStatus(`loading currents signals ${page}/${pages}`);
     const res=await fetch(`${CURRENTS_API_URL}?${p.toString()}`,{
       headers:{Authorization:CURRENTS_API_KEY}
     });
     if(!res.ok)throw new Error(`currents ${res.status}`);
     const data=await res.json();
     const news=Array.isArray(data?.news)?data.news:[];
-    for(const article of news){
-      rows.push(article);
-      if(rows.length>=target)break;
-    }
+    rows.push(...news);
     if(rows.length>=target||!news.length)break;
   }
 
@@ -2870,57 +3012,29 @@ async function fetchCurrentsSignals(limit){
   return rows.slice(0,target).map(proxySignalRecord);
 }
 
-async function fetchHackerNewsSignals(limit){
-  const target=Math.max(1,Number(limit)||signalLimit());
-  const cached=readSignalCache('hn');
-  if(cached?.length){
-    setStatus(`${Math.min(cached.length,target)} cached live signals`);
-    return cached.slice(0,target).map(hnSignalRecord);
-  }
-
-  const pageSize=100;
-  const pages=Math.ceil(target/pageSize);
-  const startPage=Math.abs((corpusPageOffset||0)+(shuffleSeed||0))%3;
-  const sinceDays=searchDepth==='archive'?45:searchDepth==='field'?21:10;
-  const since=Math.floor((Date.now()-sinceDays*24*60*60*1000)/1000);
-  const rows=[];
-
-  for(let i=0;i<pages;i++){
-    const page=startPage+i;
-    const p=new URLSearchParams({
-      tags:'story',
-      page:String(page),
-      hitsPerPage:String(Math.min(pageSize,target-rows.length)),
-      numericFilters:`created_at_i>${since}`
-    });
-    setStatus(`loading live signals ${i+1}/${pages}`);
-    const res=await fetch(`${HN_ALGOLIA_URL}?${p.toString()}`);
-    if(!res.ok)throw new Error(`hn algolia ${res.status}`);
-    const data=await res.json();
-    const hits=Array.isArray(data?.hits)?data.hits:[];
-    for(const hit of hits){
-      if(hit?.title||hit?.story_title)rows.push(hit);
-      if(rows.length>=target)break;
-    }
-    if(rows.length>=target||!hits.length)break;
-  }
-
-  if(!rows.length)throw new Error('hn algolia returned zero stories');
-  writeSignalCache(rows,'hn');
-  return rows.slice(0,target).map(hnSignalRecord);
+function rankSignalRichness(row){
+  let score=0;
+  if(row.image&&!String(row.image).startsWith('data:image/svg'))score+=6;
+  if(row.overview&&row.overview.length>140)score+=2;
+  if(row.publishedAt)score+=1;
+  if(/world|defense|china|russia|middle east|energy|markets|cyber|supply/i.test(`${row.section} ${(row.genres||[]).join(' ')}`))score+=2;
+  return score;
 }
 
 async function loadSignals(limit){
   const target=Math.max(1,Number(limit)||signalLimit());
   try{
-    setStatus(`loading ${target} live signals`);
+    setStatus(`loading ${target} geopolitical signals`);
     let rows=[];
+
     if(NEWS_API_PROXY_URL){
       rows=await fetchProxySignals(target);
+    }else if(NEWSDATA_API_KEY){
+      rows=await fetchNewsDataSignals(target);
     }else if(CURRENTS_API_KEY){
       rows=await fetchCurrentsSignals(target);
     }else{
-      rows=await fetchHackerNewsSignals(target);
+      rows=await fetchGuardianSignals(target);
     }
 
     const seen=new Set(),out=[];
@@ -2929,10 +3043,16 @@ async function loadSignals(limit){
       if(!row.title||seen.has(key))continue;
       seen.add(key);
       out.push(row);
-      if(out.length>=target)break;
     }
-    if(!out.length)throw new Error('signal provider returned zero stories');
-    return out;
+
+    out.sort((a,b)=>{
+      const rich=rankSignalRichness(b)-rankSignalRichness(a);
+      if(rich)return rich;
+      return new Date(b.publishedAt||0)-new Date(a.publishedAt||0);
+    });
+
+    if(!out.length)throw new Error('signal provider returned zero articles');
+    return out.slice(0,target);
   }catch(e){
     console.error(e);
     setStatus('signal provider unavailable');
