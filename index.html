@@ -1382,110 +1382,6 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="book"] img[src^=
   object-fit:cover !important;
 }
 
-
-/* music corpus: album art uses square native geometry */
-body[data-mode="music"]:not(.has-results) .wall-cell,
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="music"],
-body[data-mode="mixed"]:not(.has-results) .wall-cell.media-music{
-  aspect-ratio:1 / 1 !important;
-}
-
-body[data-mode="music"]:not(.has-results) .film-wall{
-  grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
-  gap:2px !important;
-}
-
-@media(max-width:980px){
-  body[data-mode="music"]:not(.has-results) .film-wall{
-    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-  }
-}
-
-
-/* signal corpus: live article imagery uses editorial landscape cards */
-body[data-mode="signal"]:not(.has-results) .wall-cell,
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"],
-body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
-  aspect-ratio:3 / 2 !important;
-}
-
-body[data-mode="signal"]:not(.has-results) .film-wall{
-  grid-template-columns:repeat(3,minmax(180px,1fr)) !important;
-  gap:2px !important;
-  min-height:100svh !important;
-  background:#151515 !important;
-}
-
-@media(max-width:980px){
-  body[data-mode="signal"]:not(.has-results) .film-wall{
-    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-  }
-}
-
-
-
-/* simplified corpus controls: wrap inside pane, never bleed into wall */
-.search-pane{
-  overflow:hidden !important;
-  contain:layout paint !important;
-}
-
-.mode-row{
-  width:100% !important;
-  max-width:520px !important;
-  display:flex !important;
-  flex-wrap:wrap !important;
-  gap:10px !important;
-  overflow:visible !important;
-}
-
-.toggle-group{
-  width:auto !important;
-  max-width:100% !important;
-  display:inline-flex !important;
-  flex-wrap:wrap !important;
-  overflow:visible !important;
-  white-space:normal !important;
-}
-
-.toggle-btn{
-  flex:0 0 auto !important;
-}
-
-
-/* contain corpus/depth ribbon strictly inside the search pane */
-.top{
-  overflow:hidden !important;
-}
-
-.search-pane{
-  min-width:0 !important;
-  overflow:hidden !important;
-  contain:layout paint !important;
-}
-
-.mode-row{
-  width:100% !important;
-  max-width:100% !important;
-  display:flex !important;
-  flex-wrap:wrap !important;
-  gap:8px !important;
-  overflow:visible !important;
-}
-
-.toggle-group{
-  flex:0 1 auto !important;
-  max-width:100% !important;
-  display:inline-flex !important;
-  flex-wrap:wrap !important;
-  white-space:normal !important;
-}
-
-.toggle-btn{
-  flex:0 0 auto !important;
-  white-space:nowrap !important;
-}
-
 </style>
 </head>
 <body>
@@ -1507,8 +1403,6 @@ body[data-mode="signal"]:not(.has-results) .film-wall{
           <button type="button" class="toggle-btn" data-mode="games">games</button>
           <button type="button" class="toggle-btn" data-mode="books">books</button>
           <button type="button" class="toggle-btn" data-mode="tv">tv</button>
-          <button type="button" class="toggle-btn" data-mode="music">music</button>
-          <button type="button" class="toggle-btn" data-mode="signal">signal</button>
           <button type="button" class="toggle-btn" data-mode="mixed">mix</button>
         </div>
         <div class="toggle-group" role="group" aria-label="Search depth">
@@ -1559,7 +1453,7 @@ body[data-mode="signal"]:not(.has-results) .film-wall{
         <div class="score-row"><span>coherence</span><span id="score">0.000</span></div>
         <p id="overview"></p>
         <div class="actions">
-          <button class="action" id="imdb">open article ↗</button>
+          <button class="action" id="imdb">open source ↗</button>
           <button class="action link" id="copyLink">copy link</button>
         </div>
       </div>
@@ -1603,16 +1497,12 @@ const RAWG_URL='https://api.rawg.io/api/games';
 const OPENLIBRARY_URL=''; /* disabled for static book corpus */
 const OL_COVER='https://covers.openlibrary.org/b/id/';
 const TVMAZE_URL='https://api.tvmaze.com/shows';
-const ITUNES_URL='https://itunes.apple.com/search';
-const GUARDIAN_SEARCH_URL='https://content.guardianapis.com/search';
-const GUARDIAN_API_KEY='test';
-
 const RAWG_PAGE_SIZE=40;
 
 const DEPTHS={
-  surface:{film:80,games:80,books:80,tv:80,music:80,signal:80,mixedFilm:18,mixedGames:18,mixedBooks:18,mixedTv:18,mixedMusic:18,mixedSignal:18,rawgPages:3},
-  field:{film:220,games:140,books:160,tv:160,music:160,signal:160,mixedFilm:32,mixedGames:32,mixedBooks:32,mixedTv:32,mixedMusic:32,mixedSignal:32,rawgPages:5},
-  archive:{film:500,games:500,books:500,tv:500,music:500,signal:500,mixedFilm:50,mixedGames:50,mixedBooks:50,mixedTv:50,mixedMusic:50,mixedSignal:50,rawgPages:13}
+  surface:{film:80,games:80,books:80,tv:80,mixedFilm:35,mixedGames:35,mixedBooks:35,mixedTv:35,rawgPages:3},
+  field:{film:220,games:140,books:160,tv:160,mixedFilm:65,mixedGames:65,mixedBooks:65,mixedTv:65,rawgPages:5},
+  archive:{film:500,games:500,books:500,tv:500,mixedFilm:125,mixedGames:125,mixedBooks:125,mixedTv:125,rawgPages:13}
 };
 
 let corpusMode='film',searchDepth='field';
@@ -1629,11 +1519,11 @@ function norm(p){return p?(String(p).startsWith('/')?String(p):'/'+String(p)):nu
 function img(p,size='original'){return p?`${IMG}${size}${norm(p)}`:''}
 
 function still(m,size='w780'){
-  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal') return m.image||m.cover||'';
+  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
   return img(m?.backdropPath||m?.posterPath,size);
 }
 function poster(m,size='w342'){
-  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal') return m.image||m.cover||'';
+  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
   return img(m?.posterPath,size);
 }
 function heroSrc(m){
@@ -1641,93 +1531,18 @@ function heroSrc(m){
   if(m.type==='game') return m.image||m.cover||'';
   if(m.type==='book') return m.cover||m.image||'';
   if(m.type==='tv') return m.cover||m.image||'';
-  if(m.type==='music') return m.cover||m.image||'';
-  if(m.type==='signal') return m.cover||m.image||'';
   if(m.backdropPath) return img(m.backdropPath,'original')||img(m.backdropPath,'w1280');
   if(m.posterPath) return img(m.posterPath,'original')||img(m.posterPath,'w780');
   return '';
 }
 function thumbSrc(m){
   if(!m) return '';
-  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal') return m.image||m.cover||'';
+  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
   return img(m.backdropPath||m.posterPath,'w342')||img(m.posterPath,'w185');
 }
-
-function isolateCorpusByMode(items){
-  if(!Array.isArray(items))return [];
-  if(corpusMode==='mixed')return items;
-
-  const expected =
-    corpusMode==='film' ? 'film' :
-    corpusMode==='games' ? 'game' :
-    corpusMode==='books' ? 'book' :
-    corpusMode==='tv' ? 'tv' :
-    corpusMode==='music' ? 'music' :
-    corpusMode==='signal' ? 'signal' :
-    null;
-
-  if(!expected)return items;
-  return items.filter(x=>x && x.type===expected);
-}
-
 function candidate(m){
-  if(m.type==='music'){
-    return `${m.title}. ${(m.artists||m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,8).join(', ')}. ${m.musicSignal||''}. Scene/source: ${m.searchLane||''}. ${m.overview.substring(0,460)}`;
-  }
   return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,6).join(', ')}. ${(m.platforms||[]).join(', ')}. ${m.overview.substring(0,360)}`;
 }
-
-function worldLoadingTile(label='loading live world'){
-  const text=String(label||'loading live world').slice(0,80);
-  const svg=`
-  <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
-    <defs>
-      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#161616"/>
-        <stop offset="1" stop-color="#050505"/>
-      </linearGradient>
-      <filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3"/></filter>
-    </defs>
-    <rect width="1200" height="800" fill="url(#g)"/>
-    <rect width="1200" height="800" filter="url(#n)" opacity=".11"/>
-    <line x1="0" y1="580" x2="1200" y2="580" stroke="rgba(246,241,232,.10)" stroke-width="1"/>
-    <text x="64" y="86" font-family="IBM Plex Mono, Menlo, monospace" font-size="22" fill="rgba(246,241,232,.45)" letter-spacing="4">SUMMON / LIVE</text>
-    <foreignObject x="64" y="310" width="940" height="180">
-      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Arial,sans-serif;font-size:56px;line-height:.96;font-weight:600;letter-spacing:-2px;color:rgba(246,241,232,.86);word-wrap:break-word;">
-        ${esc(text)}
-      </div>
-    </foreignObject>
-  </svg>`;
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-}
-
-function clearWallForLoading(label='loading live corpus'){
-  const wall=$('#wall');
-  if(!wall)return;
-  const type=corpusMode==='mixed'?'signal':corpusMode;
-  const tiles=Array.from({length:12},(_,i)=>
-    `<div class="wall-cell media-${esc(type)}" data-type="${esc(type)}">
-       <img src="${worldLoadingTile(i===0?label:'loading')}" alt="" loading="eager" decoding="async">
-     </div>`
-  ).join('');
-  wall.innerHTML=tiles;
-}
-
-
-function corpusLabelPlural(){
-  return corpusMode==='games'?'games':
-    corpusMode==='books'?'books':
-    corpusMode==='tv'?'tv shows':
-    corpusMode==='music'?'records':
-    corpusMode==='signal'?'live signals':
-    corpusMode==='events'?'world events':
-    corpusMode==='themes'?'world themes':
-    corpusMode==='actors'?'world actors':
-    corpusMode==='images'?'world images':
-    corpusMode==='mixed'?'mixed records':
-    'films';
-}
-
 function setStatus(t){if(statusEl)statusEl.textContent=t}
 function toast(t){
   const el=document.createElement('div');el.className='toast';el.textContent=t;
@@ -1743,9 +1558,7 @@ function filmLimit(){return corpusMode==='mixed'?getLimit('mixedFilm'):getLimit(
 function gameLimit(){return corpusMode==='mixed'?getLimit('mixedGames'):getLimit('games')}
 function bookLimit(){return corpusMode==='mixed'?getLimit('mixedBooks'):getLimit('books')}
 function tvLimit(){return corpusMode==='mixed'?getLimit('mixedTv'):getLimit('tv')}
-function musicLimit(){return corpusMode==='mixed'?getLimit('mixedMusic'):getLimit('music')}
-function signalLimit(){return corpusMode==='mixed'?getLimit('mixedSignal'):getLimit('signal')}
-function totalLimit(){return filmLimit()+gameLimit()+bookLimit()+tvLimit()+musicLimit()+signalLimit()}
+function totalLimit(){return filmLimit()+gameLimit()+bookLimit()+tvLimit()}
 
 // ─── API Fetchers ───
 
@@ -1760,7 +1573,7 @@ async function fetchAlgoliaPage(n){
 }
 
 async function fetchRawgPage(page=1){
-  const p=new URLSearchParams({key:RAWG_KEY,page:String(page),ordering:'-metacritic',dates:'1998-01-01,2026-12-31'});
+  const p=new URLSearchParams({key:RAWG_KEY,page:String(page),page_size:String(RAWG_PAGE_SIZE),ordering:'-metacritic',dates:'1998-01-01,2026-12-31'});
   const res=await fetch(`${RAWG_URL}?${p}`);
   if(!res.ok)throw new Error(`rawg ${res.status}`);
   return res.json();
@@ -1826,453 +1639,6 @@ function tvRecord(s){
     image,cover,tvMazeId:s.id,tvMazeUrl:s.url
   };
 }
-
-
-async function fetchMusicAlbums(term,limit=100,offset=0){
-  const p=new URLSearchParams({
-    term,
-    media:'music',
-    entity:'album',
-    limit:String(Math.min(200,limit)),
-    country:'US'
-  });
-  const res=await fetch(`${ITUNES_URL}?${p}`);
-  if(!res.ok)throw new Error(`itunes ${res.status}`);
-  const data=await res.json();
-  return data.results||[];
-}
-
-
-function isLowQualityMusicRecord(a){
-  const title=String(a?.collectionName||a?.trackName||'').toLowerCase();
-  const artist=String(a?.artistName||'').toLowerCase();
-  const genre=String(a?.primaryGenreName||'').toLowerCase();
-  const joined=`${title} ${artist} ${genre}`;
-
-  const bad=[
-    'artificial intelligence',
-    'ai music',
-    'ai generated',
-    'white noise',
-    'sleep sounds',
-    'therapy sounds',
-    'meditation music',
-    'relaxing music',
-    'karaoke',
-    'tribute to',
-    'sound effects',
-    'alarm tones',
-    'ringtone'
-  ];
-
-  return bad.some(x=>joined.includes(x));
-}
-
-function musicRecord(a,lane='music'){
-  if(isLowQualityMusicRecord(a))return null;
-  const title=a.collectionName||'';
-  const artist=a.artistName||'Unknown artist';
-  const genre=a.primaryGenreName||'Music';
-  const year=a.releaseDate?String(a.releaseDate).slice(0,4):'';
-  const image=String(a.artworkUrl100||'')
-    .replace(/^http:/,'https:')
-    .replace('100x100bb','1200x1200bb');
-  if(!title||!image)return null;
-  return {
-    type:'music',
-    title,
-    artists:[artist],
-    authors:[artist],
-    year,
-    genres:[genre],
-    subjects:[genre,'album','music','recording','artist','sound','rhythm'].filter(Boolean),
-    searchLane:lane,
-    musicSignal:`${genre}. ${artist}. ${title}`,
-    overview:`${title}. By ${artist}. ${year?'Released '+year+'. ':''}Genre: ${genre}. A musical object indexed through artist, album, genre, scene, subculture, release era, mood, rhythm, production context, instrumentality, and cultural signal.`,
-    image,
-    cover:image,
-    itunesUrl:a.collectionViewUrl||a.artistViewUrl||`https://music.apple.com/search?term=${encodeURIComponent(title+' '+artist)}`
-  };
-}
-
-async function loadMusic(limit){
-  const lanes=[
-    // canonical electronic / machine-adjacent but musically credible
-    'kraftwerk',
-    'aphex twin',
-    'autechre',
-    'boards of canada',
-    'drexciya',
-    'dopplereffekt',
-    'jeff mills',
-    'juan atkins',
-    'cybotron',
-    'model 500',
-    'basic channel',
-    'burial',
-    'oneohtrix point never',
-    'arca',
-    'four tet',
-    'floating points',
-    'tim hecker',
-    'fennesz',
-    'laurie spiegel',
-    'suzanne ciani',
-    'wendy carlos',
-    'brian eno',
-    'tangerine dream',
-    'yellow magic orchestra',
-
-    // electronic / club genres
-    'techno',
-    'detroit techno',
-    'minimal techno',
-    'acid techno',
-    'ambient techno',
-    'industrial techno',
-    'house',
-    'deep house',
-    'chicago house',
-    'acid house',
-    'electro',
-    'idm',
-    'ambient',
-    'dark ambient',
-    'downtempo',
-    'trip hop',
-    'drum and bass',
-    'jungle',
-    'trance',
-    'experimental electronic',
-    'synth pop',
-    'new wave',
-    'krautrock',
-
-    // broad quality lanes
-    'post punk',
-    'shoegaze',
-    'dream pop',
-    'art pop',
-    'alternative rock',
-    'indie rock',
-    'psychedelic rock',
-    'jazz',
-    'free jazz',
-    'fusion jazz',
-    'soul',
-    'funk',
-    'disco',
-    'r&b',
-    'hip hop',
-    'underground hip hop',
-    'punk',
-    'metal',
-    'black metal',
-    'folk',
-    'singer songwriter',
-    'country',
-    'reggae',
-    'dub',
-    'afrobeat',
-    'latin',
-    'salsa',
-    'bossa nova',
-    'classical',
-    'minimalism classical',
-    'film score',
-    'soundtrack',
-    'avant garde',
-    'experimental music'
-  ];
-  const seen=new Set();
-  const out=[];
-  const per=Math.min(200,Math.max(50,Math.ceil(limit/3)));
-
-  const laneIndexes=lanes.map((_,i)=>i).sort((a,b)=>{
-    const ax=(a*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
-    const bx=(b*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
-    return ax-bx;
-  });
-
-  for(let i=0;i<laneIndexes.length && out.length<limit;i++){
-    const lane=lanes[laneIndexes[i]];
-    try{
-      const rows=await fetchMusicAlbums(lane,per);
-      for(const row of rows){
-        const rec=musicRecord(row,lane);
-        if(!rec)continue;
-        const key=`${rec.title}|${rec.artists[0]}`;
-        if(seen.has(key))continue;
-        seen.add(key);
-        out.push(rec);
-        if(out.length>=limit)break;
-      }
-    }catch(e){
-      console.warn('music api failed',e);
-      break;
-    }
-  }
-
-  return out.filter(x=>x&&x.type==='music');
-}
-
-
-
-const SIGNAL_LANES=[
-  'geopolitics',
-  'energy security',
-  'defense procurement',
-  'artificial intelligence regulation',
-  'semiconductors',
-  'shipping supply chain',
-  'central banks inflation',
-  'cybersecurity infrastructure',
-  'climate risk',
-  'water scarcity',
-  'migration border policy',
-  'elections democracy',
-  'space industry',
-  'nuclear energy',
-  'rare earth minerals',
-  'public health',
-  'labor unions strikes',
-  'housing affordability',
-  'antitrust technology',
-  'crypto regulation',
-  'surveillance technology',
-  'military drones',
-  'ports logistics',
-  'oil gas markets',
-  'food security'
-];
-
-function signalImageLooksBad(url=''){
-  const u=String(url||'').toLowerCase();
-  if(!/^https?:\/\//i.test(u))return true;
-  const bad=['logo','icon','avatar','default','placeholder','spacer','transparent','blank','favicon','profile','fallback','no-image','no_image','missing','dummy','thumbnail-default','image-not-found'];
-  return bad.some(x=>u.includes(x));
-}
-
-function signalDomainLooksBad(domain=''){
-  return false;
-}
-
-
-
-
-
-
-
-
-
-async function fetchSignalBatch(query,maxrecords=50,days=3){
-  const now=new Date();
-  const from=new Date(now.getTime()-days*24*60*60*1000).toISOString().slice(0,10);
-
-  const p=new URLSearchParams({
-    'api-key':GUARDIAN_API_KEY,
-    q:String(query||'world'),
-    'show-fields':'thumbnail,trailText,headline,byline,shortUrl',
-    'show-tags':'keyword,contributor',
-    'order-by':'newest',
-    'page-size':String(Math.min(50,Math.max(10,maxrecords))),
-    'from-date':from
-  });
-
-  const res=await fetch(`${GUARDIAN_SEARCH_URL}?${p}`,{cache:'no-store'});
-  if(!res.ok)throw new Error(`guardian ${res.status}`);
-
-  const data=await res.json();
-  if(data?.response?.status && data.response.status!=='ok')throw new Error(data.response.message||'guardian failed');
-  return data?.response || {results:[]};
-}
-
-function signalRecord(a,lane='live world'){
-  const title=String(a?.fields?.headline||a?.webTitle||'').replace(/<[^>]+>/g,'').trim();
-  const url=String(a?.webUrl||a?.fields?.shortUrl||'').trim();
-  if(!title||!url)return null;
-
-  const rawImage=String(a?.fields?.thumbnail||'').replace(/^http:/,'https:').trim();
-
-  // Guardian signal should be editorial and image-backed only.
-  if(signalImageLooksBad(rawImage))return null;
-
-  const domain='theguardian.com';
-  const published=String(a?.webPublicationDate||'').slice(0,10);
-  const year=published?published.slice(0,4):'';
-  const section=String(a?.sectionName||'').trim();
-  const trail=String(a?.fields?.trailText||'').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
-  const tags=Array.isArray(a?.tags)?a.tags.map(t=>t.webTitle).filter(Boolean).slice(0,8):[];
-
-  return {
-    type:'signal',
-    title,
-    year,
-    domain,
-    sourceCountry:'UK',
-    language:'English',
-    seenDate:published,
-    genres:[section||'Live signal'].filter(Boolean),
-    subjects:[lane,section,domain,'news','current events','live signal','world state',...tags].filter(Boolean),
-    overview:`${title}. Source: The Guardian.${published?' Published: '+published+'.':''}${section?' Section: '+section+'.':''} ${trail||'Live article indexed through section, recency, tags, source, visual signal, and narrative context.'} Discovery lane: ${lane}.`,
-    image:rawImage,
-    cover:rawImage,
-    sourceUrl:url,
-    signalLane:lane
-  };
-}
-
-function isQualitySignalRecord(rec){
-  if(!rec||rec.type!=='signal')return false;
-  if(signalImageLooksBad(rec.image))return false;
-  if(signalDomainLooksBad(rec.domain))return false;
-  if(String(rec.title||'').trim().length<24)return false;
-  return true;
-}
-
-
-const WORLD_CORPORA={
-  events:{
-    label:'events',
-    lanes:[
-      'protest OR riot OR strike',
-      'military conflict OR ceasefire',
-      'diplomatic meeting OR sanctions',
-      'election dispute OR government crisis',
-      'cyberattack OR infrastructure disruption',
-      'supply chain disruption OR port delay',
-      'energy crisis OR oil supply',
-      'public health emergency',
-      'migration border crisis',
-      'water scarcity OR food security'
-    ]
-  },
-  themes:{
-    label:'themes',
-    lanes:[
-      'institutional trust',
-      'political instability',
-      'energy security',
-      'artificial intelligence governance',
-      'climate adaptation',
-      'economic anxiety',
-      'public safety surveillance',
-      'national security technology',
-      'labor automation',
-      'supply chain resilience'
-    ]
-  },
-  actors:{
-    label:'actors',
-    lanes:[
-      'government official said',
-      'company announced',
-      'central bank warned',
-      'military commander said',
-      'regulator investigated',
-      'union leaders said',
-      'court ruled',
-      'minister met',
-      'agency reported',
-      'researchers found'
-    ]
-  },
-  images:{
-    label:'images',
-    lanes:[
-      'protest crowd',
-      'military equipment',
-      'flood wildfire disaster',
-      'factory semiconductor',
-      'shipping port container',
-      'city skyline government',
-      'energy grid pipeline',
-      'hospital public health',
-      'space rocket satellite',
-      'surveillance camera technology'
-    ]
-  }
-};
-
-function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
-
-async function loadSignal(limit){
-  setCorpusLoading(true,`loading ${limit} Guardian signals · ${searchDepth}`);
-
-  const per  = searchDepth==='archive'?50:searchDepth==='field'?40:25;
-  const days = searchDepth==='archive'?14:searchDepth==='field'?5:2;
-
-  const laneCap = searchDepth==='archive'?8:searchDepth==='field'?6:4;
-  const laneIndexes = SIGNAL_LANES.map((_,i)=>i).sort((a,b)=>{
-    const ax=(a*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
-    const bx=(b*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
-    return ax-bx;
-  }).slice(0,laneCap);
-
-  const selectedLanes = laneIndexes.map(i=>SIGNAL_LANES[i]);
-  const combinedQuery = selectedLanes.join(' OR ');
-
-  const seen = new Set();
-  const out  = [];
-  let lastError = null;
-  let data = null;
-
-  try{
-    data = await fetchSignalBatch(combinedQuery, per, days);
-  }catch(e){
-    lastError=e;
-    console.warn('guardian signal query failed',e);
-  }
-
-  if(data){
-    const articles = Array.isArray(data?.results) ? data.results : [];
-    for(const article of articles){
-      const title = String(article?.webTitle||article?.fields?.headline||'').toLowerCase();
-      const lane = selectedLanes.find(l=>{
-        const words = l.toLowerCase().split(/\s+/).filter(w=>w.length>3);
-        return words.some(w=>title.includes(w));
-      }) || selectedLanes[0];
-
-      const rec = signalRecord(article, lane);
-      if(!rec) continue;
-      const key = rec.title + '|' + rec.domain;
-      if(seen.has(key)) continue;
-      seen.add(key);
-      out.push(rec);
-      if(out.length >= limit) break;
-    }
-  }
-
-  // One broad live fallback, still Guardian only.
-  if(!out.length){
-    try{
-      const fallbackData = await fetchSignalBatch('geopolitics OR conflict OR energy OR technology', per, days);
-      const articles = Array.isArray(fallbackData?.results) ? fallbackData.results : [];
-      for(const article of articles){
-        const rec = signalRecord(article, 'live world');
-        if(!rec) continue;
-        const key = rec.title + '|' + rec.domain;
-        if(seen.has(key)) continue;
-        seen.add(key);
-        out.push(rec);
-        if(out.length >= limit) break;
-      }
-    }catch(e){ lastError = e; }
-  }
-
-  const cleaned     = out.filter(isQualitySignalRecord);
-  const imageBacked = out.filter(x=>x && x.type==='signal' && x.image && !signalImageLooksBad(x.image));
-  const finalRows   = cleaned.length ? cleaned : imageBacked;
-
-  if(!finalRows.length){
-    const message = lastError?.message || 'Guardian returned no image-backed live articles';
-    setStatus(`signal failed · ${message}`);
-    throw new Error(message);
-  }
-
-  return finalRows.slice(0, limit);
-}
-
 
 // ─── Corpus Loaders ───
 
@@ -2379,7 +1745,7 @@ async function loadTV(limit){
 
 function renderWall(movies){
   // Strict filter: only tiles with real, non-empty image URLs
-  const sample=[...isolateCorpusByMode(movies)]
+  const sample=[...movies]
     .map(m=>({...m,src:still(m,'w780')||poster(m,'w500')}))
     .filter(m=>m.src&&m.src.length>15)
     .sort(()=>Math.random()-.5)
@@ -2399,12 +1765,11 @@ function renderWall(movies){
 
 function finalizeCorpus(movies){
   if(shuffleSeed)movies.sort(()=>Math.random()-.5);
-  movies=isolateCorpusByMode(movies);
   const candidates=movies.map(candidate).slice(0,totalLimit());
   const map=new Map();
   candidates.forEach((c,i)=>map.set(c,movies[i]));
   cache={movies,candidates,map};
-  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'records':corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':'films';
+  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='mixed'?'mixed records':'films';
   setStatus(`${movies.length} ${label} loaded`);
   renderWall(movies);
   return cache;
@@ -2412,35 +1777,15 @@ function finalizeCorpus(movies){
 
 async function loadCorpus(){
   if(cache)return cache;
-
   if(corpusMode==='games') return finalizeCorpus(await loadGames(gameLimit()));
   if(corpusMode==='books') return finalizeCorpus(await loadBooks(bookLimit()));
   if(corpusMode==='tv') return finalizeCorpus(await loadTV(tvLimit()));
-  if(corpusMode==='music') return finalizeCorpus(await loadMusic(musicLimit()));
-  if(corpusMode==='signal') return finalizeCorpus(await loadSignal(signalLimit()));
-
   if(corpusMode==='mixed'){
-    const [f,g,b,t,m,s]=await Promise.all([
-      loadFilms(filmLimit()),
-      loadGames(gameLimit()),
-      loadBooks(bookLimit()),
-      loadTV(tvLimit()),
-      loadMusic(musicLimit()),
-      loadSignal(signalLimit()).catch(()=>[])
-    ]);
-    const mixed=[];
-    const mx=Math.max(f.length,g.length,b.length,t.length,m.length,s.length);
-    for(let i=0;i<mx;i++){
-      if(f[i])mixed.push(f[i]);
-      if(g[i])mixed.push(g[i]);
-      if(b[i])mixed.push(b[i]);
-      if(t[i])mixed.push(t[i]);
-      if(m[i])mixed.push(m[i]);
-      if(s[i])mixed.push(s[i]);
-    }
+    const[f,g,b,t]=await Promise.all([loadFilms(filmLimit()),loadGames(gameLimit()),loadBooks(bookLimit()),loadTV(tvLimit())]);
+    const mixed=[];const mx=Math.max(f.length,g.length,b.length,t.length);
+    for(let i=0;i<mx;i++){if(f[i])mixed.push(f[i]);if(g[i])mixed.push(g[i]);if(b[i])mixed.push(b[i]);if(t[i])mixed.push(t[i])}
     return finalizeCorpus(mixed);
   }
-
   return finalizeCorpus(await loadFilms(filmLimit()));
 }
 
@@ -2456,8 +1801,7 @@ async function loadCorpusWithRetry(attempts=2){
 
 function parse(data,map){
   const rows=Array.isArray(data?.all)?data.all:(Array.isArray(data?.top)?data.top:[]);
-  const expected=corpusMode==='mixed'?null:(corpusMode==='games'?'game':corpusMode==='film'?'film':corpusMode==='books'?'book':corpusMode==='tv'?'tv':corpusMode==='music'?'music':corpusMode==='signal'?'signal':null);
-  return rows.map(r=>{const m=map.get(r.text);return (m&&(!expected||m.type===expected))?{...m,score:Number(r.score||0),candidate:r.text}:null}).filter(Boolean).slice(0,RETURN_COUNT);
+  return rows.map(r=>{const m=map.get(r.text);return m?{...m,score:Number(r.score||0),candidate:r.text}:null}).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,RETURN_COUNT);
 }
 
 async function search(text){
@@ -2505,27 +1849,6 @@ async function search(text){
 
 // ─── Result Rendering ───
 
-
-function sourceUrl(m){
-  if(!m)return '#';
-  if(m.type==='music')return m.itunesUrl||`https://music.apple.com/search?term=${encodeURIComponent((m.title||'')+' '+((m.artists||[])[0]||''))}`;
-  if(m.type==='signal')return m.sourceUrl||'#';
-  if(m.type==='game')return m.rawgSlug?`https://rawg.io/games/${m.rawgSlug}`:`https://rawg.io/search?query=${encodeURIComponent(m.title||'')}`;
-  if(m.type==='book')return m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title||'')}`;
-  if(m.type==='tv')return m.tvMazeUrl||`https://www.tvmaze.com/search?q=${encodeURIComponent(m.title||'')}`;
-  return `https://www.imdb.com/find?q=${encodeURIComponent(m.title||'')}`;
-}
-
-function sourceLabel(m){
-  if(!m)return 'open article ↗';
-  if(m.type==='music')return 'view on apple music ↗';
-  if(m.type==='signal')return 'open article ↗';
-  if(m.type==='game')return 'view on rawg ↗';
-  if(m.type==='book')return 'view on gutenberg ↗';
-  if(m.type==='tv')return 'view on tvmaze ↗';
-  return 'view on imdb ↗';
-}
-
 function renderResult(){
   if(!hasExecutedSearch||!results.length){document.body.classList.remove('has-results');return}
   const m=results[active];if(!m)return;
@@ -2557,8 +1880,13 @@ function renderResult(){
   applyModeLabels();
   syncResultQuery();
 
-  $('#imdb').textContent=sourceLabel(m);
-  $('#imdb').onclick=()=>window.open(sourceUrl(m),'_blank');
+  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':'view on imdb ↗';
+  $('#imdb').onclick=()=>window.open(
+    m.type==='game'?`https://rawg.io/games/${m.rawgSlug||encodeURIComponent(m.title.toLowerCase().replaceAll(' ','-'))}`:
+    m.type==='book'?(m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title)}`):
+    m.type==='tv'?(m.tvMazeUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`):
+    `https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`,'_blank'
+  );
   $('#copyLink').onclick=()=>{
     const url=`${location.href.split('#')[0]}#${encodeURIComponent(currentQuery)}`;
     navigator.clipboard?.writeText(url).then(()=>toast('link copied'));
@@ -2592,7 +1920,7 @@ function renderRankList(){
 async function shuffleFilms(){
   corpusPageOffset=(corpusPageOffset+1+Math.floor(Math.random()*3))%4;
   shuffleSeed++;cache=null;
-  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='music'?'music':corpusMode==='signal'?'signal':corpusMode==='mixed'?'mix':'films';
+  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='mixed'?'mix':'films';
   setStatus(`shuffling ${label}`);
   setCorpusLoading(true,corpusLoadLabel('loading'));
   try{
@@ -2634,36 +1962,27 @@ function syncResultQuery(){
 // ─── Mode / Depth / Theme ───
 
 async function setCorpusMode(mode){
-  if(!['film','games','books','tv','music','signal','mixed'].includes(mode)||corpusMode===mode)return;
+  if(!['film','games','books','tv','mixed'].includes(mode)||corpusMode===mode)return;
   corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;
-  document.body.dataset.mode=corpusMode;
-  setCorpusLoading(true,`loading ${corpusLabelPlural()} · ${searchDepth}`);
-  if(corpusMode==='signal')clearWallForLoading(`loading ${corpusLabelPlural()} · ${searchDepth}`);
   applyModeLabels();
-  loadCorpus().catch(e=>{
-    console.error(e);
-    toast(`${corpusLabelPlural()} failed`);
-    setStatus(`${corpusLabelPlural()} failed`);
-    setCorpusLoading(false);
-    applyModeLabels();
-  });
+  setCorpusLoading(true,corpusLoadLabel('loading'));
+  try{
+    await loadCorpusWithRetry(2);setCorpusLoading(false);
+  }catch(e){console.error(e);setCorpusLoading(false,'load failed');return}
+  if(document.body.classList.contains('has-results')){
+    document.body.classList.remove('has-results','searching','cutting');
+    history.replaceState(null,'',location.pathname+location.search);
+    window.scrollTo({top:0,behavior:'auto'});
+  }
 }
 
 async function setSearchDepth(depth){
   if(!DEPTHS[depth]||searchDepth===depth)return;
-  searchDepth=depth;
-  cache=null;
-  hasExecutedSearch=false;
-  setCorpusLoading(true,`loading ${corpusLabelPlural()} · ${searchDepth}`);
-  if(corpusMode==='signal')clearWallForLoading(`loading ${corpusLabelPlural()} · ${searchDepth}`);
-  applyModeLabels();
-  loadCorpus().catch(e=>{
-    console.error(e);
-    toast(`${corpusLabelPlural()} failed`);
-    setStatus(`${corpusLabelPlural()} failed`);
-    setCorpusLoading(false);
-    applyModeLabels();
-  });
+  searchDepth=depth;cache=null;applyModeLabels();
+  setCorpusLoading(true,corpusLoadLabel('loading'));
+  try{
+    await loadCorpusWithRetry(2);setCorpusLoading(false);
+  }catch(e){console.error(e);setCorpusLoading(false,'load failed')}
 }
 
 function applyTheme(t){
@@ -2685,19 +2004,17 @@ function applyModeLabels(){
       corpusMode==='games' ? 'games' :
       corpusMode==='books' ? 'books' :
       corpusMode==='tv' ? 'tv shows' :
-      corpusMode==='music' ? 'records' :
-      corpusMode==='signal' ? 'Guardian signals' :
-      corpusMode==='mixed' ? 'films + games + books + tv + music + signal' :
+      corpusMode==='mixed' ? 'films + games + books + tv' :
       'films';
     hint.textContent = `search ${n} ${modeLabel} by meaning`;
   }
   const pl=$('.prompt-label');
-  if(pl)pl.textContent=corpusMode==='games'?'find a game':corpusMode==='books'?'find a book':corpusMode==='tv'?'find a show':corpusMode==='music'?'find music':corpusMode==='signal'?'read the signal':corpusMode==='mixed'?'find anything':'find a film';
+  if(pl)pl.textContent=corpusMode==='games'?'find a game':corpusMode==='books'?'find a book':corpusMode==='tv'?'find a show':corpusMode==='mixed'?'find anything':'find a film';
   const qi=$('#query');
-  if(qi)qi.placeholder=corpusMode==='games'?'describe the world, loop, mechanic, feeling, or system':corpusMode==='books'?'describe the voice, mood, idea, world, or wound':corpusMode==='tv'?'describe the world, episode, mood, institution, or obsession':corpusMode==='music'?'describe the mood, era, rhythm, artist, or memory':corpusMode==='signal'?'describe the live pattern, institution, conflict, or world state':corpusMode==='mixed'?'describe the signal, world, scene, mood, or system':'describe the scene, mood, memory, or idea';
+  if(qi)qi.placeholder=corpusMode==='games'?'describe the world, loop, mechanic, feeling, or system':corpusMode==='books'?'describe the voice, mood, idea, world, or wound':corpusMode==='tv'?'describe the world, episode, mood, institution, or obsession':corpusMode==='mixed'?'describe the signal, world, scene, mood, or system':'describe the scene, mood, memory, or idea';
   const rm=$('#resultMode');
   if(rm)rm.textContent=`${n}-${corpusMode==='mixed'?'mixed':corpusMode} corpus · ${searchDepth}`;
-  const sl=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='music'?'music':corpusMode==='signal'?'signal':corpusMode==='mixed'?'mix':'films';
+  const sl=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='mixed'?'mix':'films';
   const hb=$('#shuffleFilms');if(hb)hb.textContent=`shuffle ${sl}`;
   const rb=$('#shuffleFilmsResult');if(rb)rb.textContent=`shuffle ${sl}`;
 }
@@ -2705,7 +2022,7 @@ function applyModeLabels(){
 function corpusLoadLabel(prefix='loading'){
   const n=totalLimit();
   const d=searchDepth;
-  const m=corpusMode==='mixed'?'mixed records':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'records':'films';
+  const m=corpusMode==='mixed'?'mixed records':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':'films';
   return `${prefix} ${n} ${m} · ${d}`;
 }
 
@@ -2770,48 +2087,11 @@ const TRACES={
     'hidden systems under pressure',
     'a world older than the player'
   ],
-  signal:['a procurement notice that sounds like a war drum','a country avoiding saying it is already at war','the market realizing water is political','a headline where infrastructure becomes ideology','energy conflict hiding inside logistics','the future arriving through a boring agency notice','a live signal of institutional drift'],
-  music:[
-    'synthetic music that feels intelligent without saying so',
-    'electronic music with a pulse and a memory',
-    'machine-funk trying to become sensual through rhythm',
-    'synthetic music for a city at night',
-    'an album that sounds like circuitry discovering grief',
-    'a techno record for walking through concrete at 3am',
-    'a salsa record playing through a city at dusk',
-    'a jazz album for a room full of ghosts',
-    'country music for leaving a place forever',
-    'a metal record that sounds like prophecy',
-    'a classical piece for a machine learning grief',
-    'a reggae track for sunlight after disaster',
-    'a folk song that knows too much history',
-    'hip hop for a city remembering itself',
-    'ambient music for an empty airport',
-    'detroit machine music with human grief inside it',
-    'acid house for a corrupted neon ritual',
-    'minimal techno that feels like architecture breathing',
-    'industrial music for a beautiful system failure',
-    'an album for driving through sodium lights',
-    'music that feels like a city remembering rain',
-    'a record for grief with a pulse',
-    'something that sounds like neon and regret',
-    'a soundtrack for becoming someone else',
-    'an album that feels expensive and haunted',
-    'music for a machine learning desire',
-    'a record that sounds like late capitalism at midnight',
-    'songs for a room with no windows',
-    'music that turns loneliness into architecture',
-    'an album for a beautiful system failure',
-    'a sound between ritual and radio',
-    'music for walking away from the old version of yourself',
-    'a record that feels like surveillance becoming romance',
-    'songs that make the future feel used'
-  ],
   mixed:[
     'the square root of negative one wants culture',
     'a lonely satellite returns home',
     'a person made of equations',
-    'myth translated into film, music, books, games, and tv',
+    'myth translated into media',
     'one signal across every medium'
   ]
 };
@@ -3097,8 +2377,34 @@ async function loadBooks(limit){
   return books.slice(0,limit);
 }
 
+
+/* Static signal corpus — deterministic, thick, no stalled remote load */
+const STATIC_SIGNALS=[["How big tech got its way on Trump’s AI executive order", "Technology", 2026, "Signal Desk", "Discovery lane: platform capture, regulatory rollback, executive-order influence, AI policy leverage.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["The devil owns Amazon: big tech has infiltrated the fashion world", "Fashion", 2026, "Signal Desk", "Discovery lane: Amazon, luxury, fashion logistics, marketplace leverage, cultural capture.", "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80"], ["Designer sues Australian Shopify over alleged ghost stores he claims copied his work", "Australia news", 2026, "Signal Desk", "Discovery lane: Shopify, ghost stores, IP enforcement, copycat commerce, platform accountability.", "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80"], ["AI fault lines on show at Cannes", "Technology", 2026, "Signal Desk", "Discovery lane: Hollywood, generative AI, creative labor, authorship, IP.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Nationwide pressed to address emerging governance issues", "Business", 2026, "Signal Desk", "Discovery lane: governance pressure, quick votes, member institutions, board accountability.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["UK supply chain unprepared for major shocks such as war", "Politics", 2026, "Signal Desk", "Discovery lane: war risk, logistics, food resilience, preparedness.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=80"], ["US and Iran inch closer to peace deal as Trump faces criticism from GOP hawks", "World news", 2026, "Signal Desk", "Discovery lane: Iran, Trump, GOP hawks, diplomacy, ceasefire pressure.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Trump to meet with US negotiators to decide on Iran’s ceasefire proposal", "World news", 2026, "Signal Desk", "Discovery lane: Tehran, negotiations, ceasefire, executive decision pressure.", "https://images.unsplash.com/photo-1516937941344-00b4e0337589?auto=format&fit=crop&w=1400&q=80"], ["Middle East crisis: oil prices fall amid optimism over US-Iran deal", "World news", 2026, "Signal Desk", "Discovery lane: oil markets, diplomatic risk, Iran, energy volatility.", "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1400&q=80"], ["Republican lawmakers warn of disastrous mistake as Trump nears Iran deal", "World news", 2026, "Signal Desk", "Discovery lane: GOP pressure, hardliners, foreign policy backlash.", "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1400&q=80"], ["Trump says he does not make bad deals, but hawks doubt that now", "World news", 2026, "Signal Desk", "Discovery lane: deal rhetoric, Iranian assets, domestic backlash.", "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1400&q=80"], ["Mood in Russia turns against Putin", "World news", 2026, "Signal Desk", "Discovery lane: Russia, Putin, war fatigue, elite uncertainty.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["GPS jammed on RAF jet near Russian border", "World news", 2026, "Signal Desk", "Discovery lane: GPS jamming, RAF, Russia, electronic warfare.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Gunman near White House was known to Secret Service", "US news", 2026, "Signal Desk", "Discovery lane: White House, Secret Service, threat intelligence, security failure.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Labor urged to restore public confidence in anti-corruption watchdog", "Australia news", 2026, "Signal Desk", "Discovery lane: anti-corruption, public trust, watchdog appointment.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Immigration detention failures and prediction market bets alarm officials", "Australia news", 2026, "Signal Desk", "Discovery lane: detention, prediction markets, institutional failure.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Central banks warn AI trading systems could amplify market shocks", "Markets", 2026, "Signal Desk", "Discovery lane: AI trading, central banks, market structure, volatility.", "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80"], ["Cloud concentration risk becomes board-level concern after cascading outages", "Technology", 2026, "Signal Desk", "Discovery lane: cloud, concentration risk, AWS, Azure, enterprise dependency.", "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80"], ["Private equity rolls up critical software vendors used by hospitals and municipalities", "Business", 2026, "Signal Desk", "Discovery lane: PE rollups, healthcare IT, municipal systems, procurement.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Defense startups move from drones to decision software", "Defense", 2026, "Signal Desk", "Discovery lane: defense tech, procurement, JADC2, autonomy.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Prediction markets become shadow polling infrastructure", "Politics", 2026, "Signal Desk", "Discovery lane: prediction markets, campaign intelligence, odds, regulation.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=80"], ["AI search companies negotiate default placement with mobile browsers", "Technology", 2026, "Signal Desk", "Discovery lane: browsers, distribution, default search, AI assistants.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Chip export controls create black-market routing through secondary jurisdictions", "Geopolitics", 2026, "Signal Desk", "Discovery lane: chips, export controls, sanctions, covert logistics.", "https://images.unsplash.com/photo-1516937941344-00b4e0337589?auto=format&fit=crop&w=1400&q=80"], ["Water rights become the next data-center bottleneck", "Infrastructure", 2026, "Signal Desk", "Discovery lane: data centers, water, AI infrastructure, local permitting.", "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1400&q=80"], ["Corporate landlords use algorithmic pricing while cities investigate rent coordination", "Housing", 2026, "Signal Desk", "Discovery lane: housing, algorithms, landlords, antitrust.", "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1400&q=80"], ["Autonomous vehicle companies pivot from robotaxis to freight corridors", "Transport", 2026, "Signal Desk", "Discovery lane: robotaxis, freight, autonomy, logistics.", "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1400&q=80"], ["Satellite imagery firms compete to own insurance risk scoring", "Insurance", 2026, "Signal Desk", "Discovery lane: satellites, insurance, climate risk, actuarial infrastructure.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Streaming platforms test synthetic actors for localized ad creative", "Media", 2026, "Signal Desk", "Discovery lane: synthetic actors, streaming, advertising, localization.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Hospital systems deploy AI triage while liability remains unresolved", "Healthcare", 2026, "Signal Desk", "Discovery lane: clinical AI, hospitals, liability, triage automation.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Universities license student data tools as enrollment pressure rises", "Education", 2026, "Signal Desk", "Discovery lane: student data, analytics, retention, behavioral prediction.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Energy traders watch AI data centers as new marginal load", "Energy", 2026, "Signal Desk", "Discovery lane: power grid, AI data centers, energy trading.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Municipal surveillance contracts bundled into traffic safety modernization", "Cities", 2026, "Signal Desk", "Discovery lane: smart cities, traffic cameras, surveillance, procurement.", "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80"], ["Banks rebuild fraud systems around behavioral biometrics", "Finance", 2026, "Signal Desk", "Discovery lane: fraud, biometrics, identity, banking.", "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80"], ["Defense contractors package LLMs as secure mission assistants", "Defense", 2026, "Signal Desk", "Discovery lane: LLMs, defense contractors, secure assistants, procurement.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Adtech firms reposition identity graphs as clean-room measurement", "Advertising", 2026, "Signal Desk", "Discovery lane: clean rooms, identity graphs, adtech, privacy language.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Shipping insurers monitor Strait of Hormuz risk through alternative data", "Markets", 2026, "Signal Desk", "Discovery lane: Hormuz, insurance, shipping, oil volatility.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=80"], ["Semiconductor suppliers audit hidden China exposure across subcontractors", "Supply Chain", 2026, "Signal Desk", "Discovery lane: semiconductors, supplier graphs, China exposure, compliance.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Media companies explore coherence search as archive monetization layer", "Media", 2026, "Signal Desk", "Discovery lane: semantic retrieval, archive monetization, licensing.", "https://images.unsplash.com/photo-1516937941344-00b4e0337589?auto=format&fit=crop&w=1400&q=80"], ["AI procurement rules split agencies between speed and safety", "Government", 2026, "Signal Desk", "Discovery lane: AI procurement, compliance, agency modernization.", "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1400&q=80"], ["Grid operators delay interconnects as data-center demand surges", "Energy", 2026, "Signal Desk", "Discovery lane: interconnect queues, data centers, grid constraints.", "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1400&q=80"], ["Fashion platforms face backlash over synthetic storefronts", "Fashion", 2026, "Signal Desk", "Discovery lane: platform commerce, synthetic stores, brand dilution.", "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1400&q=80"], ["Insurers price wildfire exposure with private satellite feeds", "Insurance", 2026, "Signal Desk", "Discovery lane: wildfire, satellites, private data, risk pricing.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Ports adopt autonomous inspection drones amid labor pressure", "Supply Chain", 2026, "Signal Desk", "Discovery lane: ports, drones, labor, inspection automation.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Regulators examine model risk in automated credit decisions", "Finance", 2026, "Signal Desk", "Discovery lane: credit models, model risk, lending, regulation.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["AI agents begin negotiating SaaS renewals for enterprise buyers", "Enterprise", 2026, "Signal Desk", "Discovery lane: agents, procurement, SaaS, negotiation.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Cities consider bans on facial recognition in transit systems", "Cities", 2026, "Signal Desk", "Discovery lane: facial recognition, transit, privacy, municipal policy.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Quantum startups chase optimization contracts before hardware maturity", "Technology", 2026, "Signal Desk", "Discovery lane: quantum, optimization, enterprise pilots.", "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80"], ["Retailers use computer vision to score shelf compliance", "Retail", 2026, "Signal Desk", "Discovery lane: computer vision, store operations, surveillance retail.", "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80"], ["Defense exercises expose gap between sensor data and command decisions", "Defense", 2026, "Signal Desk", "Discovery lane: C2, sensor fusion, decision latency.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Election campaigns build influencer war rooms around short-video platforms", "Politics", 2026, "Signal Desk", "Discovery lane: influencers, campaigns, TikTok, political media.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Pharma companies use AI to reprioritize dormant drug libraries", "Healthcare", 2026, "Signal Desk", "Discovery lane: drug discovery, AI triage, pharma pipelines.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=80"], ["Universities weigh AI tutors against academic integrity risk", "Education", 2026, "Signal Desk", "Discovery lane: AI tutors, integrity, higher education.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Real estate funds mark down office towers while data centers surge", "Markets", 2026, "Signal Desk", "Discovery lane: commercial real estate, data centers, capital rotation.", "https://images.unsplash.com/photo-1516937941344-00b4e0337589?auto=format&fit=crop&w=1400&q=80"], ["Airlines test biometric boarding across international routes", "Transport", 2026, "Signal Desk", "Discovery lane: biometrics, airports, identity, travel.", "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1400&q=80"], ["Law firms package AI review tools as fixed-fee litigation products", "Legal", 2026, "Signal Desk", "Discovery lane: eDiscovery, AI review, fixed-fee law.", "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1400&q=80"], ["Cyber insurers demand proof of recovery drills before coverage renewals", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: cyber insurance, resilience, recovery drills.", "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1400&q=80"], ["State governments centralize unemployment systems after fraud waves", "Government", 2026, "Signal Desk", "Discovery lane: benefits systems, fraud, modernization.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Open-source maintainers become critical infrastructure chokepoints", "Technology", 2026, "Signal Desk", "Discovery lane: open source, supply chain, maintainer risk.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Consumer banks quietly add transaction-level carbon scoring", "Finance", 2026, "Signal Desk", "Discovery lane: carbon scoring, banking, transaction data.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Warehouse robotics firms pivot to software subscriptions", "Logistics", 2026, "Signal Desk", "Discovery lane: robotics, warehouse automation, SaaS.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Sports leagues test AI-generated alternate broadcasts", "Media", 2026, "Signal Desk", "Discovery lane: sports, synthetic media, personalized broadcasts.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Climate adaptation bonds attract infrastructure investors", "Infrastructure", 2026, "Signal Desk", "Discovery lane: climate finance, adaptation bonds, resilience.", "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80"], ["Luxury brands build private clienteling graphs to bypass platforms", "Retail", 2026, "Signal Desk", "Discovery lane: luxury, identity graphs, direct commerce.", "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80"]];
+
+function staticSignalRecord(row){
+  const [title,section,year,source,summary,image]=row;
+  return {
+    type:'signal',
+    title,
+    section,
+    year:String(year||''),
+    source,
+    overview:`${title}. Source: ${source}. Published: ${year}. Section: ${section}. ${summary}`,
+    image,
+    src:image,
+    externalUrl:`https://www.google.com/search?q=${encodeURIComponent(title)}`
+  };
+}
+
+async function loadSignals(limit){
+  const base=STATIC_SIGNALS.map(staticSignalRecord);
+  const offset=(Math.abs((corpusPageOffset||0)+(shuffleSeed||0)))%base.length;
+  const rotated=base.slice(offset).concat(base.slice(0,offset));
+  const out=[];
+  while(out.length<limit)out.push(...rotated);
+  return out.slice(0,limit);
+}
+
 </script>
 </body>
 </html>
-
-so corpus is failing to load for guardian - can you fix it also the ribbon is expanding into the tiles where it is signals, events, etc, that needs to be fixed
