@@ -1550,6 +1550,12 @@ body.wall-refreshing:not(.has-results) .wall-cell.media-signal{
   }
 }
 
+
+/* single loading indicator: use the left corpus loader only, never a floating wall badge */
+.wall-transition-overlay{
+  display:none !important;
+}
+
 </style>
 </head>
 <body data-mode="film">
@@ -2126,9 +2132,9 @@ function renderLoadingWall(mode=corpusMode){
   if(!wall)return;
   stopOracleDrift();
   document.body.classList.add('wall-refreshing');
-  showWallTransitionOverlay(mode);
+  removeWallTransitionOverlay();
   /* Preserve existing tiles during mode/depth/shuffle loads.
-     Only clear when there is literally nothing to preserve. */
+     The left corpus loader is the only visible loading indicator. */
   if(!wall.querySelector('.wall-cell') && !wall.children.length){
     wall.innerHTML='';
   }
@@ -2413,7 +2419,7 @@ async function setCorpusMode(mode){
     if(requestId!==corpusRequestId)return;
     console.error(e);
     setCorpusLoading(false,'load failed');
-    showWallTransitionOverlay(corpusMode);
+    removeWallTransitionOverlay();
   }
 }
 
@@ -2428,7 +2434,7 @@ async function setSearchDepth(depth){
     if(requestId===corpusRequestId)setCorpusLoading(false);
   }catch(e){
     if(requestId!==corpusRequestId)return;
-    console.error(e);setCorpusLoading(false,'load failed');showWallTransitionOverlay(corpusMode)
+    console.error(e);setCorpusLoading(false,'load failed');removeWallTransitionOverlay()
   }
 }
 
