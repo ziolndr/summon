@@ -1542,6 +1542,7 @@ const TVMAZE_URL='https://api.tvmaze.com/shows';
 const ITUNES_URL='https://itunes.apple.com/search';
 const CURRENTS_API_KEY='6leo9dON1EuYXb3edmMrZAFmzome8D3JHlYZqFgUcA-CAaoO';
 const CURRENTS_SEARCH_URL='https://api.currentsapi.services/v1/search';
+const CURRENTS_LATEST_URL='https://api.currentsapi.services/v1/latest-news';
 const RAWG_PAGE_SIZE=40;
 
 const DEPTHS={
@@ -1943,21 +1944,39 @@ function signalDomainLooksBad(domain=''){
 }
 
 async function fetchSignalBatch(query,maxrecords=100,timespan='3days'){
-  const now=new Date();
-  const days=timespan==='7days'?7:timespan==='3days'?3:1;
-  const start=new Date(now.getTime()-days*24*60*60*1000).toISOString().slice(0,10);
-  const p=new URLSearchParams({
+  const pageSize=String(Math.min(100,Math.max(25,maxrecords)));
+
+  const searchParams=new URLSearchParams({
     apiKey:CURRENTS_API_KEY,
     keywords:query,
     language:'en',
-    start_date:start,
-    page_size:String(Math.min(200,maxrecords))
+    page_size:pageSize
   });
-  const res=await fetch(`${CURRENTS_SEARCH_URL}?${p}`,{cache:'no-store'});
-  if(!res.ok)throw new Error(`currents ${res.status}`);
-  const data=await res.json();
-  if(data.status&&data.status!=='ok')throw new Error(data.message||'currents failed');
-  return data;
+
+  const searchUrl=`${CURRENTS_SEARCH_URL}?${searchParams}`;
+
+  try{
+    const res=await fetch(searchUrl,{cache:'no-store'});
+    if(!res.ok)throw new Error(`currents search ${res.status}`);
+    const data=await res.json();
+    if(data.status&&data.status!=='ok')throw new Error(data.message||'currents search failed');
+    if(Array.isArray(data.news)&&data.news.length)return data;
+  }catch(e){
+    console.warn('currents search failed, trying latest-news',e);
+  }
+
+  const latestParams=new URLSearchParams({
+    apiKey:CURRENTS_API_KEY,
+    language:'en',
+    page_size:pageSize
+  });
+
+  const latestUrl=`${CURRENTS_LATEST_URL}?${latestParams}`;
+  const latest=await fetch(latestUrl,{cache:'no-store'});
+  if(!latest.ok)throw new Error(`currents latest ${latest.status}`);
+  const latestData=await latest.json();
+  if(latestData.status&&latestData.status!=='ok')throw new Error(latestData.message||'currents latest failed');
+  return latestData;
 }
 
 function signalRecord(a,lane='live world'){
@@ -2006,7 +2025,7 @@ async function loadSignal(limit){
   setCorpusLoading(true,`loading ${limit} live signals · ${searchDepth}`);
   const seen=new Set();
   const out=[];
-  const per=Math.min(200,Math.max(70,Math.ceil(limit/2)));
+  const per=Math.min(100,Math.max(40,Math.ceil(limit/3)));
   const span=searchDepth==='archive'?'7days':searchDepth==='field'?'3days':'24hours';
 
   const laneIndexes=SIGNAL_LANES.map((_,i)=>i).sort((a,b)=>{
@@ -2037,12 +2056,17 @@ async function loadSignal(limit){
   }
 
   const cleaned=out.filter(isQualitySignalRecord);
-  if(!cleaned.length){
-    const message=lastError?.message||'Currents returned no quality image-backed live articles';
+  const imageBacked=out.filter(x=>x&&x.type==='signal'&&x.image&&!signalImageLooksBad(x.image));
+
+  const finalRows=cleaned.length?cleaned:imageBacked;
+
+  if(!finalRows.length){
+    const message=lastError?.message||'Currents returned no image-backed live articles';
     setStatus(`signal failed · ${message}`);
     throw new Error(message);
   }
-  return cleaned.slice(0,limit);
+
+  return finalRows.slice(0,limit);
 }
 
 
