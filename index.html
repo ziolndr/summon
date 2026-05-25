@@ -1442,7 +1442,7 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]::after{
   <div class="search-pane">
     <div>
       <div class="brand" aria-label="SUMMON">SUMMON</div>
-      <div class="prompt-label">find a film</div>
+      <div class="prompt-label" id="eyebrow">find a film</div>
       <form id="searchForm" class="search-form">
         <input id="query" autocomplete="off" spellcheck="false" inputmode="search" enterkeyhint="search" placeholder="describe the scene, mood, memory, or idea">
         <button id="go" aria-label="Search">→</button>
@@ -2216,8 +2216,22 @@ function applyModeLabels(){
   const hint = document.querySelector('#modeHint');
   if(hint) hint.textContent = `search ${n} ${corpusLabel} by meaning`;
 
-  const eyebrow = document.querySelector('#eyebrow');
+  const eyebrow = document.querySelector('#eyebrow') || document.querySelector('.prompt-label');
   if(eyebrow) eyebrow.textContent = actionLabel;
+
+  const placeholders = {
+    signal: 'describe a geopolitical pattern, risk, actor, region, or system pressure',
+    mixed: 'describe the scene, system, mood, memory, or idea',
+    games: 'describe the world, mechanic, feeling, or system',
+    books: 'describe the theme, voice, era, symbol, or idea',
+    tv: 'describe the premise, tone, character dynamic, or world',
+    film: 'describe the scene, mood, memory, or idea'
+  };
+  if(query) query.placeholder = placeholders[corpusMode] || placeholders.film;
+  if(resultQuery) resultQuery.placeholder = corpusMode==='signal' ? 'edit the signal search' : 'edit the search';
+
+  const resultMode = document.querySelector('#resultMode');
+  if(resultMode) resultMode.textContent = `${corpusMode==='signal'?'signal':corpusMode} corpus · ${searchDepth}`;
 
   const ready = document.querySelector('#readyLine');
   if(ready) ready.textContent = `ready ${n} ${corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':corpusLabel} · ${searchDepth}`;
