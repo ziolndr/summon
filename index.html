@@ -1452,6 +1452,40 @@ body[data-mode="signal"]:not(.has-results) .film-wall{
   flex:0 0 auto !important;
 }
 
+
+/* contain corpus/depth ribbon strictly inside the search pane */
+.top{
+  overflow:hidden !important;
+}
+
+.search-pane{
+  min-width:0 !important;
+  overflow:hidden !important;
+  contain:layout paint !important;
+}
+
+.mode-row{
+  width:100% !important;
+  max-width:100% !important;
+  display:flex !important;
+  flex-wrap:wrap !important;
+  gap:8px !important;
+  overflow:visible !important;
+}
+
+.toggle-group{
+  flex:0 1 auto !important;
+  max-width:100% !important;
+  display:inline-flex !important;
+  flex-wrap:wrap !important;
+  white-space:normal !important;
+}
+
+.toggle-btn{
+  flex:0 0 auto !important;
+  white-space:nowrap !important;
+}
+
 </style>
 </head>
 <body>
@@ -2072,9 +2106,7 @@ function fetchGdeltJsonp(url, timeoutMs=15000){
 
 
 async function fetchSignalBatch(query,maxrecords=75,timespan='24h'){
-  // GDELT DOC API via JSONP only. Direct fetch is avoided because the deployed domain can be CORS-blocked.
   const span=timespan==='24hours'?'24h':timespan==='3days'?'3d':timespan==='7days'?'7d':timespan;
-
   const cleanQuery=String(query||'').trim();
   const q=/\bOR\b|\bAND\b/i.test(cleanQuery)
     ? `(${cleanQuery}) sourcelang:english`
@@ -2202,52 +2234,95 @@ const WORLD_CORPORA={
   }
 };
 
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
 async function loadSignal(limit){
   setCorpusLoading(true,`loading ${limit} live signals · ${searchDepth}`);
-  const seen=new Set();
-  const out=[];
-  const per=searchDepth==='archive'?75:searchDepth==='field'?50:35;
-  const span=searchDepth==='archive'?'7d':searchDepth==='field'?'3d':'24h';
 
-  const laneCap=searchDepth==='archive'?3:searchDepth==='field'?2:1;
-  const laneIndexes=SIGNAL_LANES.map((_,i)=>i).sort((a,b)=>{
+  const per  = searchDepth==='archive'?250:searchDepth==='field'?150:100;
+  const span = searchDepth==='archive'?'7d':searchDepth==='field'?'3d':'24h';
+
+  // Combine multiple lanes into ONE GDELT request — avoids request bursts / 429s.
+  const laneCap = searchDepth==='archive'?8:searchDepth==='field'?6:4;
+  const laneIndexes = SIGNAL_LANES.map((_,i)=>i).sort((a,b)=>{
     const ax=(a*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
     const bx=(b*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
     return ax-bx;
   }).slice(0,laneCap);
 
-  let lastError=null;
-  for(let i=0;i<laneIndexes.length && out.length<limit;i++){
-    const lane=SIGNAL_LANES[laneIndexes[i]];
+  const selectedLanes = laneIndexes.map(i=>SIGNAL_LANES[i]);
+  const combinedQuery = selectedLanes
+    .map(l=>l.includes(' ')?`(${l})`:l)
+    .join(' OR ');
+
+  const seen = new Set();
+  const out  = [];
+  let lastError = null;
+  let data = null;
+
+  // Single combined request with exponential backoff.
+  for(let attempt=0; attempt<4 && !data; attempt++){
     try{
-      const data=await fetchSignalBatch(lane,per,span);
-      const articles=Array.isArray(data?.articles)?data.articles:[];
-      for(const article of articles){
-        const rec=signalRecord(article,lane);
-        if(!rec)continue;
-        const key=rec.title+'|'+rec.domain;
-        if(seen.has(key))continue;
-        seen.add(key);
-        out.push(rec);
-        if(out.length>=limit)break;
-      }
+      data = await fetchSignalBatch(combinedQuery, per, span);
     }catch(e){
-      lastError=e;
-      console.warn('signal lane failed',lane,e);
+      lastError = e;
+      if(attempt < 3){
+        const wait = 2500 * Math.pow(2, attempt);
+        setCorpusLoading(true, `gdelt throttled · retry ${attempt+1}/3 in ${Math.round(wait/1000)}s`);
+        await sleep(wait);
+      }
     }
   }
 
-  const cleaned=out.filter(isQualitySignalRecord);
-  const imageBacked=out.filter(x=>x&&x.type==='signal'&&x.image&&!signalImageLooksBad(x.image));
-  const finalRows=cleaned.length?cleaned:imageBacked;
+  if(data){
+    const articles = Array.isArray(data?.articles) ? data.articles : [];
+    for(const article of articles){
+      // Tag each article with the most relevant selected lane.
+      const title = String(article?.title||'').toLowerCase();
+      const lane = selectedLanes.find(l=>{
+        const words = l.toLowerCase().split(/\s+/).filter(w=>w.length>3);
+        return words.some(w=>title.includes(w));
+      }) || selectedLanes[0];
+
+      const rec = signalRecord(article, lane);
+      if(!rec) continue;
+      const key = rec.title + '|' + rec.domain;
+      if(seen.has(key)) continue;
+      seen.add(key);
+      out.push(rec);
+      if(out.length >= limit) break;
+    }
+  }
+
+  // One broad fallback after a cooldown, still live GDELT only.
+  if(!out.length && lastError){
+    await sleep(3000);
+    try{
+      const fallbackData = await fetchSignalBatch('geopolitics OR conflict OR energy', per, span);
+      const articles = Array.isArray(fallbackData?.articles) ? fallbackData.articles : [];
+      for(const article of articles){
+        const rec = signalRecord(article, 'live world');
+        if(!rec) continue;
+        const key = rec.title + '|' + rec.domain;
+        if(seen.has(key)) continue;
+        seen.add(key);
+        out.push(rec);
+        if(out.length >= limit) break;
+      }
+    }catch(e){ lastError = e; }
+  }
+
+  const cleaned     = out.filter(isQualitySignalRecord);
+  const imageBacked = out.filter(x=>x && x.type==='signal' && x.image && !signalImageLooksBad(x.image));
+  const finalRows   = cleaned.length ? cleaned : imageBacked;
 
   if(!finalRows.length){
-    const message=lastError?.message||'GDELT JSONP returned no image-backed live articles';
+    const message = lastError?.message || 'GDELT returned no image-backed live articles';
     setStatus(`signal failed · ${message}`);
     throw new Error(message);
   }
 
-  return finalRows.slice(0,limit);
+  return finalRows.slice(0, limit);
 }
 
 
