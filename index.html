@@ -1417,7 +1417,7 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
 
 </style>
 </head>
-<body>
+<body data-mode="film">
 <section class="top">
   <div class="search-pane">
     <div>
@@ -1592,14 +1592,18 @@ function filmLimit(){return corpusMode==='mixed'?getLimit('mixedFilm'):getLimit(
 function gameLimit(){return corpusMode==='mixed'?getLimit('mixedGames'):getLimit('games')}
 function bookLimit(){return corpusMode==='mixed'?getLimit('mixedBooks'):getLimit('books')}
 function tvLimit(){return corpusMode==='mixed'?getLimit('mixedTv'):getLimit('tv')}
+
 function totalLimit(){
   if(corpusMode==='signal')return searchDepth==='archive'?3000:1000;
-  if(corpusMode==='mixed')return mixedLimit();
+  if(corpusMode==='mixed'){
+    return searchDepth==='archive'?500:searchDepth==='field'?260:120;
+  }
   if(corpusMode==='books')return bookLimit();
   if(corpusMode==='games')return gameLimit();
   if(corpusMode==='tv')return tvLimit();
   return filmLimit();
 }
+
 
 async function fetchRawgPage(page=1){
   const p=new URLSearchParams({key:RAWG_KEY,page:String(page),page_size:String(RAWG_PAGE_SIZE),ordering:'-metacritic',dates:'1998-01-01,2026-12-31'});
@@ -1804,29 +1808,36 @@ function finalizeCorpus(movies){
   return cache;
 }
 
+
 async function loadCorpus(){
   if(cache && cache.mode===corpusMode && cache.depth===searchDepth)return cache;
 
   let items=[];
-  if(corpusMode==='signal')items=await loadSignals(totalLimit());
-  else if(corpusMode==='books')items=await loadBooks(totalLimit());
-  else if(corpusMode==='games')items=await loadGames(totalLimit());
-  else if(corpusMode==='tv')items=await loadTV(totalLimit());
-  else if(corpusMode==='mixed'){
+  if(corpusMode==='signal'){
+    items=await loadSignals(totalLimit());
+  }else if(corpusMode==='books'){
+    items=await loadBooks(totalLimit());
+  }else if(corpusMode==='games'){
+    items=await loadGames(totalLimit());
+  }else if(corpusMode==='tv'){
+    items=await loadTV(totalLimit());
+  }else if(corpusMode==='mixed'){
+    const per=Math.max(20,Math.ceil(totalLimit()/5));
     const pools=await Promise.all([
-      loadFilms(Math.ceil(totalLimit()/5)),
-      loadGames(Math.ceil(totalLimit()/5)),
-      loadBooks(Math.ceil(totalLimit()/5)),
-      loadTV(Math.ceil(totalLimit()/5)),
-      loadSignals(Math.ceil(totalLimit()/5))
+      loadFilms(per),
+      loadGames(per),
+      loadBooks(per),
+      loadTV(per),
+      loadSignals(per)
     ]);
-    items=pools.flat();
+    items=pools.flat().slice(0,totalLimit());
   }else{
+    corpusMode='film';
     items=await loadFilms(totalLimit());
   }
 
   const map=new Map();
-  const candidates=items.map((m,i)=>{
+  const candidates=items.map(m=>{
     const text=candidateText(m);
     map.set(text,m);
     return text;
@@ -1837,12 +1848,14 @@ async function loadCorpus(){
   return cache;
 }
 
-async function loadCorpusWithRetry(attempts=2){
-  let lastErr;
-  for(let i=0;i<attempts;i++){
-    try{return await loadCorpus()}catch(e){lastErr=e;await new Promise(r=>setTimeout(r,450+i*850))}
+
+async function loadCorpusWithRetry(tries=2){
+  let last;
+  for(let i=0;i<tries;i++){
+    try{return await loadCorpus()}
+    catch(e){last=e; await new Promise(r=>setTimeout(r,250))}
   }
-  throw lastErr;
+  throw last;
 }
 
 // ─── Search ───
@@ -2469,11 +2482,13 @@ async function loadSignals(limit){
 
 function signalLimit(){return searchDepth==='archive'?3000:1000}
 
+
 function candidateText(m){
-  if(m.type==='signal')return `${m.title}. ${m.section||''}. ${m.overview||''}`;
+  if(m.type==='signal')return `${m.title}. ${m.section||''}. ${m.source||''}. ${m.overview||''}`;
   if(m.type==='book')return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.subjects||[]).join(', ')}. ${m.overview||''}`;
   return `${m.title}. ${m.year||''}. ${(m.genres||[]).join(' ')}. ${m.overview||''}`;
 }
+
 </script>
 </body>
 </html>
