@@ -1415,6 +1415,28 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
   }
 }
 
+
+/* ─── Signal mode: no stock photography, no duplicate-looking image wall ─── */
+body[data-mode="signal"]:not(.has-results) .wall-cell,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]{
+  background:#0a0a0a !important;
+  box-shadow:0 0 0 1px rgba(244,241,235,.08) !important;
+}
+body[data-mode="signal"]:not(.has-results) .wall-cell img,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"] img{
+  filter:none !important;
+  transform:none !important;
+  object-fit:cover !important;
+}
+body[data-mode="signal"]:not(.has-results) .wall-cell::before,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]::before{
+  opacity:.28 !important;
+}
+body[data-mode="signal"]:not(.has-results) .wall-cell::after,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]::after{
+  opacity:.08 !important;
+}
+
 </style>
 </head>
 <body data-mode="film">
@@ -1606,7 +1628,7 @@ function bookLimit(){return corpusMode==='mixed'?getLimit('mixedBooks'):getLimit
 function tvLimit(){return corpusMode==='mixed'?getLimit('mixedTv'):getLimit('tv')}
 
 function totalLimit(){
-  if(corpusMode==='signal')return searchDepth==='archive'?3000:1000;
+  if(corpusMode==='signal')return signalLimit();
   if(corpusMode==='mixed'){
     return searchDepth==='archive'?500:searchDepth==='field'?260:120;
   }
@@ -1888,15 +1910,15 @@ async function loadTV(limit){
 
 function renderWall(movies){
   const sample=[...movies]
-    .map(m=>({...m,src:still(m,'w780')||poster(m,'w500')}))
+    .map((m,i)=>({...m,wallIndex:i,src:still(m,'w780')||poster(m,'w500')}))
     .filter(m=>m.src&&m.src.length>15)
     .sort(()=>Math.random()-.5)
     .slice(0,48);
 
   $('#wall').innerHTML=sample.map(m=>
-    `<div class="wall-cell media-${esc(m.type||'film')}" data-type="${esc(m.type||'film')}" data-title="${esc(m.title)}" data-author="${esc((m.authors||[])[0]||m.author||'')}" data-year="${esc(m.year||'')}" data-genres="${esc((m.genres||[]).join(', '))}">
+    `<div class="wall-cell media-${esc(m.type||'film')}" data-type="${esc(m.type||'film')}" data-title="${esc(m.title)}" data-author="${esc((m.authors||[])[0]||m.author||'')}" data-year="${esc(m.year||'')}" data-section="${esc(m.section||'')}" data-source="${esc(m.source||'')}" data-index="${esc(m.wallIndex||0)}" data-genres="${esc((m.genres||[]).join(', '))}">
       <img src="${m.src}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"
-           onerror="this.onerror=null;const c=this.closest('.wall-cell');const t=c?.dataset?.type;if(t==='book'){this.src=fallbackBookCover(c.dataset.title,c.dataset.author||'')}else if(t==='film'){this.src=fallbackFilmStill(c.dataset.title,c.dataset.year||'',String(c.dataset.genres||'').split(',').map(s=>s.trim()).filter(Boolean))}else{c?.remove()}">
+           onerror="this.onerror=null;const c=this.closest('.wall-cell');const t=c?.dataset?.type;if(t==='book'){this.src=fallbackBookCover(c.dataset.title,c.dataset.author||'')}else if(t==='film'){this.src=fallbackFilmStill(c.dataset.title,c.dataset.year||'',String(c.dataset.genres||'').split(',').map(s=>s.trim()).filter(Boolean))}else if(t==='signal'){this.src=fallbackSignalCard(c.dataset.title,c.dataset.section||'',c.dataset.source||'',Number(c.dataset.index||0))}else{c?.remove()}">
     </div>`
   ).join('');
 
@@ -2565,36 +2587,192 @@ async function loadBooks(limit){
 }
 
 
-/* Static signal corpus — deterministic, thick, no stalled remote load */
-const STATIC_SIGNALS=[["How big tech got its way on Trump’s AI executive order", "Technology", 2026, "Signal Desk", "Discovery lane: platform capture, regulatory rollback, executive-order influence, AI policy leverage.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["The devil owns Amazon: big tech has infiltrated the fashion world", "Fashion", 2026, "Signal Desk", "Discovery lane: Amazon, luxury, fashion logistics, marketplace leverage, cultural capture.", "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80"], ["Designer sues Australian Shopify over alleged ghost stores he claims copied his work", "Australia news", 2026, "Signal Desk", "Discovery lane: Shopify, ghost stores, IP enforcement, copycat commerce, platform accountability.", "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80"], ["AI fault lines on show at Cannes", "Technology", 2026, "Signal Desk", "Discovery lane: Hollywood, generative AI, creative labor, authorship, IP.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Nationwide pressed to address emerging governance issues", "Business", 2026, "Signal Desk", "Discovery lane: governance pressure, quick votes, member institutions, board accountability.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["UK supply chain unprepared for major shocks such as war", "Politics", 2026, "Signal Desk", "Discovery lane: war risk, logistics, food resilience, preparedness.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=80"], ["US and Iran inch closer to peace deal as Trump faces criticism from GOP hawks", "World news", 2026, "Signal Desk", "Discovery lane: Iran, Trump, GOP hawks, diplomacy, ceasefire pressure.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Trump to meet with US negotiators to decide on Iran’s ceasefire proposal", "World news", 2026, "Signal Desk", "Discovery lane: Tehran, negotiations, ceasefire, executive decision pressure.", "https://images.unsplash.com/photo-1516937941344-00b4e0337589?auto=format&fit=crop&w=1400&q=80"], ["Middle East crisis: oil prices fall amid optimism over US-Iran deal", "World news", 2026, "Signal Desk", "Discovery lane: oil markets, diplomatic risk, Iran, energy volatility.", "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1400&q=80"], ["Republican lawmakers warn of disastrous mistake as Trump nears Iran deal", "World news", 2026, "Signal Desk", "Discovery lane: GOP pressure, hardliners, foreign policy backlash.", "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1400&q=80"], ["Trump says he does not make bad deals, but hawks doubt that now", "World news", 2026, "Signal Desk", "Discovery lane: deal rhetoric, Iranian assets, domestic backlash.", "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1400&q=80"], ["Mood in Russia turns against Putin", "World news", 2026, "Signal Desk", "Discovery lane: Russia, Putin, war fatigue, elite uncertainty.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["GPS jammed on RAF jet near Russian border", "World news", 2026, "Signal Desk", "Discovery lane: GPS jamming, RAF, Russia, electronic warfare.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Gunman near White House was known to Secret Service", "US news", 2026, "Signal Desk", "Discovery lane: White House, Secret Service, threat intelligence, security failure.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Labor urged to restore public confidence in anti-corruption watchdog", "Australia news", 2026, "Signal Desk", "Discovery lane: anti-corruption, public trust, watchdog appointment.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Immigration detention failures and prediction market bets alarm officials", "Australia news", 2026, "Signal Desk", "Discovery lane: detention, prediction markets, institutional failure.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Central banks warn AI trading systems could amplify market shocks", "Markets", 2026, "Signal Desk", "Discovery lane: AI trading, central banks, market structure, volatility.", "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80"], ["Cloud concentration risk becomes board-level concern after cascading outages", "Technology", 2026, "Signal Desk", "Discovery lane: cloud, concentration risk, AWS, Azure, enterprise dependency.", "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80"], ["Private equity rolls up critical software vendors used by hospitals and municipalities", "Business", 2026, "Signal Desk", "Discovery lane: PE rollups, healthcare IT, municipal systems, procurement.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Defense startups move from drones to decision software", "Defense", 2026, "Signal Desk", "Discovery lane: defense tech, procurement, JADC2, autonomy.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Prediction markets become shadow polling infrastructure", "Politics", 2026, "Signal Desk", "Discovery lane: prediction markets, campaign intelligence, odds, regulation.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=80"], ["AI search companies negotiate default placement with mobile browsers", "Technology", 2026, "Signal Desk", "Discovery lane: browsers, distribution, default search, AI assistants.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Chip export controls create black-market routing through secondary jurisdictions", "Geopolitics", 2026, "Signal Desk", "Discovery lane: chips, export controls, sanctions, covert logistics.", "https://images.unsplash.com/photo-1516937941344-00b4e0337589?auto=format&fit=crop&w=1400&q=80"], ["Water rights become the next data-center bottleneck", "Infrastructure", 2026, "Signal Desk", "Discovery lane: data centers, water, AI infrastructure, local permitting.", "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1400&q=80"], ["Corporate landlords use algorithmic pricing while cities investigate rent coordination", "Housing", 2026, "Signal Desk", "Discovery lane: housing, algorithms, landlords, antitrust.", "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1400&q=80"], ["Autonomous vehicle companies pivot from robotaxis to freight corridors", "Transport", 2026, "Signal Desk", "Discovery lane: robotaxis, freight, autonomy, logistics.", "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1400&q=80"], ["Satellite imagery firms compete to own insurance risk scoring", "Insurance", 2026, "Signal Desk", "Discovery lane: satellites, insurance, climate risk, actuarial infrastructure.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Streaming platforms test synthetic actors for localized ad creative", "Media", 2026, "Signal Desk", "Discovery lane: synthetic actors, streaming, advertising, localization.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Hospital systems deploy AI triage while liability remains unresolved", "Healthcare", 2026, "Signal Desk", "Discovery lane: clinical AI, hospitals, liability, triage automation.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Universities license student data tools as enrollment pressure rises", "Education", 2026, "Signal Desk", "Discovery lane: student data, analytics, retention, behavioral prediction.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Energy traders watch AI data centers as new marginal load", "Energy", 2026, "Signal Desk", "Discovery lane: power grid, AI data centers, energy trading.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Municipal surveillance contracts bundled into traffic safety modernization", "Cities", 2026, "Signal Desk", "Discovery lane: smart cities, traffic cameras, surveillance, procurement.", "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80"], ["Banks rebuild fraud systems around behavioral biometrics", "Finance", 2026, "Signal Desk", "Discovery lane: fraud, biometrics, identity, banking.", "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80"], ["Defense contractors package LLMs as secure mission assistants", "Defense", 2026, "Signal Desk", "Discovery lane: LLMs, defense contractors, secure assistants, procurement.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Adtech firms reposition identity graphs as clean-room measurement", "Advertising", 2026, "Signal Desk", "Discovery lane: clean rooms, identity graphs, adtech, privacy language.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Shipping insurers monitor Strait of Hormuz risk through alternative data", "Markets", 2026, "Signal Desk", "Discovery lane: Hormuz, insurance, shipping, oil volatility.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=80"], ["Semiconductor suppliers audit hidden China exposure across subcontractors", "Supply Chain", 2026, "Signal Desk", "Discovery lane: semiconductors, supplier graphs, China exposure, compliance.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Media companies explore coherence search as archive monetization layer", "Media", 2026, "Signal Desk", "Discovery lane: semantic retrieval, archive monetization, licensing.", "https://images.unsplash.com/photo-1516937941344-00b4e0337589?auto=format&fit=crop&w=1400&q=80"], ["AI procurement rules split agencies between speed and safety", "Government", 2026, "Signal Desk", "Discovery lane: AI procurement, compliance, agency modernization.", "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1400&q=80"], ["Grid operators delay interconnects as data-center demand surges", "Energy", 2026, "Signal Desk", "Discovery lane: interconnect queues, data centers, grid constraints.", "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1400&q=80"], ["Fashion platforms face backlash over synthetic storefronts", "Fashion", 2026, "Signal Desk", "Discovery lane: platform commerce, synthetic stores, brand dilution.", "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1400&q=80"], ["Insurers price wildfire exposure with private satellite feeds", "Insurance", 2026, "Signal Desk", "Discovery lane: wildfire, satellites, private data, risk pricing.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Ports adopt autonomous inspection drones amid labor pressure", "Supply Chain", 2026, "Signal Desk", "Discovery lane: ports, drones, labor, inspection automation.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Regulators examine model risk in automated credit decisions", "Finance", 2026, "Signal Desk", "Discovery lane: credit models, model risk, lending, regulation.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["AI agents begin negotiating SaaS renewals for enterprise buyers", "Enterprise", 2026, "Signal Desk", "Discovery lane: agents, procurement, SaaS, negotiation.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Cities consider bans on facial recognition in transit systems", "Cities", 2026, "Signal Desk", "Discovery lane: facial recognition, transit, privacy, municipal policy.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Quantum startups chase optimization contracts before hardware maturity", "Technology", 2026, "Signal Desk", "Discovery lane: quantum, optimization, enterprise pilots.", "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80"], ["Retailers use computer vision to score shelf compliance", "Retail", 2026, "Signal Desk", "Discovery lane: computer vision, store operations, surveillance retail.", "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80"], ["Defense exercises expose gap between sensor data and command decisions", "Defense", 2026, "Signal Desk", "Discovery lane: C2, sensor fusion, decision latency.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Election campaigns build influencer war rooms around short-video platforms", "Politics", 2026, "Signal Desk", "Discovery lane: influencers, campaigns, TikTok, political media.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Pharma companies use AI to reprioritize dormant drug libraries", "Healthcare", 2026, "Signal Desk", "Discovery lane: drug discovery, AI triage, pharma pipelines.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=80"], ["Universities weigh AI tutors against academic integrity risk", "Education", 2026, "Signal Desk", "Discovery lane: AI tutors, integrity, higher education.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Real estate funds mark down office towers while data centers surge", "Markets", 2026, "Signal Desk", "Discovery lane: commercial real estate, data centers, capital rotation.", "https://images.unsplash.com/photo-1516937941344-00b4e0337589?auto=format&fit=crop&w=1400&q=80"], ["Airlines test biometric boarding across international routes", "Transport", 2026, "Signal Desk", "Discovery lane: biometrics, airports, identity, travel.", "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1400&q=80"], ["Law firms package AI review tools as fixed-fee litigation products", "Legal", 2026, "Signal Desk", "Discovery lane: eDiscovery, AI review, fixed-fee law.", "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1400&q=80"], ["Cyber insurers demand proof of recovery drills before coverage renewals", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: cyber insurance, resilience, recovery drills.", "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1400&q=80"], ["State governments centralize unemployment systems after fraud waves", "Government", 2026, "Signal Desk", "Discovery lane: benefits systems, fraud, modernization.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Open-source maintainers become critical infrastructure chokepoints", "Technology", 2026, "Signal Desk", "Discovery lane: open source, supply chain, maintainer risk.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Consumer banks quietly add transaction-level carbon scoring", "Finance", 2026, "Signal Desk", "Discovery lane: carbon scoring, banking, transaction data.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Warehouse robotics firms pivot to software subscriptions", "Logistics", 2026, "Signal Desk", "Discovery lane: robotics, warehouse automation, SaaS.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Sports leagues test AI-generated alternate broadcasts", "Media", 2026, "Signal Desk", "Discovery lane: sports, synthetic media, personalized broadcasts.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Climate adaptation bonds attract infrastructure investors", "Infrastructure", 2026, "Signal Desk", "Discovery lane: climate finance, adaptation bonds, resilience.", "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80"], ["Luxury brands build private clienteling graphs to bypass platforms", "Retail", 2026, "Signal Desk", "Discovery lane: luxury, identity graphs, direct commerce.", "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80"]];
 
-function staticSignalRecord(row){
-  const [title,section,year,source,summary,image]=row;
+function fallbackSignalCard(title='',section='',source='',i=0){
+  const palette=[
+    ['#0b0b0b','#f4f1eb','#b24b36'],
+    ['#11100d','#ece7dc','#7f8a78'],
+    ['#090b0e','#f2eee6','#6f8fa8'],
+    ['#0d0b0a','#f1eadf','#b07a52'],
+    ['#0a0d0c','#efe9de','#8b6f9f'],
+    ['#0c0c10','#f5efe6','#c0a35a'],
+    ['#100b0b','#f2ece3','#a94f45'],
+    ['#090d10','#f1ede5','#5f8c8d']
+  ];
+  const [bg,fg,accent]=palette[Math.abs(i)%palette.length];
+  const safeTitle=esc(title||'Signal');
+  const safeSection=esc(section||'Signal');
+  const safeSource=esc(source||'SUMMON');
+  const words=String(title||'Signal').split(/\s+/).filter(Boolean);
+  const lines=[];
+  let line='';
+  for(const word of words){
+    const test=line?`${line} ${word}`:word;
+    if(test.length>25&&line){lines.push(line);line=word}else line=test;
+    if(lines.length===3)break;
+  }
+  if(line&&lines.length<4)lines.push(line);
+  const text=lines.slice(0,4).map((line,idx)=>`<text x="34" y="${116+idx*42}" font-family="Arial, Helvetica, sans-serif" font-size="31" font-weight="700" letter-spacing="-.9" fill="${fg}">${esc(line)}</text>`).join('');
+  const density=Array.from({length:12},(_,n)=>`<rect x="${34+n*28}" y="${318+(n%3)*10}" width="${12+(n%5)*9}" height="2" fill="${n%4===0?accent:fg}" opacity="${n%4===0?.9:.22}"/>`).join('');
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560">
+    <rect width="900" height="560" fill="${bg}"/>
+    <rect x="16" y="16" width="868" height="528" fill="none" stroke="${fg}" stroke-opacity=".14"/>
+    <rect x="34" y="34" width="132" height="22" fill="${accent}"/>
+    <text x="34" y="82" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" letter-spacing="3" fill="${fg}" opacity=".64">${safeSection.toUpperCase()}</text>
+    ${text}
+    ${density}
+    <text x="34" y="492" font-family="Courier New, monospace" font-size="16" letter-spacing="2.4" fill="${fg}" opacity=".48">${safeSource.toUpperCase()} / SIGNAL-${String(i+1).padStart(3,'0')}</text>
+    <circle cx="830" cy="72" r="36" fill="none" stroke="${accent}" stroke-width="3" opacity=".86"/>
+    <path d="M805 72h50M830 47v50" stroke="${fg}" stroke-opacity=".28" stroke-width="2"/>
+  </svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+/* Live signal corpus — real news API, no stock-image or invented-headline fallback.
+   Default provider: Guardian Content API.
+   Production: set window.GUARDIAN_API_KEY before this script, or replace "test" below.
+   Optional backend proxy: set window.NEWS_API_PROXY_URL to an endpoint that returns
+   { articles:[{ title, section, source, publishedAt, summary, image, url, tags }] }.
+*/
+const GUARDIAN_API_KEY=window.GUARDIAN_API_KEY||'test';
+const GUARDIAN_API_URL='https://content.guardianapis.com/search';
+const NEWS_API_PROXY_URL=window.NEWS_API_PROXY_URL||'';
+
+function signalLimit(){
+  return searchDepth==='archive'?60:searchDepth==='field'?40:24;
+}
+
+function stripHtml(value=''){
+  return String(value||'')
+    .replace(/<[^>]*>/g,' ')
+    .replace(/&amp;/g,'&')
+    .replace(/&quot;/g,'"')
+    .replace(/&#39;/g,"'")
+    .replace(/&lt;/g,'<')
+    .replace(/&gt;/g,'>')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+function normalizeNewsImage(url=''){
+  const clean=String(url||'').trim();
+  if(!clean)return '';
+  return clean.replace(/^http:/,'https:');
+}
+
+function newsApiUnavailableRecord(error){
+  const message=String(error?.message||error||'news api unavailable').slice(0,120);
+  const title='News API unavailable';
+  const section='API';
+  const source='Guardian Content API';
+  const card=fallbackSignalCard(title,section,source,0);
   return {
     type:'signal',
     title,
     section,
-    year:String(year||''),
+    year:new Date().getFullYear().toString(),
     source,
-    overview:`${title}. Source: ${source}. Published: ${year}. Section: ${section}. ${summary}`,
-    image,
-    src:image,
-    externalUrl:`https://www.google.com/search?q=${encodeURIComponent(title)}`
+    genres:['API','Unavailable'],
+    overview:`${title}. ${message}. Signal mode is configured for live news and will not substitute fake headlines or stock images. Add a Guardian API key or set NEWS_API_PROXY_URL.`,
+    image:card,
+    cover:card,
+    src:card,
+    externalUrl:'https://open-platform.theguardian.com/documentation/search'
   };
 }
 
-async function loadSignals(limit){
-  const base=STATIC_SIGNALS.map(staticSignalRecord);
-  const offset=(Math.abs((corpusPageOffset||0)+(shuffleSeed||0)))%base.length;
-  const rotated=base.slice(offset).concat(base.slice(0,offset));
-  const out=[];
-  while(out.length<limit)out.push(...rotated);
-  return out.slice(0,limit);
+function proxySignalRecord(article,i=0){
+  const title=stripHtml(article.title||article.webTitle||'Untitled signal');
+  const section=stripHtml(article.section||article.sectionName||article.category||'News');
+  const source=stripHtml(article.source||article.publication||article.publisher||'News API');
+  const date=article.publishedAt||article.webPublicationDate||article.date||'';
+  const year=date?String(date).slice(0,4):'';
+  const summary=stripHtml(article.summary||article.description||article.trailText||article.content||'');
+  const tags=Array.isArray(article.tags)?article.tags.map(t=>typeof t==='string'?t:(t.webTitle||t.name||'')).filter(Boolean).slice(0,6):[];
+  const image=normalizeNewsImage(article.image||article.urlToImage||article.thumbnail||article.fields?.thumbnail)||fallbackSignalCard(title,section,source,i);
+  return {
+    type:'signal',title,section,year,source,
+    genres:tags.length?tags:[section],
+    overview:`${title}. Source: ${source}. ${year?'Published: '+year+'. ':''}Section: ${section}. ${summary}`.trim(),
+    image,cover:image,src:image,
+    externalUrl:article.url||article.webUrl||article.shortUrl||''
+  };
 }
 
+function guardianSignalRecord(article,i=0){
+  const fields=article.fields||{};
+  const title=stripHtml(article.webTitle||'Untitled signal');
+  const section=stripHtml(article.sectionName||'News');
+  const source=stripHtml(fields.publication||'The Guardian');
+  const date=article.webPublicationDate||'';
+  const year=date?String(date).slice(0,4):'';
+  const summary=stripHtml(fields.trailText||'');
+  const tags=(article.tags||[])
+    .map(t=>t.webTitle||t.id||'')
+    .filter(Boolean)
+    .slice(0,6);
+  const image=normalizeNewsImage(fields.thumbnail)||fallbackSignalCard(title,section,source,i);
+  return {
+    type:'signal',
+    title,
+    section,
+    year,
+    source,
+    genres:tags.length?tags:[section],
+    overview:`${title}. Source: ${source}. ${year?'Published: '+year+'. ':''}Section: ${section}. ${summary}`.trim(),
+    image,
+    cover:image,
+    src:image,
+    externalUrl:article.webUrl||article.fields?.shortUrl||''
+  };
+}
 
-function signalLimit(){return searchDepth==='archive'?3000:1000}
+async function fetchGuardianSignals(limit){
+  const pageSize=Math.min(50,Math.max(12,limit||24));
+  const maxPage=searchDepth==='archive'?5:searchDepth==='field'?3:2;
+  const page=1+(Math.abs((corpusPageOffset||0)+(shuffleSeed||0))%maxPage);
+  const p=new URLSearchParams({
+    'api-key':GUARDIAN_API_KEY,
+    'order-by':'newest',
+    'show-fields':'trailText,thumbnail,byline,publication,shortUrl',
+    'show-tags':'keyword',
+    'page-size':String(pageSize),
+    'page':String(page)
+  });
+  const res=await fetch(`${GUARDIAN_API_URL}?${p.toString()}`,{headers:{'Accept':'application/json'}});
+  if(!res.ok)throw new Error(`guardian ${res.status}`);
+  const data=await res.json();
+  if(data?.response?.status!=='ok')throw new Error(data?.response?.message||'guardian response not ok');
+  return (data.response.results||[]).map(guardianSignalRecord);
+}
 
+async function fetchProxySignals(limit){
+  const p=new URLSearchParams({limit:String(limit||24),depth:searchDepth,page:String(1+Math.abs((corpusPageOffset||0)+(shuffleSeed||0)))});
+  const res=await fetch(`${NEWS_API_PROXY_URL}${NEWS_API_PROXY_URL.includes('?')?'&':'?'}${p.toString()}`,{headers:{'Accept':'application/json'}});
+  if(!res.ok)throw new Error(`news proxy ${res.status}`);
+  const data=await res.json();
+  const rows=Array.isArray(data)?data:(data.articles||data.results||[]);
+  return rows.map(proxySignalRecord);
+}
+
+async function loadSignals(limit){
+  try{
+    const rows=NEWS_API_PROXY_URL?await fetchProxySignals(limit):await fetchGuardianSignals(limit);
+    const seen=new Set(),out=[];
+    for(const row of rows){
+      if(!row.title||seen.has(row.title))continue;
+      seen.add(row.title);
+      out.push(row);
+      if(out.length>=limit)break;
+    }
+    if(!out.length)throw new Error('news api returned zero articles');
+    return out;
+  }catch(e){
+    console.error(e);
+    setStatus(`news api unavailable`);
+    return [newsApiUnavailableRecord(e)];
+  }
+}
 
 function candidateText(m){
   if(m.type==='signal')return `${m.title}. ${m.section||''}. ${m.source||''}. ${m.overview||''}`;
