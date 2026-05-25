@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#ffffff">
 <title>SUMMON</title>
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
-<link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23050505'/%3E%3Cpath d='M14 43h36M14 32h36M14 21h36' stroke='%23f4f1eb' stroke-width='4'/%3E%3C/svg%3E">
 
 <meta name="description" content="Find anything by meaning.">
 <meta property="og:title" content="SUMMON">
@@ -1415,6 +1413,28 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
   }
 }
 
+
+/* ─── Signal mode: no stock photography, no duplicate-looking image wall ─── */
+body[data-mode="signal"]:not(.has-results) .wall-cell,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]{
+  background:#0a0a0a !important;
+  box-shadow:0 0 0 1px rgba(244,241,235,.08) !important;
+}
+body[data-mode="signal"]:not(.has-results) .wall-cell img,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"] img{
+  filter:none !important;
+  transform:none !important;
+  object-fit:cover !important;
+}
+body[data-mode="signal"]:not(.has-results) .wall-cell::before,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]::before{
+  opacity:.28 !important;
+}
+body[data-mode="signal"]:not(.has-results) .wall-cell::after,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]::after{
+  opacity:.08 !important;
+}
+
 </style>
 </head>
 <body data-mode="film">
@@ -1550,29 +1570,41 @@ const statusEl=$('#status');
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function norm(p){return p?(String(p).startsWith('/')?String(p):'/'+String(p)):null}
-function img(p,size='original'){return p?`${IMG}${size}${norm(p)}`:''}
-
-function still(m,size='w780'){
-  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
-  return img(m?.backdropPath||m?.posterPath,size);
+function isUrl(v){return /^https?:\/\//i.test(String(v||''))||String(v||'').startsWith('data:image')}
+function img(p,size='original'){
+  if(!p)return '';
+  const s=String(p).trim();
+  if(!s)return '';
+  if(isUrl(s))return s.replace(/^http:/i,'https:');
+  return `${IMG}${size}${norm(s)}`;
 }
-function poster(m,size='w342'){
-  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
-  return img(m?.posterPath,size);
-}
-function heroSrc(m){
-  if(!m) return '';
-  if(m.type==='game') return m.image||m.cover||'';
-  if(m.type==='book') return m.cover||m.image||'';
-  if(m.type==='tv') return m.cover||m.image||'';
-  if(m.backdropPath) return img(m.backdropPath,'original')||img(m.backdropPath,'w1280');
-  if(m.posterPath) return img(m.posterPath,'original')||img(m.posterPath,'w780');
+function firstImage(values=[],size='w780'){
+  for(const v of values){
+    const out=img(v,size);
+    if(out)return out;
+  }
   return '';
 }
+
+function still(m,size='w780'){
+  if(!m)return '';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='signal')return m.image||m.cover||m.src||'';
+  return firstImage([m.backdropPath,m.backdrop_path,m.image,m.cover,m.posterPath,m.poster_path],size);
+}
+function poster(m,size='w342'){
+  if(!m)return '';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='signal')return m.cover||m.image||m.src||'';
+  return firstImage([m.posterPath,m.poster_path,m.image,m.cover,m.backdropPath,m.backdrop_path],size);
+}
+function heroSrc(m){
+  if(!m)return '';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='signal')return m.cover||m.image||m.src||'';
+  return firstImage([m.backdropPath,m.backdrop_path,m.image,m.cover,m.posterPath,m.poster_path],'original');
+}
 function thumbSrc(m){
-  if(!m) return '';
-  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
-  return img(m.backdropPath||m.posterPath,'w342')||img(m.posterPath,'w185');
+  if(!m)return '';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='signal')return m.image||m.cover||m.src||'';
+  return firstImage([m.backdropPath,m.backdrop_path,m.image,m.cover,m.posterPath,m.poster_path],'w342');
 }
 function candidate(m){
   return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,6).join(', ')}. ${(m.platforms||[]).join(', ')}. ${m.overview.substring(0,360)}`;
@@ -1594,7 +1626,7 @@ function bookLimit(){return corpusMode==='mixed'?getLimit('mixedBooks'):getLimit
 function tvLimit(){return corpusMode==='mixed'?getLimit('mixedTv'):getLimit('tv')}
 
 function totalLimit(){
-  if(corpusMode==='signal')return searchDepth==='archive'?3000:1000;
+  if(corpusMode==='signal')return signalLimit();
   if(corpusMode==='mixed'){
     return searchDepth==='archive'?500:searchDepth==='field'?260:120;
   }
@@ -1602,6 +1634,105 @@ function totalLimit(){
   if(corpusMode==='games')return gameLimit();
   if(corpusMode==='tv')return tvLimit();
   return filmLimit();
+}
+
+
+async function fetchAlgoliaPage(page=0){
+  const params=new URLSearchParams({
+    query:'',
+    hitsPerPage:String(HITS),
+    page:String(Math.max(0,page||0)),
+    attributesToRetrieve:['title','name','overview','description','plot','release_date','year','poster_path','backdrop_path','posterPath','backdropPath','image','poster','poster_url','image_url','genres','genre','actors','director','rating'].join(',')
+  });
+
+  const res=await fetch(ALGOLIA_URL,{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'X-Algolia-Application-Id':ALGOLIA_APP_ID,
+      'X-Algolia-API-Key':ALGOLIA_API_KEY
+    },
+    body:JSON.stringify({params:params.toString()})
+  });
+
+  if(!res.ok)throw new Error(`algolia ${res.status}`);
+  return res.json();
+}
+
+const STATIC_FILMS=[
+  ['Heat','1995',['Crime','Drama','Los Angeles'],'A disciplined thief and an obsessive detective circle each other across Los Angeles. Professional codes, loneliness, surveillance, and violence become the same geometry.'],
+  ['In the Mood for Love','2000',['Romance','Drama','Memory'],'Two neighbors discover parallel betrayals and turn restraint into atmosphere. Hallways, fabric, rain, and repetition carry the emotional signal.'],
+  ['The Conversation','1974',['Thriller','Surveillance','Paranoia'],'A surveillance expert records a conversation and slowly loses confidence in what the signal means. Listening becomes guilt.'],
+  ['Persona','1966',['Drama','Identity','Psychological'],'A nurse and an actress dissolve into each other through silence, projection, and cinematic rupture.'],
+  ['Stalker','1979',['Science Fiction','Philosophy','Zone'],'A guide leads two men through a forbidden zone where desire, faith, and decay distort reality.'],
+  ['Paris, Texas','1984',['Drama','Road','Family'],'A lost man returns from the desert and tries to reconstruct a broken family through distance, silence, and confession.'],
+  ['Blade Runner','1982',['Science Fiction','Noir','Identity'],'A future detective hunts synthetic humans while the city itself becomes memory, rain, commerce, and doubt.'],
+  ['Mulholland Drive','2001',['Mystery','Dream','Hollywood'],'Hollywood fractures into dream logic, desire, humiliation, and identity collapse.'],
+  ['No Country for Old Men','2007',['Crime','Western','Fate'],'A desert crime pattern becomes an encounter with chance, aging, violence, and moral exhaustion.'],
+  ['The Master','2012',['Drama','Cult','Power'],'A traumatized drifter and a charismatic leader test control, dependency, charisma, and animal force.'],
+  ['Children of Men','2006',['Dystopia','War','Hope'],'A sterile world turns one pregnancy into a corridor through state collapse, faith, and survival.'],
+  ['Under the Skin','2013',['Science Fiction','Alienation','Body'],'An alien presence moves through human desire and discovers the terror of embodiment.'],
+  ['Eyes Wide Shut','1999',['Mystery','Ritual','Marriage'],'A marriage argument opens into nocturnal ritual, class secrecy, erotic panic, and social performance.'],
+  ['Zodiac','2007',['Crime','Obsession','Archive'],'A serial-killer investigation becomes paperwork, signal loss, obsession, and institutional drift.'],
+  ['The Tree of Life','2011',['Memory','Family','Cosmos'],'A childhood in Texas opens into grief, grace, cosmic scale, and the texture of remembered light.'],
+  ['Brazil','1985',['Bureaucracy','Dystopia','Absurdism'],'A bureaucratic machine converts fantasy, paperwork, terrorism, and romance into a malfunctioning state dream.'],
+  ['La Jetée','1962',['Time','Memory','Science Fiction'],'A man is sent through memory after catastrophe, chasing one image that becomes fate.'],
+  ['Solaris','1972',['Science Fiction','Memory','Grief'],'A planet returns human memory as living presence, forcing grief and knowledge into the same room.'],
+  ['The Third Man','1949',['Noir','Postwar','Betrayal'],'Postwar Vienna becomes a tilted map of friendship, black markets, and moral rot.'],
+  ['Lost in Translation','2003',['Loneliness','Tokyo','Connection'],'Two displaced people find a temporary signal in hotel rooms, insomnia, and urban drift.']
+];
+
+function fallbackFilmStill(title='',year='',genres=[]){
+  const safeTitle=String(title||'FILM').slice(0,72);
+  const safeMeta=[year,(genres||[]).slice(0,2).join(' / ')].filter(Boolean).join(' · ');
+  const hue=[...safeTitle].reduce((a,c)=>a+c.charCodeAt(0),0)%360;
+  const svg=`
+  <svg xmlns="http://www.w3.org/2000/svg" width="900" height="1350" viewBox="0 0 900 1350">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="hsl(${hue},18%,14%)"/>
+        <stop offset="1" stop-color="hsl(${(hue+42)%360},20%,5%)"/>
+      </linearGradient>
+      <filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="4"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .20"/></feComponentTransfer></filter>
+    </defs>
+    <rect width="900" height="1350" fill="url(#g)"/>
+    <rect width="900" height="1350" filter="url(#n)" opacity=".38"/>
+    <rect x="54" y="54" width="792" height="1242" fill="none" stroke="rgba(246,241,232,.17)" stroke-width="2"/>
+    <text x="74" y="124" font-family="IBM Plex Mono, Menlo, monospace" font-size="26" fill="rgba(246,241,232,.52)" letter-spacing="5">SUMMON / FILM</text>
+    <foreignObject x="74" y="430" width="752" height="430">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Georgia,serif;font-size:76px;line-height:.92;font-weight:600;letter-spacing:-3px;color:rgb(246,241,232);word-wrap:break-word;">
+        ${esc(safeTitle)}
+      </div>
+    </foreignObject>
+    <foreignObject x="74" y="1070" width="752" height="120">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:IBM Plex Mono,Menlo,monospace;font-size:24px;line-height:1.35;color:rgba(246,241,232,.62);text-transform:uppercase;letter-spacing:3px;word-wrap:break-word;">
+        ${esc(safeMeta)}
+      </div>
+    </foreignObject>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function fallbackFilmCorpus(limit=filmLimit()){
+  const offset=(Math.abs((corpusPageOffset||0)+(shuffleSeed||0)))%STATIC_FILMS.length;
+  const rotated=STATIC_FILMS.slice(offset).concat(STATIC_FILMS.slice(0,offset));
+  const out=[];
+  while(out.length<limit){
+    for(const [title,year,genres,overview] of rotated){
+      out.push({
+        type:'film',
+        title,
+        year:String(year||''),
+        genres,
+        overview,
+        image:fallbackFilmStill(title,year,genres),
+        cover:fallbackFilmStill(title,year,genres),
+        externalUrl:`https://www.imdb.com/find?q=${encodeURIComponent(title)}`
+      });
+      if(out.length>=limit)break;
+    }
+  }
+  return out.slice(0,limit);
 }
 
 
@@ -1628,9 +1759,38 @@ async function fetchTVPage(page=0){
 // ─── Record Builders ───
 
 function filmRecord(h){
-  let genres=[];
-  if(Array.isArray(h.genres)) genres=h.genres.map(g=>typeof g==='object'?(g.name||''):g).filter(Boolean);
-  return {type:'film',title:h.title,overview:h.overview||'',year:h.release_date?String(h.release_date).slice(0,4):'',posterPath:norm(h.poster_path),backdropPath:norm(h.backdrop_path),genres};
+  const title=h.title||h.name||'';
+  const rawGenres=Array.isArray(h.genres)?h.genres:(Array.isArray(h.genre)?h.genre:[]);
+  const genres=rawGenres.map(g=>typeof g==='object'?(g.name||''):g).filter(Boolean);
+  const actors=(Array.isArray(h.actors)?h.actors:[]).map(a=>typeof a==='object'?(a.name||''):a).filter(Boolean).slice(0,5);
+  const year=h.release_date?String(h.release_date).slice(0,4):(h.year?String(h.year):'');
+  const posterPath=norm(h.poster_path||h.posterPath||'');
+  const backdropPath=norm(h.backdrop_path||h.backdropPath||'');
+  const directImage=firstImage([h.image,h.poster,h.poster_url,h.image_url], 'w500');
+  const overview=String(
+    h.overview||h.description||h.plot||[
+      title,
+      year?`Released ${year}`:'',
+      genres.length?genres.join(', '):'',
+      actors.length?`Actors: ${actors.join(', ')}`:''
+    ].filter(Boolean).join('. ')
+  ).trim();
+
+  return {
+    type:'film',
+    title,
+    overview:overview||`${title}. Film indexed by title, genre, cast, era, and visual signal.`,
+    year,
+    posterPath,
+    backdropPath,
+    image:directImage,
+    cover:directImage,
+    genres,
+    actors,
+    director:h.director||'',
+    rating:h.rating||null,
+    externalUrl:`https://www.imdb.com/find?q=${encodeURIComponent(title)}`
+  };
 }
 
 function gameRecord(g){
@@ -1675,7 +1835,38 @@ function tvRecord(s){
 
 // ─── Corpus Loaders ───
 
+async function loadFilms(limit){
+  const pageCount=Math.max(1,Math.ceil(limit/HITS));
+  const pages=await Promise.all(
+    Array.from({length:pageCount},(_,i)=>
+      fetchAlgoliaPage((corpusPageOffset+i)%8).catch(err=>{
+        console.warn('Algolia film page failed',err);
+        return {hits:[]};
+      })
+    )
+  );
 
+  const seen=new Set();
+  const out=[];
+  for(const page of pages){
+    for(const h of(page.hits||[])){
+      const rec=filmRecord(h||{});
+      if(!rec.title)continue;
+      const key=rec.title.toLowerCase();
+      if(seen.has(key))continue;
+      seen.add(key);
+      if(!heroSrc(rec)&&!thumbSrc(rec)){
+        rec.image=fallbackFilmStill(rec.title,rec.year,rec.genres);
+        rec.cover=rec.image;
+      }
+      out.push(rec);
+      if(out.length>=limit)break;
+    }
+    if(out.length>=limit)break;
+  }
+
+  return out.length?out.slice(0,limit):fallbackFilmCorpus(limit);
+}
 
 async function loadGames(limit){
   const base=1+((corpusPageOffset||0)%4);
@@ -1693,55 +1884,6 @@ async function loadGames(limit){
     if(out.length>=limit)break;
   }
   return out;
-}
-
-
-async function loadBooks(limit=bookLimit()){
-  const base='';
-  const fields='title,author_name,first_publish_year,subject,cover_i,edition_count';
-  const queries=[
-    'subject:fiction OR subject:literature OR subject:science_fiction OR subject:fantasy',
-    'subject:classic_literature OR subject:science_fiction OR subject:fantasy',
-    'subject:dystopia OR subject:robots OR subject:philosophy'
-  ];
-
-  const docs=[];
-  for(const q of queries){
-    if(docs.length>=limit)break;
-    const url=`${base}?q=${encodeURIComponent(q)}&limit=${Math.min(100,limit)}&fields=${encodeURIComponent(fields)}`;
-    try{
-      const data=await fetch(url);
-      docs.push(...(data.docs||[]));
-    }catch(e){
-      console.warn('Open Library blocked, using fallback books', e);
-      break;
-    }
-  }
-
-  const seen=new Set();
-  const books=[];
-  for(const d of docs){
-    const title=d.title||'';
-    if(!title||seen.has(title))continue;
-    seen.add(title);
-    const author=(d.author_name||[])[0]||'Unknown author';
-    const subjects=(d.subject||[]).slice(0,8).filter(Boolean);
-    const cover=d.cover_i?`https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg`:'';
-    books.push({
-      type:'book',
-      title,
-      author,
-      year:d.first_publish_year?String(d.first_publish_year):'',
-      subjects,
-      genres:subjects.slice(0,2),
-      overview:`${title}. By ${author}. Subjects: ${subjects.join(', ') || 'Literature'}. A literary object indexed through authorship, subject, era, and thematic signal.`,
-      src:cover || `https://covers.openlibrary.org/b/title/${encodeURIComponent(title)}-L.jpg`,
-      externalUrl:`https://openlibrary.org/search?q=${encodeURIComponent(title+' '+author)}`
-    });
-    if(books.length>=limit)break;
-  }
-
-  return books.length ? books : fallbackBookCorpus(limit);
 }
 
 
@@ -1765,17 +1907,19 @@ async function loadTV(limit){
 // ─── Wall Rendering ───
 
 function renderWall(movies){
-  // Strict filter: only tiles with real, non-empty image URLs
+  const wallTarget=corpusMode==='signal'
+    ?(searchDepth==='archive'?240:searchDepth==='field'?144:96)
+    :(corpusMode==='mixed'?72:48);
   const sample=[...movies]
-    .map(m=>({...m,src:still(m,'w780')||poster(m,'w500')}))
+    .map((m,i)=>({...m,wallIndex:i,src:still(m,'w780')||poster(m,'w500')}))
     .filter(m=>m.src&&m.src.length>15)
     .sort(()=>Math.random()-.5)
-    .slice(0,48);
+    .slice(0,wallTarget);
 
   $('#wall').innerHTML=sample.map(m=>
-    `<div class="wall-cell media-${esc(m.type||'film')}" data-type="${esc(m.type||'film')}" data-title="${esc(m.title)}" data-author="${esc((m.authors||[])[0]||m.author||'')}">
+    `<div class="wall-cell media-${esc(m.type||'film')}" data-type="${esc(m.type||'film')}" data-title="${esc(m.title)}" data-author="${esc((m.authors||[])[0]||m.author||'')}" data-year="${esc(m.year||'')}" data-section="${esc(m.section||'')}" data-source="${esc(m.source||'')}" data-index="${esc(m.wallIndex||0)}" data-genres="${esc((m.genres||[]).join(', '))}">
       <img src="${m.src}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"
-           onerror="this.onerror=null;const c=this.closest('.wall-cell');if(c?.dataset?.type==='book'){this.src=fallbackBookCover(c.dataset.title,c.dataset.author||'')}else{this.src=fallbackStill(c?.dataset?.title||'SUMMON',c?.dataset?.type||'film')}">
+           onerror="this.onerror=null;const c=this.closest('.wall-cell');const t=c?.dataset?.type;if(t==='book'){this.src=fallbackBookCover(c.dataset.title,c.dataset.author||'')}else if(t==='film'){this.src=fallbackFilmStill(c.dataset.title,c.dataset.year||'',String(c.dataset.genres||'').split(',').map(s=>s.trim()).filter(Boolean))}else if(t==='signal'){this.src=fallbackSignalCard(c.dataset.title,c.dataset.section||'',c.dataset.source||'',Number(c.dataset.index||0))}else{c?.remove()}">
     </div>`
   ).join('');
 
@@ -1831,8 +1975,10 @@ async function loadCorpus(){
     return text;
   });
 
+  if(!items.length)throw new Error(`empty ${corpusMode} corpus`);
   cache={mode:corpusMode,depth:searchDepth,items,map,candidates};
-  if(!items.length){throw new Error(`empty corpus ${corpusMode}`)}
+  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':'films';
+  setStatus(`${items.length} ${label} loaded`);
   renderWall(items);
   return cache;
 }
@@ -1888,7 +2034,7 @@ async function search(text){
       $('#results')?.scrollIntoView({behavior:'auto',block:'start'});
       document.body.classList.remove('cutting');
     });
-    history.replaceState(null,'',`#${encodeURIComponent(q)}`);
+    safeSetHash(q);
   }catch(e){
     console.error(e);toast('connection failed');
   }finally{
@@ -1930,15 +2076,17 @@ function renderResult(){
   applyModeLabels();
   syncResultQuery();
 
-  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='signal'?`${m.title}. ${m.overview||''}`:m.type==='signal'?'open article ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':'view on imdb ↗';
-  $('#imdb').onclick=()=>window.open(
-    m.type==='game'?`https://rawg.io/games/${m.rawgSlug||encodeURIComponent(m.title.toLowerCase().replaceAll(' ','-'))}`:
-    m.type==='signal'?`${m.title}. ${m.overview||''}`:m.type==='signal'?(m.externalUrl||`https://www.google.com/search?q=${encodeURIComponent(m.title)}`):m.type==='book'?(m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title)}`):
+  const sourceUrl =
+    m.type==='game'?`https://rawg.io/games/${m.rawgSlug||encodeURIComponent(String(m.title||'').toLowerCase().replaceAll(' ','-'))}`:
+    m.type==='signal'?(m.externalUrl||`https://www.google.com/search?q=${encodeURIComponent(m.title)}`):
+    m.type==='book'?(m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title)}`):
     m.type==='tv'?(m.tvMazeUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`):
-    `https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`,'_blank'
-  );
+    (m.externalUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`);
+  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='signal'?'open source ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':'view on imdb ↗';
+  $('#imdb').onclick=()=>window.open(sourceUrl,'_blank','noopener,noreferrer');
   $('#copyLink').onclick=()=>{
-    const url=`${location.href.split('#')[0]}#${encodeURIComponent(currentQuery)}`;
+    const base=location.protocol==='file:'?'':location.href.split('#')[0];
+    const url=base?`${base}#${encodeURIComponent(currentQuery)}`:`#${encodeURIComponent(currentQuery)}`;
     navigator.clipboard?.writeText(url).then(()=>toast('link copied'));
   };
   renderRankList();
@@ -1983,7 +2131,7 @@ function newSearch(){
   hasExecutedSearch=false;
   stopOracleDrift();
   document.body.classList.remove('has-results','searching','cutting');
-  history.replaceState(null,'',location.pathname+location.search);
+  safeClearHash();
   window.scrollTo({top:0,behavior:'auto'});
   query.focus({preventScroll:true});
   finishResolveState();resetQueryTraces();
@@ -2021,7 +2169,7 @@ async function setCorpusMode(mode){
   }catch(e){console.error(e);setCorpusLoading(false,'load failed');return}
   if(document.body.classList.contains('has-results')){
     document.body.classList.remove('has-results','searching','cutting');
-    history.replaceState(null,'',location.pathname+location.search);
+    safeClearHash();
     window.scrollTo({top:0,behavior:'auto'});
   }
 }
@@ -2442,170 +2590,361 @@ async function loadBooks(limit){
 
 
 
-/* Expanded static signal corpus — deterministic, thick, no stalled remote load */
-const STATIC_SIGNALS=[["AI browser defaults become the next search distribution war", "Technology", 2026, "Signal Desk", "Discovery lane: AI search, browser defaults, distribution, platform lock-in, mobile placement. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Open-source model labs compete with closed frontier systems through enterprise fine-tunes", "Technology", 2026, "Signal Desk", "Discovery lane: open models, frontier AI, enterprise adoption, model strategy. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Cloud vendors bundle AI credits into long-term infrastructure contracts", "Technology", 2026, "Signal Desk", "Discovery lane: cloud contracts, AI credits, vendor lock-in, infrastructure spend. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Semiconductor packaging capacity becomes the hidden AI bottleneck", "Technology", 2026, "Signal Desk", "Discovery lane: advanced packaging, chips, AI supply chain, capacity constraint. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["AI agents move from chat interfaces into procurement workflows", "Technology", 2026, "Signal Desk", "Discovery lane: agents, procurement, enterprise automation, workflow routing. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Consumer device makers reposition phones as local AI inference nodes", "Technology", 2026, "Signal Desk", "Discovery lane: edge AI, smartphones, inference, privacy. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Synthetic data vendors become compliance layer for model training", "Technology", 2026, "Signal Desk", "Discovery lane: synthetic data, compliance, privacy, AI training. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Foundation model companies quietly court regulated-industry auditors", "Technology", 2026, "Signal Desk", "Discovery lane: AI audit, regulated industry, compliance, enterprise trust. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["Enterprise copilots hit friction at the permissions layer", "Technology", 2026, "Signal Desk", "Discovery lane: copilots, permissions, enterprise data, security. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Model-routing startups pitch lower inference spend to CFOs", "Technology", 2026, "Signal Desk", "Discovery lane: model routing, inference cost, CFO, AI infrastructure. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"], ["Data-labeling firms pivot to evaluation and red-team services", "Technology", 2026, "Signal Desk", "Discovery lane: data labeling, evals, red teaming, AI safety. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80"], ["GPU cloud resellers face margin pressure as hyperscalers reprice capacity", "Technology", 2026, "Signal Desk", "Discovery lane: GPU cloud, hyperscalers, capacity, margin pressure. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1400&q=80"], ["AI infrastructure stocks begin trading like energy assets", "Markets", 2026, "Signal Desk", "Discovery lane: AI capex, power demand, data centers, market rotation. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80"], ["Oil volatility reprices shipping insurance around Hormuz risk", "Markets", 2026, "Signal Desk", "Discovery lane: oil, shipping insurance, Hormuz, geopolitical risk. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80"], ["Prediction markets become a shadow volatility index for politics", "Markets", 2026, "Signal Desk", "Discovery lane: prediction markets, political risk, volatility, odds. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80"], ["Private credit lenders tighten covenants around software rollups", "Markets", 2026, "Signal Desk", "Discovery lane: private credit, software rollups, covenants, debt risk. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Exchange operators test tokenized collateral with institutional desks", "Markets", 2026, "Signal Desk", "Discovery lane: tokenized collateral, exchanges, institutional finance. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Copper traders watch grid buildout as AI demand accelerates", "Markets", 2026, "Signal Desk", "Discovery lane: copper, grid, AI infrastructure, commodities. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Real estate funds rotate from office towers into powered land", "Markets", 2026, "Signal Desk", "Discovery lane: real estate, powered land, data centers, capital rotation. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Insurance-linked securities reprice climate tail risk", "Markets", 2026, "Signal Desk", "Discovery lane: insurance, climate risk, catastrophe bonds, tail risk. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Macro funds track data-center interconnect queues as growth signal", "Markets", 2026, "Signal Desk", "Discovery lane: macro funds, data centers, interconnect queues, growth. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Central banks warn automated trading could amplify liquidity gaps", "Markets", 2026, "Signal Desk", "Discovery lane: central banks, automated trading, liquidity, market shocks. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Defense spending basket outperforms as autonomy procurement accelerates", "Markets", 2026, "Signal Desk", "Discovery lane: defense stocks, autonomy, procurement, markets. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["AI capex questions pressure cloud margins after earnings", "Markets", 2026, "Signal Desk", "Discovery lane: AI capex, cloud margins, earnings, hyperscalers. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Defense startups shift from drones to command software", "Defense", 2026, "Signal Desk", "Discovery lane: defense tech, drones, command software, autonomy. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"], ["Sensor fusion vendors pitch JADC2-compatible decision layers", "Defense", 2026, "Signal Desk", "Discovery lane: JADC2, sensor fusion, defense software, decision support. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80"], ["Electronic warfare lessons reshape NATO drone procurement", "Defense", 2026, "Signal Desk", "Discovery lane: electronic warfare, NATO, drones, Ukraine lessons. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1400&q=80"], ["Autonomy companies sell human-on-the-loop compliance as procurement feature", "Defense", 2026, "Signal Desk", "Discovery lane: autonomy, compliance, defense procurement, ROE. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80"], ["Space firms package commercial imagery as tactical intelligence feeds", "Defense", 2026, "Signal Desk", "Discovery lane: space, satellite imagery, tactical intelligence, ISR. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80"], ["Defense primes bundle LLM assistants into secure mission environments", "Defense", 2026, "Signal Desk", "Discovery lane: LLMs, defense primes, secure assistants, mission software. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80"], ["Border surveillance contracts expand through counter-drone justifications", "Defense", 2026, "Signal Desk", "Discovery lane: border surveillance, counter-drone, procurement, sensors. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Naval logistics software becomes resilience priority in contested Pacific", "Defense", 2026, "Signal Desk", "Discovery lane: naval logistics, Pacific, resilience, software. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Allied militaries test AI-generated courses of action in exercises", "Defense", 2026, "Signal Desk", "Discovery lane: AI COA, military exercises, command planning. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Procurement offices demand audit trails for AI mission recommendations", "Defense", 2026, "Signal Desk", "Discovery lane: audit trails, defense AI, procurement, explainability. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Autonomous maritime systems draw capital as chokepoint risk rises", "Defense", 2026, "Signal Desk", "Discovery lane: maritime autonomy, chokepoints, defense investment. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Defense accelerators prioritize dual-use infrastructure tools", "Defense", 2026, "Signal Desk", "Discovery lane: dual-use, defense accelerators, infrastructure, startups. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Utilities price AI data centers as new baseload demand", "Energy", 2026, "Signal Desk", "Discovery lane: utilities, AI data centers, baseload, power demand. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Grid interconnection queues become data-center deal bottleneck", "Energy", 2026, "Signal Desk", "Discovery lane: interconnection, grid, data centers, bottleneck. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["Natural gas plants return to AI infrastructure pitch decks", "Energy", 2026, "Signal Desk", "Discovery lane: natural gas, AI infrastructure, power generation. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Nuclear small modular reactor vendors target hyperscaler demand", "Energy", 2026, "Signal Desk", "Discovery lane: SMR, nuclear, hyperscalers, energy. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"], ["Battery storage developers chase data-center reliability contracts", "Energy", 2026, "Signal Desk", "Discovery lane: battery storage, data centers, reliability. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80"], ["Water constraints slow campus-scale AI infrastructure projects", "Energy", 2026, "Signal Desk", "Discovery lane: water, AI infrastructure, local permitting. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1400&q=80"], ["Energy traders monitor cooling demand from GPU clusters", "Energy", 2026, "Signal Desk", "Discovery lane: cooling demand, GPU clusters, energy trading. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80"], ["Transmission permitting becomes central AI policy issue", "Energy", 2026, "Signal Desk", "Discovery lane: transmission, permitting, AI policy, grid. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80"], ["Oil majors explore data-center power partnerships", "Energy", 2026, "Signal Desk", "Discovery lane: oil majors, data centers, power partnerships. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80"], ["Municipal utilities gain leverage over AI campus site selection", "Energy", 2026, "Signal Desk", "Discovery lane: municipal utilities, site selection, data centers. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Demand response startups pitch GPU load flexibility", "Energy", 2026, "Signal Desk", "Discovery lane: demand response, GPU load, grid flexibility. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Renewables developers attach compute demand to project finance", "Energy", 2026, "Signal Desk", "Discovery lane: renewables, project finance, compute demand. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Traffic safety modernization bundles surveillance analytics into city contracts", "Cities", 2026, "Signal Desk", "Discovery lane: smart cities, surveillance, traffic safety, procurement. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Mayors pitch AI permitting as housing backlog solution", "Cities", 2026, "Signal Desk", "Discovery lane: AI permitting, housing, municipalities, backlog. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Transit agencies test biometric fare systems amid privacy backlash", "Cities", 2026, "Signal Desk", "Discovery lane: transit, biometrics, privacy, fare systems. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Police departments rebrand predictive tools as resource optimization", "Cities", 2026, "Signal Desk", "Discovery lane: predictive policing, resource optimization, public safety. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Cities sell curb data access to logistics platforms", "Cities", 2026, "Signal Desk", "Discovery lane: curb data, logistics, cities, data monetization. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["Municipal broadband programs become local AI infrastructure wedge", "Cities", 2026, "Signal Desk", "Discovery lane: municipal broadband, AI infrastructure, cities. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Water agencies use satellite data to enforce drought restrictions", "Cities", 2026, "Signal Desk", "Discovery lane: water agencies, satellite data, drought, enforcement. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"], ["Public records portals become AI training-data battleground", "Cities", 2026, "Signal Desk", "Discovery lane: public records, AI training, municipal data. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80"], ["Urban sensor networks migrate from pilots to long-term vendor contracts", "Cities", 2026, "Signal Desk", "Discovery lane: urban sensors, vendor contracts, smart city. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1400&q=80"], ["Homelessness dashboards create new governance fights over measurement", "Cities", 2026, "Signal Desk", "Discovery lane: homelessness, dashboards, metrics, governance. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80"], ["Cities weigh drone response units against civil-liberties concerns", "Cities", 2026, "Signal Desk", "Discovery lane: drones, cities, emergency response, civil liberties. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80"], ["Municipal finance teams study data centers as tax-base strategy", "Cities", 2026, "Signal Desk", "Discovery lane: municipal finance, data centers, tax base. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80"], ["Banks rebuild fraud stacks around behavioral biometrics", "Finance", 2026, "Signal Desk", "Discovery lane: banks, fraud, behavioral biometrics, identity. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Asset managers test AI research copilots behind compliance walls", "Finance", 2026, "Signal Desk", "Discovery lane: asset management, AI research, compliance. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Credit bureaus package alternative data for thin-file lending", "Finance", 2026, "Signal Desk", "Discovery lane: credit bureaus, alternative data, lending. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Fintech lenders face scrutiny over model drift in downturn scenarios", "Finance", 2026, "Signal Desk", "Discovery lane: fintech, model drift, lending risk. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Payment networks explore identity tokens for agent commerce", "Finance", 2026, "Signal Desk", "Discovery lane: payments, identity tokens, agent commerce. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Wealth platforms use AI to segment next-best-action advice", "Finance", 2026, "Signal Desk", "Discovery lane: wealthtech, AI advice, client segmentation. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Banks consolidate vendor risk tools after third-party breaches", "Finance", 2026, "Signal Desk", "Discovery lane: vendor risk, banks, cybersecurity, third-party. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Stablecoin issuers court payroll and remittance corridors", "Finance", 2026, "Signal Desk", "Discovery lane: stablecoins, payroll, remittance, payments. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["Treasury teams demand real-time cash visibility across fragmented banks", "Finance", 2026, "Signal Desk", "Discovery lane: treasury, cash visibility, banking fragmentation. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Insurers deploy AI claims triage while regulators examine bias", "Finance", 2026, "Signal Desk", "Discovery lane: insurance, claims AI, bias, regulation. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"], ["Financial data vendors move from feeds to decision APIs", "Finance", 2026, "Signal Desk", "Discovery lane: financial data, APIs, decision infrastructure. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80"], ["Family offices increase exposure to energy infrastructure for AI demand", "Finance", 2026, "Signal Desk", "Discovery lane: family offices, energy infrastructure, AI demand. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1400&q=80"], ["Streaming platforms test synthetic actors for localized ad creative", "Media", 2026, "Signal Desk", "Discovery lane: streaming, synthetic actors, ads, localization. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80"], ["Publishers explore semantic archive search as new subscription feature", "Media", 2026, "Signal Desk", "Discovery lane: publishers, semantic search, archives, subscriptions. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80"], ["Studios use AI localization to release regional trailers faster", "Media", 2026, "Signal Desk", "Discovery lane: studios, AI localization, trailers, media. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80"], ["Newsrooms build internal knowledge graphs for investigative continuity", "Media", 2026, "Signal Desk", "Discovery lane: newsrooms, knowledge graphs, investigations. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Creator platforms sell brand-safety scoring as advertiser infrastructure", "Media", 2026, "Signal Desk", "Discovery lane: creator economy, brand safety, advertisers. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Sports leagues test personalized AI commentary streams", "Media", 2026, "Signal Desk", "Discovery lane: sports, AI commentary, personalization. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Music labels negotiate voice-model licensing frameworks", "Media", 2026, "Signal Desk", "Discovery lane: music, voice models, licensing, AI. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Adtech firms rebrand identity graphs as clean-room measurement", "Media", 2026, "Signal Desk", "Discovery lane: adtech, clean rooms, identity graphs. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Media companies turn old catalogs into machine-readable rights assets", "Media", 2026, "Signal Desk", "Discovery lane: media catalogs, rights, metadata, licensing. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Reality television producers test synthetic casting analytics", "Media", 2026, "Signal Desk", "Discovery lane: reality TV, casting analytics, AI. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Local news groups experiment with city-level civic intelligence products", "Media", 2026, "Signal Desk", "Discovery lane: local news, civic intelligence, media. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["Podcast networks package transcripts as searchable enterprise knowledge", "Media", 2026, "Signal Desk", "Discovery lane: podcasts, transcripts, enterprise search. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Hospital systems deploy AI triage while liability remains unresolved", "Healthcare", 2026, "Signal Desk", "Discovery lane: hospitals, AI triage, liability, clinical automation. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"], ["Pharma companies use AI to reprioritize dormant drug libraries", "Healthcare", 2026, "Signal Desk", "Discovery lane: pharma, drug discovery, AI triage. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80"], ["Insurers demand documentation trails for AI-supported prior authorizations", "Healthcare", 2026, "Signal Desk", "Discovery lane: insurance, prior authorization, audit trails. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1400&q=80"], ["Clinical trial sponsors use semantic matching to improve recruitment", "Healthcare", 2026, "Signal Desk", "Discovery lane: clinical trials, semantic matching, recruitment. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80"], ["Health systems centralize patient messaging through automation layers", "Healthcare", 2026, "Signal Desk", "Discovery lane: patient messaging, automation, health systems. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80"], ["Radiology AI vendors shift from detection to workflow orchestration", "Healthcare", 2026, "Signal Desk", "Discovery lane: radiology AI, workflow, clinical operations. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80"], ["Hospital cybersecurity budgets rise after ransomware downtime events", "Healthcare", 2026, "Signal Desk", "Discovery lane: hospital cybersecurity, ransomware, downtime. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["PBMs face pressure over algorithmic formulary steering", "Healthcare", 2026, "Signal Desk", "Discovery lane: PBMs, algorithms, formulary, healthcare costs. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Remote monitoring companies compete for chronic-care contracts", "Healthcare", 2026, "Signal Desk", "Discovery lane: remote monitoring, chronic care, contracts. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Life sciences data rooms become AI-ready diligence products", "Healthcare", 2026, "Signal Desk", "Discovery lane: life sciences, data rooms, M&A, AI diligence. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Clinical documentation startups sell physician burnout reduction", "Healthcare", 2026, "Signal Desk", "Discovery lane: clinical documentation, burnout, AI scribes. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Healthcare boards demand model-governance policies before AI rollout", "Healthcare", 2026, "Signal Desk", "Discovery lane: model governance, healthcare AI, boards. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Agencies split between AI speed mandates and safety review requirements", "Government", 2026, "Signal Desk", "Discovery lane: government AI, safety review, modernization. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Public procurement offices test semantic vendor discovery", "Government", 2026, "Signal Desk", "Discovery lane: procurement, semantic search, vendors, government. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["States centralize unemployment systems after fraud waves", "Government", 2026, "Signal Desk", "Discovery lane: unemployment systems, fraud, state IT. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Tax agencies use anomaly detection to prioritize audits", "Government", 2026, "Signal Desk", "Discovery lane: tax, anomaly detection, audits, government. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"], ["Federal data inventories become AI-readiness bottleneck", "Government", 2026, "Signal Desk", "Discovery lane: data inventories, AI readiness, federal agencies. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80"], ["Watchdogs examine consulting contracts around digital modernization", "Government", 2026, "Signal Desk", "Discovery lane: watchdogs, consulting, modernization, contracts. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1400&q=80"], ["Immigration case systems become flashpoint for automation policy", "Government", 2026, "Signal Desk", "Discovery lane: immigration, automation, case systems. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80"], ["Defense-adjacent grants push universities into dual-use research", "Government", 2026, "Signal Desk", "Discovery lane: dual-use research, grants, universities. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80"], ["Election offices buy cyber resilience tools ahead of local contests", "Government", 2026, "Signal Desk", "Discovery lane: elections, cybersecurity, local government. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80"], ["Public-sector cloud migrations face sovereignty and lock-in concerns", "Government", 2026, "Signal Desk", "Discovery lane: cloud migration, sovereignty, vendor lock-in. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Regulators explore AI labeling rules for consumer-facing agents", "Government", 2026, "Signal Desk", "Discovery lane: regulation, AI agents, labeling. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Government call centers pilot AI voice agents under union scrutiny", "Government", 2026, "Signal Desk", "Discovery lane: call centers, AI voice agents, unions. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Cyber insurers demand recovery drills before coverage renewal", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: cyber insurance, recovery drills, resilience. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Ransomware crews exploit unmanaged SaaS identities", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: ransomware, SaaS identity, access control. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Security teams treat browser extensions as enterprise attack surface", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: browser extensions, enterprise security, attack surface. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Critical infrastructure operators adopt continuous asset discovery", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: critical infrastructure, asset discovery, OT security. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["AI-generated phishing forces banks to rethink voice authentication", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: phishing, voice authentication, banks, AI. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["Software vendors publish SBOMs but buyers struggle to use them", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: SBOM, software supply chain, procurement. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Managed security providers add AI alert triage to retain margins", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: MSSP, alert triage, AI, security operations. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"], ["Zero-trust budgets shift toward identity graph cleanup", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: zero trust, identity graph, security budgets. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80"], ["Cloud misconfiguration remains leading cause of data exposure", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: cloud security, misconfiguration, data exposure. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1400&q=80"], ["Open-source package takeovers trigger board-level questions", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: open source, package takeover, board risk. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80"], ["Endpoint vendors bundle DLP with insider-risk analytics", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: DLP, insider risk, endpoint security. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80"], ["CISOs demand evidence trails for AI-generated security actions", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: CISO, AI security, evidence trails. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80"], ["Semiconductor suppliers audit hidden China exposure across subcontractors", "Supply Chain", 2026, "Signal Desk", "Discovery lane: semiconductors, China exposure, supplier graph. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Ports adopt autonomous inspection drones amid labor pressure", "Supply Chain", 2026, "Signal Desk", "Discovery lane: ports, drones, labor, inspection. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Shipping insurers monitor Hormuz through AIS gaps and satellite data", "Supply Chain", 2026, "Signal Desk", "Discovery lane: shipping, Hormuz, AIS, satellite. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Retailers use computer vision to score shelf compliance", "Supply Chain", 2026, "Signal Desk", "Discovery lane: retail, computer vision, shelf compliance. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Cold-chain logistics firms sell pharma-grade telemetry to grocers", "Supply Chain", 2026, "Signal Desk", "Discovery lane: cold chain, telemetry, pharma, grocery. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Manufacturers reshore critical parts while keeping software offshore", "Supply Chain", 2026, "Signal Desk", "Discovery lane: reshoring, manufacturing, software supply chain. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Customs brokers package AI classification tools for importers", "Supply Chain", 2026, "Signal Desk", "Discovery lane: customs, AI classification, import compliance. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Freight platforms pivot from marketplaces to control towers", "Supply Chain", 2026, "Signal Desk", "Discovery lane: freight, control tower, logistics software. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["Warehouse robotics firms shift to subscription software margins", "Supply Chain", 2026, "Signal Desk", "Discovery lane: warehouse robotics, SaaS, logistics. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Battery supply chains map forced-labor risk through supplier graphs", "Supply Chain", 2026, "Signal Desk", "Discovery lane: battery, forced labor, supplier graph. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"], ["Food distributors use weather data to hedge regional shortages", "Supply Chain", 2026, "Signal Desk", "Discovery lane: food distribution, weather, shortages. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80"], ["Automakers trace rare-earth exposure across tier-two suppliers", "Supply Chain", 2026, "Signal Desk", "Discovery lane: automotive, rare earths, supplier risk. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure.", "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1400&q=80"], ["AI browser defaults become the next search distribution war — regulatory pressure angle", "Technology", 2026, "Signal Desk", "Discovery lane: AI search, browser defaults, distribution, platform lock-in, mobile placement. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: regulatory pressure.", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80"], ["Open-source model labs compete with closed frontier systems through enterprise fine-tunes — capital rotation angle", "Technology", 2026, "Signal Desk", "Discovery lane: open models, frontier AI, enterprise adoption, model strategy. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: capital rotation.", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80"], ["Cloud vendors bundle AI credits into long-term infrastructure contracts — infrastructure constraint angle", "Technology", 2026, "Signal Desk", "Discovery lane: cloud contracts, AI credits, vendor lock-in, infrastructure spend. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: infrastructure constraint.", "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80"], ["Semiconductor packaging capacity becomes the hidden AI bottleneck — platform control angle", "Technology", 2026, "Signal Desk", "Discovery lane: advanced packaging, chips, AI supply chain, capacity constraint. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: platform control.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["AI agents move from chat interfaces into procurement workflows — governance failure angle", "Technology", 2026, "Signal Desk", "Discovery lane: agents, procurement, enterprise automation, workflow routing. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: governance failure.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Consumer device makers reposition phones as local AI inference nodes — market structure angle", "Technology", 2026, "Signal Desk", "Discovery lane: edge AI, smartphones, inference, privacy. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: market structure.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Synthetic data vendors become compliance layer for model training — security exposure angle", "Technology", 2026, "Signal Desk", "Discovery lane: synthetic data, compliance, privacy, AI training. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: security exposure.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Foundation model companies quietly court regulated-industry auditors — procurement wedge angle", "Technology", 2026, "Signal Desk", "Discovery lane: AI audit, regulated industry, compliance, enterprise trust. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: procurement wedge.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Enterprise copilots hit friction at the permissions layer — regulatory pressure angle", "Technology", 2026, "Signal Desk", "Discovery lane: copilots, permissions, enterprise data, security. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: regulatory pressure.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Model-routing startups pitch lower inference spend to CFOs — capital rotation angle", "Technology", 2026, "Signal Desk", "Discovery lane: model routing, inference cost, CFO, AI infrastructure. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: capital rotation.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Data-labeling firms pivot to evaluation and red-team services — infrastructure constraint angle", "Technology", 2026, "Signal Desk", "Discovery lane: data labeling, evals, red teaming, AI safety. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: infrastructure constraint.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["GPU cloud resellers face margin pressure as hyperscalers reprice capacity — platform control angle", "Technology", 2026, "Signal Desk", "Discovery lane: GPU cloud, hyperscalers, capacity, margin pressure. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: platform control.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["AI infrastructure stocks begin trading like energy assets — governance failure angle", "Markets", 2026, "Signal Desk", "Discovery lane: AI capex, power demand, data centers, market rotation. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: governance failure.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"], ["Oil volatility reprices shipping insurance around Hormuz risk — market structure angle", "Markets", 2026, "Signal Desk", "Discovery lane: oil, shipping insurance, Hormuz, geopolitical risk. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: market structure.", "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80"], ["Prediction markets become a shadow volatility index for politics — security exposure angle", "Markets", 2026, "Signal Desk", "Discovery lane: prediction markets, political risk, volatility, odds. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: security exposure.", "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1400&q=80"], ["Private credit lenders tighten covenants around software rollups — procurement wedge angle", "Markets", 2026, "Signal Desk", "Discovery lane: private credit, software rollups, covenants, debt risk. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: procurement wedge.", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80"], ["Exchange operators test tokenized collateral with institutional desks — regulatory pressure angle", "Markets", 2026, "Signal Desk", "Discovery lane: tokenized collateral, exchanges, institutional finance. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: regulatory pressure.", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80"], ["Copper traders watch grid buildout as AI demand accelerates — capital rotation angle", "Markets", 2026, "Signal Desk", "Discovery lane: copper, grid, AI infrastructure, commodities. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: capital rotation.", "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80"], ["Real estate funds rotate from office towers into powered land — infrastructure constraint angle", "Markets", 2026, "Signal Desk", "Discovery lane: real estate, powered land, data centers, capital rotation. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: infrastructure constraint.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Insurance-linked securities reprice climate tail risk — platform control angle", "Markets", 2026, "Signal Desk", "Discovery lane: insurance, climate risk, catastrophe bonds, tail risk. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: platform control.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Macro funds track data-center interconnect queues as growth signal — governance failure angle", "Markets", 2026, "Signal Desk", "Discovery lane: macro funds, data centers, interconnect queues, growth. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: governance failure.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Central banks warn automated trading could amplify liquidity gaps — market structure angle", "Markets", 2026, "Signal Desk", "Discovery lane: central banks, automated trading, liquidity, market shocks. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: market structure.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Defense spending basket outperforms as autonomy procurement accelerates — security exposure angle", "Markets", 2026, "Signal Desk", "Discovery lane: defense stocks, autonomy, procurement, markets. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: security exposure.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["AI capex questions pressure cloud margins after earnings — procurement wedge angle", "Markets", 2026, "Signal Desk", "Discovery lane: AI capex, cloud margins, earnings, hyperscalers. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: procurement wedge.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Defense startups shift from drones to command software — regulatory pressure angle", "Defense", 2026, "Signal Desk", "Discovery lane: defense tech, drones, command software, autonomy. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: regulatory pressure.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Sensor fusion vendors pitch JADC2-compatible decision layers — capital rotation angle", "Defense", 2026, "Signal Desk", "Discovery lane: JADC2, sensor fusion, defense software, decision support. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: capital rotation.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["Electronic warfare lessons reshape NATO drone procurement — infrastructure constraint angle", "Defense", 2026, "Signal Desk", "Discovery lane: electronic warfare, NATO, drones, Ukraine lessons. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: infrastructure constraint.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Autonomy companies sell human-on-the-loop compliance as procurement feature — platform control angle", "Defense", 2026, "Signal Desk", "Discovery lane: autonomy, compliance, defense procurement, ROE. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: platform control.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"], ["Space firms package commercial imagery as tactical intelligence feeds — governance failure angle", "Defense", 2026, "Signal Desk", "Discovery lane: space, satellite imagery, tactical intelligence, ISR. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: governance failure.", "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80"], ["Defense primes bundle LLM assistants into secure mission environments — market structure angle", "Defense", 2026, "Signal Desk", "Discovery lane: LLMs, defense primes, secure assistants, mission software. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: market structure.", "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1400&q=80"], ["Border surveillance contracts expand through counter-drone justifications — security exposure angle", "Defense", 2026, "Signal Desk", "Discovery lane: border surveillance, counter-drone, procurement, sensors. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: security exposure.", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80"], ["Naval logistics software becomes resilience priority in contested Pacific — procurement wedge angle", "Defense", 2026, "Signal Desk", "Discovery lane: naval logistics, Pacific, resilience, software. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: procurement wedge.", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80"], ["Allied militaries test AI-generated courses of action in exercises — regulatory pressure angle", "Defense", 2026, "Signal Desk", "Discovery lane: AI COA, military exercises, command planning. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: regulatory pressure.", "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80"], ["Procurement offices demand audit trails for AI mission recommendations — capital rotation angle", "Defense", 2026, "Signal Desk", "Discovery lane: audit trails, defense AI, procurement, explainability. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: capital rotation.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Autonomous maritime systems draw capital as chokepoint risk rises — infrastructure constraint angle", "Defense", 2026, "Signal Desk", "Discovery lane: maritime autonomy, chokepoints, defense investment. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: infrastructure constraint.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Defense accelerators prioritize dual-use infrastructure tools — platform control angle", "Defense", 2026, "Signal Desk", "Discovery lane: dual-use, defense accelerators, infrastructure, startups. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: platform control.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Utilities price AI data centers as new baseload demand — governance failure angle", "Energy", 2026, "Signal Desk", "Discovery lane: utilities, AI data centers, baseload, power demand. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: governance failure.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Grid interconnection queues become data-center deal bottleneck — market structure angle", "Energy", 2026, "Signal Desk", "Discovery lane: interconnection, grid, data centers, bottleneck. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: market structure.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Natural gas plants return to AI infrastructure pitch decks — security exposure angle", "Energy", 2026, "Signal Desk", "Discovery lane: natural gas, AI infrastructure, power generation. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: security exposure.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Nuclear small modular reactor vendors target hyperscaler demand — procurement wedge angle", "Energy", 2026, "Signal Desk", "Discovery lane: SMR, nuclear, hyperscalers, energy. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: procurement wedge.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Battery storage developers chase data-center reliability contracts — regulatory pressure angle", "Energy", 2026, "Signal Desk", "Discovery lane: battery storage, data centers, reliability. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: regulatory pressure.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["Water constraints slow campus-scale AI infrastructure projects — capital rotation angle", "Energy", 2026, "Signal Desk", "Discovery lane: water, AI infrastructure, local permitting. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: capital rotation.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Energy traders monitor cooling demand from GPU clusters — infrastructure constraint angle", "Energy", 2026, "Signal Desk", "Discovery lane: cooling demand, GPU clusters, energy trading. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: infrastructure constraint.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"], ["Transmission permitting becomes central AI policy issue — platform control angle", "Energy", 2026, "Signal Desk", "Discovery lane: transmission, permitting, AI policy, grid. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: platform control.", "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80"], ["Oil majors explore data-center power partnerships — governance failure angle", "Energy", 2026, "Signal Desk", "Discovery lane: oil majors, data centers, power partnerships. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: governance failure.", "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1400&q=80"], ["Municipal utilities gain leverage over AI campus site selection — market structure angle", "Energy", 2026, "Signal Desk", "Discovery lane: municipal utilities, site selection, data centers. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: market structure.", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80"], ["Demand response startups pitch GPU load flexibility — security exposure angle", "Energy", 2026, "Signal Desk", "Discovery lane: demand response, GPU load, grid flexibility. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: security exposure.", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80"], ["Renewables developers attach compute demand to project finance — procurement wedge angle", "Energy", 2026, "Signal Desk", "Discovery lane: renewables, project finance, compute demand. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: procurement wedge.", "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80"], ["Traffic safety modernization bundles surveillance analytics into city contracts — regulatory pressure angle", "Cities", 2026, "Signal Desk", "Discovery lane: smart cities, surveillance, traffic safety, procurement. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: regulatory pressure.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Mayors pitch AI permitting as housing backlog solution — capital rotation angle", "Cities", 2026, "Signal Desk", "Discovery lane: AI permitting, housing, municipalities, backlog. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: capital rotation.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Transit agencies test biometric fare systems amid privacy backlash — infrastructure constraint angle", "Cities", 2026, "Signal Desk", "Discovery lane: transit, biometrics, privacy, fare systems. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: infrastructure constraint.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Police departments rebrand predictive tools as resource optimization — platform control angle", "Cities", 2026, "Signal Desk", "Discovery lane: predictive policing, resource optimization, public safety. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: platform control.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Cities sell curb data access to logistics platforms — governance failure angle", "Cities", 2026, "Signal Desk", "Discovery lane: curb data, logistics, cities, data monetization. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: governance failure.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Municipal broadband programs become local AI infrastructure wedge — market structure angle", "Cities", 2026, "Signal Desk", "Discovery lane: municipal broadband, AI infrastructure, cities. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: market structure.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Water agencies use satellite data to enforce drought restrictions — security exposure angle", "Cities", 2026, "Signal Desk", "Discovery lane: water agencies, satellite data, drought, enforcement. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: security exposure.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Public records portals become AI training-data battleground — procurement wedge angle", "Cities", 2026, "Signal Desk", "Discovery lane: public records, AI training, municipal data. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: procurement wedge.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["Urban sensor networks migrate from pilots to long-term vendor contracts — regulatory pressure angle", "Cities", 2026, "Signal Desk", "Discovery lane: urban sensors, vendor contracts, smart city. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: regulatory pressure.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Homelessness dashboards create new governance fights over measurement — capital rotation angle", "Cities", 2026, "Signal Desk", "Discovery lane: homelessness, dashboards, metrics, governance. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: capital rotation.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"], ["Cities weigh drone response units against civil-liberties concerns — infrastructure constraint angle", "Cities", 2026, "Signal Desk", "Discovery lane: drones, cities, emergency response, civil liberties. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: infrastructure constraint.", "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80"], ["Municipal finance teams study data centers as tax-base strategy — platform control angle", "Cities", 2026, "Signal Desk", "Discovery lane: municipal finance, data centers, tax base. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: platform control.", "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1400&q=80"], ["Banks rebuild fraud stacks around behavioral biometrics — governance failure angle", "Finance", 2026, "Signal Desk", "Discovery lane: banks, fraud, behavioral biometrics, identity. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: governance failure.", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80"], ["Asset managers test AI research copilots behind compliance walls — market structure angle", "Finance", 2026, "Signal Desk", "Discovery lane: asset management, AI research, compliance. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: market structure.", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80"], ["Credit bureaus package alternative data for thin-file lending — security exposure angle", "Finance", 2026, "Signal Desk", "Discovery lane: credit bureaus, alternative data, lending. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: security exposure.", "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80"], ["Fintech lenders face scrutiny over model drift in downturn scenarios — procurement wedge angle", "Finance", 2026, "Signal Desk", "Discovery lane: fintech, model drift, lending risk. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: procurement wedge.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Payment networks explore identity tokens for agent commerce — regulatory pressure angle", "Finance", 2026, "Signal Desk", "Discovery lane: payments, identity tokens, agent commerce. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: regulatory pressure.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Wealth platforms use AI to segment next-best-action advice — capital rotation angle", "Finance", 2026, "Signal Desk", "Discovery lane: wealthtech, AI advice, client segmentation. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: capital rotation.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Banks consolidate vendor risk tools after third-party breaches — infrastructure constraint angle", "Finance", 2026, "Signal Desk", "Discovery lane: vendor risk, banks, cybersecurity, third-party. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: infrastructure constraint.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Stablecoin issuers court payroll and remittance corridors — platform control angle", "Finance", 2026, "Signal Desk", "Discovery lane: stablecoins, payroll, remittance, payments. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: platform control.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Treasury teams demand real-time cash visibility across fragmented banks — governance failure angle", "Finance", 2026, "Signal Desk", "Discovery lane: treasury, cash visibility, banking fragmentation. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: governance failure.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Insurers deploy AI claims triage while regulators examine bias — market structure angle", "Finance", 2026, "Signal Desk", "Discovery lane: insurance, claims AI, bias, regulation. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: market structure.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Financial data vendors move from feeds to decision APIs — security exposure angle", "Finance", 2026, "Signal Desk", "Discovery lane: financial data, APIs, decision infrastructure. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: security exposure.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["Family offices increase exposure to energy infrastructure for AI demand — procurement wedge angle", "Finance", 2026, "Signal Desk", "Discovery lane: family offices, energy infrastructure, AI demand. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: procurement wedge.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Streaming platforms test synthetic actors for localized ad creative — regulatory pressure angle", "Media", 2026, "Signal Desk", "Discovery lane: streaming, synthetic actors, ads, localization. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: regulatory pressure.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"], ["Publishers explore semantic archive search as new subscription feature — capital rotation angle", "Media", 2026, "Signal Desk", "Discovery lane: publishers, semantic search, archives, subscriptions. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: capital rotation.", "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80"], ["Studios use AI localization to release regional trailers faster — infrastructure constraint angle", "Media", 2026, "Signal Desk", "Discovery lane: studios, AI localization, trailers, media. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: infrastructure constraint.", "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1400&q=80"], ["Newsrooms build internal knowledge graphs for investigative continuity — platform control angle", "Media", 2026, "Signal Desk", "Discovery lane: newsrooms, knowledge graphs, investigations. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: platform control.", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80"], ["Creator platforms sell brand-safety scoring as advertiser infrastructure — governance failure angle", "Media", 2026, "Signal Desk", "Discovery lane: creator economy, brand safety, advertisers. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: governance failure.", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80"], ["Sports leagues test personalized AI commentary streams — market structure angle", "Media", 2026, "Signal Desk", "Discovery lane: sports, AI commentary, personalization. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: market structure.", "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80"], ["Music labels negotiate voice-model licensing frameworks — security exposure angle", "Media", 2026, "Signal Desk", "Discovery lane: music, voice models, licensing, AI. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: security exposure.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Adtech firms rebrand identity graphs as clean-room measurement — procurement wedge angle", "Media", 2026, "Signal Desk", "Discovery lane: adtech, clean rooms, identity graphs. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: procurement wedge.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Media companies turn old catalogs into machine-readable rights assets — regulatory pressure angle", "Media", 2026, "Signal Desk", "Discovery lane: media catalogs, rights, metadata, licensing. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: regulatory pressure.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Reality television producers test synthetic casting analytics — capital rotation angle", "Media", 2026, "Signal Desk", "Discovery lane: reality TV, casting analytics, AI. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: capital rotation.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Local news groups experiment with city-level civic intelligence products — infrastructure constraint angle", "Media", 2026, "Signal Desk", "Discovery lane: local news, civic intelligence, media. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: infrastructure constraint.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Podcast networks package transcripts as searchable enterprise knowledge — platform control angle", "Media", 2026, "Signal Desk", "Discovery lane: podcasts, transcripts, enterprise search. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: platform control.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Hospital systems deploy AI triage while liability remains unresolved — governance failure angle", "Healthcare", 2026, "Signal Desk", "Discovery lane: hospitals, AI triage, liability, clinical automation. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: governance failure.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Pharma companies use AI to reprioritize dormant drug libraries — market structure angle", "Healthcare", 2026, "Signal Desk", "Discovery lane: pharma, drug discovery, AI triage. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: market structure.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["Insurers demand documentation trails for AI-supported prior authorizations — security exposure angle", "Healthcare", 2026, "Signal Desk", "Discovery lane: insurance, prior authorization, audit trails. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: security exposure.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Clinical trial sponsors use semantic matching to improve recruitment — procurement wedge angle", "Healthcare", 2026, "Signal Desk", "Discovery lane: clinical trials, semantic matching, recruitment. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: procurement wedge.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"], ["Health systems centralize patient messaging through automation layers — regulatory pressure angle", "Healthcare", 2026, "Signal Desk", "Discovery lane: patient messaging, automation, health systems. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: regulatory pressure.", "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80"], ["Radiology AI vendors shift from detection to workflow orchestration — capital rotation angle", "Healthcare", 2026, "Signal Desk", "Discovery lane: radiology AI, workflow, clinical operations. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: capital rotation.", "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1400&q=80"], ["Hospital cybersecurity budgets rise after ransomware downtime events — infrastructure constraint angle", "Healthcare", 2026, "Signal Desk", "Discovery lane: hospital cybersecurity, ransomware, downtime. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: infrastructure constraint.", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80"], ["PBMs face pressure over algorithmic formulary steering — platform control angle", "Healthcare", 2026, "Signal Desk", "Discovery lane: PBMs, algorithms, formulary, healthcare costs. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: platform control.", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80"], ["Remote monitoring companies compete for chronic-care contracts — governance failure angle", "Healthcare", 2026, "Signal Desk", "Discovery lane: remote monitoring, chronic care, contracts. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: governance failure.", "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80"], ["Life sciences data rooms become AI-ready diligence products — market structure angle", "Healthcare", 2026, "Signal Desk", "Discovery lane: life sciences, data rooms, M&A, AI diligence. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: market structure.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Clinical documentation startups sell physician burnout reduction — security exposure angle", "Healthcare", 2026, "Signal Desk", "Discovery lane: clinical documentation, burnout, AI scribes. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: security exposure.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Healthcare boards demand model-governance policies before AI rollout — procurement wedge angle", "Healthcare", 2026, "Signal Desk", "Discovery lane: model governance, healthcare AI, boards. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: procurement wedge.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Agencies split between AI speed mandates and safety review requirements — regulatory pressure angle", "Government", 2026, "Signal Desk", "Discovery lane: government AI, safety review, modernization. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: regulatory pressure.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Public procurement offices test semantic vendor discovery — capital rotation angle", "Government", 2026, "Signal Desk", "Discovery lane: procurement, semantic search, vendors, government. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: capital rotation.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["States centralize unemployment systems after fraud waves — infrastructure constraint angle", "Government", 2026, "Signal Desk", "Discovery lane: unemployment systems, fraud, state IT. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: infrastructure constraint.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Tax agencies use anomaly detection to prioritize audits — platform control angle", "Government", 2026, "Signal Desk", "Discovery lane: tax, anomaly detection, audits, government. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: platform control.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Federal data inventories become AI-readiness bottleneck — governance failure angle", "Government", 2026, "Signal Desk", "Discovery lane: data inventories, AI readiness, federal agencies. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: governance failure.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["Watchdogs examine consulting contracts around digital modernization — market structure angle", "Government", 2026, "Signal Desk", "Discovery lane: watchdogs, consulting, modernization, contracts. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: market structure.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Immigration case systems become flashpoint for automation policy — security exposure angle", "Government", 2026, "Signal Desk", "Discovery lane: immigration, automation, case systems. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: security exposure.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"], ["Defense-adjacent grants push universities into dual-use research — procurement wedge angle", "Government", 2026, "Signal Desk", "Discovery lane: dual-use research, grants, universities. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: procurement wedge.", "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1400&q=80"], ["Election offices buy cyber resilience tools ahead of local contests — regulatory pressure angle", "Government", 2026, "Signal Desk", "Discovery lane: elections, cybersecurity, local government. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: regulatory pressure.", "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1f?auto=format&fit=crop&w=1400&q=80"], ["Public-sector cloud migrations face sovereignty and lock-in concerns — capital rotation angle", "Government", 2026, "Signal Desk", "Discovery lane: cloud migration, sovereignty, vendor lock-in. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: capital rotation.", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80"], ["Regulators explore AI labeling rules for consumer-facing agents — infrastructure constraint angle", "Government", 2026, "Signal Desk", "Discovery lane: regulation, AI agents, labeling. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: infrastructure constraint.", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80"], ["Government call centers pilot AI voice agents under union scrutiny — platform control angle", "Government", 2026, "Signal Desk", "Discovery lane: call centers, AI voice agents, unions. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: platform control.", "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80"], ["Cyber insurers demand recovery drills before coverage renewal — governance failure angle", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: cyber insurance, recovery drills, resilience. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: governance failure.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Ransomware crews exploit unmanaged SaaS identities — market structure angle", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: ransomware, SaaS identity, access control. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: market structure.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Security teams treat browser extensions as enterprise attack surface — security exposure angle", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: browser extensions, enterprise security, attack surface. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: security exposure.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Critical infrastructure operators adopt continuous asset discovery — procurement wedge angle", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: critical infrastructure, asset discovery, OT security. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: procurement wedge.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["AI-generated phishing forces banks to rethink voice authentication — regulatory pressure angle", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: phishing, voice authentication, banks, AI. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: regulatory pressure.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Software vendors publish SBOMs but buyers struggle to use them — capital rotation angle", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: SBOM, software supply chain, procurement. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: capital rotation.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Managed security providers add AI alert triage to retain margins — infrastructure constraint angle", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: MSSP, alert triage, AI, security operations. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: infrastructure constraint.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Zero-trust budgets shift toward identity graph cleanup — platform control angle", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: zero trust, identity graph, security budgets. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: platform control.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8311d?auto=format&fit=crop&w=1400&q=80"], ["Cloud misconfiguration remains leading cause of data exposure — governance failure angle", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: cloud security, misconfiguration, data exposure. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: governance failure.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Open-source package takeovers trigger board-level questions — market structure angle", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: open source, package takeover, board risk. This signal is indexed for coherence across institutions, incentives, infrastructure, capital flows, and hidden operational pressure. Secondary lens: market structure.", "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1400&q=80"]];
+function fallbackSignalCard(title='',section='',source='',i=0){
+  const palette=[
+    ['#0b0b0b','#f4f1eb','#b24b36'],
+    ['#11100d','#ece7dc','#7f8a78'],
+    ['#090b0e','#f2eee6','#6f8fa8'],
+    ['#0d0b0a','#f1eadf','#b07a52'],
+    ['#0a0d0c','#efe9de','#8b6f9f'],
+    ['#0c0c10','#f5efe6','#c0a35a'],
+    ['#100b0b','#f2ece3','#a94f45'],
+    ['#090d10','#f1ede5','#5f8c8d']
+  ];
+  const [bg,fg,accent]=palette[Math.abs(i)%palette.length];
+  const safeTitle=esc(title||'Signal');
+  const safeSection=esc(section||'Signal');
+  const safeSource=esc(source||'SUMMON');
+  const words=String(title||'Signal').split(/\s+/).filter(Boolean);
+  const lines=[];
+  let line='';
+  for(const word of words){
+    const test=line?`${line} ${word}`:word;
+    if(test.length>25&&line){lines.push(line);line=word}else line=test;
+    if(lines.length===3)break;
+  }
+  if(line&&lines.length<4)lines.push(line);
+  const text=lines.slice(0,4).map((line,idx)=>`<text x="34" y="${116+idx*42}" font-family="Arial, Helvetica, sans-serif" font-size="31" font-weight="700" letter-spacing="-.9" fill="${fg}">${esc(line)}</text>`).join('');
+  const density=Array.from({length:12},(_,n)=>`<rect x="${34+n*28}" y="${318+(n%3)*10}" width="${12+(n%5)*9}" height="2" fill="${n%4===0?accent:fg}" opacity="${n%4===0?.9:.22}"/>`).join('');
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560">
+    <rect width="900" height="560" fill="${bg}"/>
+    <rect x="16" y="16" width="868" height="528" fill="none" stroke="${fg}" stroke-opacity=".14"/>
+    <rect x="34" y="34" width="132" height="22" fill="${accent}"/>
+    <text x="34" y="82" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" letter-spacing="3" fill="${fg}" opacity=".64">${safeSection.toUpperCase()}</text>
+    ${text}
+    ${density}
+    <text x="34" y="492" font-family="Courier New, monospace" font-size="16" letter-spacing="2.4" fill="${fg}" opacity=".48">${safeSource.toUpperCase()} / SIGNAL-${String(i+1).padStart(3,'0')}</text>
+    <circle cx="830" cy="72" r="36" fill="none" stroke="${accent}" stroke-width="3" opacity=".86"/>
+    <path d="M805 72h50M830 47v50" stroke="${fg}" stroke-opacity=".28" stroke-width="2"/>
+  </svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
 
-function staticSignalRecord(row){
-  const [title,section,year,source,summary,image]=row;
+/* Live signal corpus — fast, keyless default provider.
+   Primary default: Hacker News Algolia Search API.
+   Why: no API key, CORS-friendly JSON, quick responses, real story URLs,
+   and enough density for a signal wall without stock images or fake padding.
+
+   Optional production paths:
+   - window.NEWS_API_PROXY_URL: preferred broad-news backend proxy.
+   - window.CURRENTS_API_KEY: direct Currents API key for broader world news.
+     For production, proxy the key server-side instead of exposing it in HTML.
+*/
+const NEWS_API_PROXY_URL=window.NEWS_API_PROXY_URL||'';
+const CURRENTS_API_KEY=window.CURRENTS_API_KEY||'';
+const CURRENTS_API_URL='https://api.currentsapi.services/v1/search';
+const HN_ALGOLIA_URL='https://hn.algolia.com/api/v1/search_by_date';
+const HN_STORY_URL='https://news.ycombinator.com/item?id=';
+const SIGNAL_CACHE_TTL_MS=6*60*1000;
+
+function signalLimit(){
+  return searchDepth==='archive'?600:searchDepth==='field'?300:120;
+}
+
+function stripHtml(value=''){
+  return String(value||'')
+    .replace(/<[^>]*>/g,' ')
+    .replace(/&amp;/g,'&')
+    .replace(/&quot;/g,'"')
+    .replace(/&#39;/g,"'")
+    .replace(/&lt;/g,'<')
+    .replace(/&gt;/g,'>')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+function normalizeNewsImage(url=''){
+  const clean=String(url||'').trim();
+  if(!clean)return '';
+  if(!/^https?:\/\//i.test(clean))return '';
+  return clean.replace(/^http:/i,'https:');
+}
+
+function domainFromUrl(url=''){
+  try{
+    const host=new URL(url).hostname.replace(/^www\./,'');
+    return host||'';
+  }catch(e){return ''}
+}
+
+function sectionFromSignal(title='',url='',fallback='Signal'){
+  const t=String(title||'').toLowerCase();
+  const d=String(domainFromUrl(url)||'').toLowerCase();
+  const hay=`${t} ${d}`;
+  if(/\b(ai|artificial intelligence|llm|openai|anthropic|model|agent|inference)\b/.test(hay))return 'AI';
+  if(/\b(cyber|security|breach|ransomware|vulnerability|exploit|zero-day|malware)\b/.test(hay))return 'Cyber';
+  if(/\b(defense|military|war|drone|missile|nato|army|navy|pentagon)\b/.test(hay))return 'Defense';
+  if(/\b(chip|semiconductor|nvidia|tsmc|intel|gpu|asml|cuda)\b/.test(hay))return 'Semiconductors';
+  if(/\b(energy|grid|nuclear|solar|oil|gas|battery|power|electricity)\b/.test(hay))return 'Energy';
+  if(/\b(market|fund|capital|startup|ipo|stock|bank|finance|crypto|bitcoin)\b/.test(hay))return 'Markets';
+  if(/\b(policy|regulation|law|court|antitrust|privacy|compliance|eu|sec|ftc)\b/.test(hay))return 'Policy';
+  if(/\b(infrastructure|cloud|compute|kubernetes|database|linux|open source|server|datacenter)\b/.test(hay))return 'Infrastructure';
+  if(/\b(robot|robotics|autonomous|vehicle|sensor|lidar|manufacturing)\b/.test(hay))return 'Robotics';
+  if(/\b(space|satellite|rocket|orbit|nasa|spacex)\b/.test(hay))return 'Space';
+  return fallback||'Signal';
+}
+
+function formatDateYear(value=''){
+  if(!value)return '';
+  const d=new Date(value);
+  if(!Number.isNaN(d.getTime()))return String(d.getUTCFullYear());
+  return String(value).slice(0,4);
+}
+
+function signalCacheKey(provider='hn'){
+  return `summon:${provider}:signals:${searchDepth}:v9`;
+}
+
+function readSignalCache(provider='hn'){
+  try{
+    const raw=localStorage.getItem(signalCacheKey(provider));
+    if(!raw)return null;
+    const parsed=JSON.parse(raw);
+    if(!parsed?.time||!Array.isArray(parsed?.rows))return null;
+    if(Date.now()-parsed.time>SIGNAL_CACHE_TTL_MS)return null;
+    return parsed.rows;
+  }catch(e){return null}
+}
+
+function writeSignalCache(rows,provider='hn'){
+  try{
+    localStorage.setItem(signalCacheKey(provider),JSON.stringify({time:Date.now(),rows:rows.slice(0,800)}));
+  }catch(e){}
+}
+
+function safeReplaceHistory(url){
+  try{
+    if(location.protocol==='file:')return;
+    history.replaceState(null,'',url);
+  }catch(e){}
+}
+
+function safeSetHash(value){
+  if(location.protocol==='file:')return;
+  safeReplaceHistory(`#${encodeURIComponent(value)}`);
+}
+
+function safeClearHash(){
+  if(location.protocol==='file:')return;
+  safeReplaceHistory(location.pathname+location.search);
+}
+
+function newsApiUnavailableRecord(error){
+  const message=String(error?.message||error||'news api unavailable').slice(0,160);
+  const title='Signal provider unavailable';
+  const section='API';
+  const source='Live Signal Provider';
+  const card=fallbackSignalCard(title,section,source,0);
   return {
     type:'signal',
     title,
     section,
-    year:String(year||''),
+    year:new Date().getFullYear().toString(),
     source,
-    genres:[section],
-    overview:`${title}. Source: ${source}. Published: ${year}. Section: ${section}. ${summary}`,
-    image,
-    src:image,
-    externalUrl:`https://www.google.com/search?q=${encodeURIComponent(title.replace(/ — .*$/,''))}`
+    genres:['API','Unavailable'],
+    overview:`${title}. ${message}. Signal mode is configured for live sources and will not substitute fake headlines, stock images, or duplicated filler.`,
+    image:card,
+    cover:card,
+    src:card,
+    externalUrl:'https://hn.algolia.com/api'
   };
 }
 
-async function loadSignals(limit){
-  const base=STATIC_SIGNALS.map(staticSignalRecord);
-  const offset=(Math.abs((corpusPageOffset||0)+(shuffleSeed||0)*17))%base.length;
-  const rotated=base.slice(offset).concat(base.slice(0,offset));
-  const out=[];
-  while(out.length<limit)out.push(...rotated);
-  return out.slice(0,limit);
+function proxySignalRecord(article,i=0){
+  const title=stripHtml(article.title||article.webTitle||article.headline||'Untitled signal');
+  const url=article.url||article.webUrl||article.shortUrl||article.link||'';
+  const section=stripHtml(article.section||article.sectionName||article.category||sectionFromSignal(title,url,'News'));
+  const source=stripHtml(article.source||article.publication||article.publisher||article.domain||domainFromUrl(url)||'News API');
+  const date=article.publishedAt||article.webPublicationDate||article.date||article.published||'';
+  const year=formatDateYear(date);
+  const summary=stripHtml(article.summary||article.description||article.trailText||article.content||'');
+  const tags=Array.isArray(article.tags)?article.tags.map(t=>typeof t==='string'?t:(t.webTitle||t.name||'')).filter(Boolean).slice(0,6):[];
+  const image=normalizeNewsImage(article.image||article.urlToImage||article.thumbnail||article.image_url||article.socialimage)||fallbackSignalCard(title,section,source,i);
+  return {
+    type:'signal',title,section,year,source,
+    genres:tags.length?tags:[section],
+    overview:`${title}. Source: ${source}. ${year?'Published: '+year+'. ':''}Section: ${section}. ${summary}`.trim(),
+    image,cover:image,src:image,
+    externalUrl:url
+  };
 }
 
+function hnSignalRecord(hit,i=0){
+  const title=stripHtml(hit.title||hit.story_title||hit.comment_text||'Untitled signal');
+  const url=hit.url||hit.story_url||`${HN_STORY_URL}${hit.objectID}`;
+  const source=domainFromUrl(url)||'news.ycombinator.com';
+  const section=sectionFromSignal(title,url,'Hacker News');
+  const year=formatDateYear(hit.created_at);
+  const points=Number.isFinite(Number(hit.points))?Number(hit.points):0;
+  const comments=Number.isFinite(Number(hit.num_comments))?Number(hit.num_comments):0;
+  const author=stripHtml(hit.author||'');
+  const hnUrl=`${HN_STORY_URL}${hit.objectID}`;
+  const image=fallbackSignalCard(title,section,source,i);
+  return {
+    type:'signal',
+    title,
+    section,
+    year,
+    source,
+    genres:[section,source].filter(Boolean).slice(0,4),
+    overview:`${title}. Source: ${source}. Hacker News signal. ${points?points+' points. ':''}${comments?comments+' comments. ':''}${author?'Submitted by '+author+'. ':''}${hit.created_at?'Published: '+hit.created_at+'. ':''}Discussion: ${hnUrl}`,
+    image,
+    cover:image,
+    src:image,
+    externalUrl:url||hnUrl,
+    discussionUrl:hnUrl,
+    points,
+    comments
+  };
+}
 
+async function fetchProxySignals(limit){
+  const target=Math.max(1,Number(limit)||signalLimit());
+  const pageSize=100;
+  const pages=Math.ceil(target/pageSize);
+  const basePage=1+Math.abs((corpusPageOffset||0)+(shuffleSeed||0));
+  const out=[];
 
-function signalLimit(){return searchDepth==='archive'?3000:1000}
+  for(let page=0;page<pages;page++){
+    const p=new URLSearchParams({limit:String(Math.min(pageSize,target-out.length)),pageSize:String(pageSize),depth:searchDepth,page:String(basePage+page)});
+    const res=await fetch(`${NEWS_API_PROXY_URL}${NEWS_API_PROXY_URL.includes('?')?'&':'?'}${p.toString()}`);
+    if(!res.ok)throw new Error(`news proxy ${res.status}`);
+    const data=await res.json();
+    const rows=Array.isArray(data)?data:(data.articles||data.results||data.news||[]);
+    for(const row of rows){
+      out.push(row);
+      if(out.length>=target)break;
+    }
+    if(out.length>=target||!rows.length)break;
+  }
 
+  return out.map(proxySignalRecord);
+}
+
+async function fetchCurrentsSignals(limit){
+  if(!CURRENTS_API_KEY)throw new Error('currents api key missing');
+  const target=Math.max(1,Number(limit)||signalLimit());
+  const cached=readSignalCache('currents');
+  if(cached?.length){
+    setStatus(`${Math.min(cached.length,target)} cached currents signals`);
+    return cached.slice(0,target).map(proxySignalRecord);
+  }
+
+  const keyword='AI OR cybersecurity OR defense OR energy OR semiconductors OR markets OR infrastructure OR regulation';
+  const pageSize=100;
+  const pages=Math.ceil(target/pageSize);
+  const rows=[];
+
+  for(let page=1;page<=pages;page++){
+    const p=new URLSearchParams({
+      keywords:keyword,
+      language:'en',
+      page_size:String(Math.min(pageSize,target-rows.length)),
+      page_number:String(page)
+    });
+    const res=await fetch(`${CURRENTS_API_URL}?${p.toString()}`,{
+      headers:{Authorization:CURRENTS_API_KEY}
+    });
+    if(!res.ok)throw new Error(`currents ${res.status}`);
+    const data=await res.json();
+    const news=Array.isArray(data?.news)?data.news:[];
+    for(const article of news){
+      rows.push(article);
+      if(rows.length>=target)break;
+    }
+    if(rows.length>=target||!news.length)break;
+  }
+
+  if(!rows.length)throw new Error('currents returned zero articles');
+  writeSignalCache(rows,'currents');
+  return rows.slice(0,target).map(proxySignalRecord);
+}
+
+async function fetchHackerNewsSignals(limit){
+  const target=Math.max(1,Number(limit)||signalLimit());
+  const cached=readSignalCache('hn');
+  if(cached?.length){
+    setStatus(`${Math.min(cached.length,target)} cached live signals`);
+    return cached.slice(0,target).map(hnSignalRecord);
+  }
+
+  const pageSize=100;
+  const pages=Math.ceil(target/pageSize);
+  const startPage=Math.abs((corpusPageOffset||0)+(shuffleSeed||0))%3;
+  const sinceDays=searchDepth==='archive'?45:searchDepth==='field'?21:10;
+  const since=Math.floor((Date.now()-sinceDays*24*60*60*1000)/1000);
+  const rows=[];
+
+  for(let i=0;i<pages;i++){
+    const page=startPage+i;
+    const p=new URLSearchParams({
+      tags:'story',
+      page:String(page),
+      hitsPerPage:String(Math.min(pageSize,target-rows.length)),
+      numericFilters:`created_at_i>${since}`
+    });
+    setStatus(`loading live signals ${i+1}/${pages}`);
+    const res=await fetch(`${HN_ALGOLIA_URL}?${p.toString()}`);
+    if(!res.ok)throw new Error(`hn algolia ${res.status}`);
+    const data=await res.json();
+    const hits=Array.isArray(data?.hits)?data.hits:[];
+    for(const hit of hits){
+      if(hit?.title||hit?.story_title)rows.push(hit);
+      if(rows.length>=target)break;
+    }
+    if(rows.length>=target||!hits.length)break;
+  }
+
+  if(!rows.length)throw new Error('hn algolia returned zero stories');
+  writeSignalCache(rows,'hn');
+  return rows.slice(0,target).map(hnSignalRecord);
+}
+
+async function loadSignals(limit){
+  const target=Math.max(1,Number(limit)||signalLimit());
+  try{
+    setStatus(`loading ${target} live signals`);
+    let rows=[];
+    if(NEWS_API_PROXY_URL){
+      rows=await fetchProxySignals(target);
+    }else if(CURRENTS_API_KEY){
+      rows=await fetchCurrentsSignals(target);
+    }else{
+      rows=await fetchHackerNewsSignals(target);
+    }
+
+    const seen=new Set(),out=[];
+    for(const row of rows){
+      const key=String(row.externalUrl||row.title||'').toLowerCase().trim();
+      if(!row.title||seen.has(key))continue;
+      seen.add(key);
+      out.push(row);
+      if(out.length>=target)break;
+    }
+    if(!out.length)throw new Error('signal provider returned zero stories');
+    return out;
+  }catch(e){
+    console.error(e);
+    setStatus('signal provider unavailable');
+    return [newsApiUnavailableRecord(e)];
+  }
+}
 
 function candidateText(m){
   if(m.type==='signal')return `${m.title}. ${m.section||''}. ${m.source||''}. ${m.overview||''}`;
   if(m.type==='book')return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.subjects||[]).join(', ')}. ${m.overview||''}`;
+  if(m.type==='film')return `${m.title}. ${m.year||''}. ${(m.genres||[]).join(', ')}. ${(m.actors||[]).join(', ')}. ${m.director||''}. ${m.overview||''}`;
   return `${m.title}. ${m.year||''}. ${(m.genres||[]).join(' ')}. ${m.overview||''}`;
-}
-
-
-/* Film loader fallback helpers */
-const STATIC_FILMS=[["Blade Runner", 1982, ["Science Fiction", "Noir"], "A burned-out detective hunts artificial humans in a rain-soaked corporate future where memory, identity, and personhood collapse into one another."], ["2001: A Space Odyssey", 1968, ["Science Fiction", "Mystery"], "Human evolution, artificial intelligence, and cosmic intelligence intersect through machines, silence, and unknown architecture."], ["The Matrix", 1999, ["Science Fiction", "Action"], "A hacker discovers reality is a control system and joins a resistance against the machine infrastructure beneath ordinary life."], ["Stalker", 1979, ["Science Fiction", "Drama"], "A guide leads two men into a forbidden zone where desire, faith, and ruin become indistinguishable."], ["Solaris", 1972, ["Science Fiction", "Drama"], "A space station orbiting an alien ocean becomes a chamber for memory, guilt, and impossible return."], ["Under the Skin", 2013, ["Science Fiction", "Horror"], "An alien intelligence moves through human desire, flesh, and loneliness while trying to understand embodiment."], ["Arrival", 2016, ["Science Fiction", "Drama"], "Language, time, grief, and contact converge when a linguist decodes alien communication."], ["Ex Machina", 2014, ["Science Fiction", "Thriller"], "A controlled experiment in artificial intelligence becomes a trap of desire, power, and escape."], ["Her", 2013, ["Romance", "Science Fiction"], "A lonely man falls in love with an operating system, exposing the emotional architecture of mediated intimacy."], ["The Conversation", 1974, ["Thriller", "Drama"], "A surveillance expert becomes trapped inside the moral consequences of listening."], ["Eyes Wide Shut", 1999, ["Drama", "Mystery"], "A doctor enters a nocturnal world of ritual, desire, and elite secrecy."], ["Mulholland Drive", 2001, ["Mystery", "Drama"], "Hollywood, identity, fantasy, and dream logic fracture into a haunted map of ambition."], ["Persona", 1966, ["Drama", "Psychological"], "Two women dissolve into one another through silence, projection, and identity collapse."], ["The Third Man", 1949, ["Noir", "Thriller"], "Postwar Vienna becomes a maze of betrayal, black markets, friendship, and moral ambiguity."], ["Vertigo", 1958, ["Mystery", "Romance"], "Obsession, image-making, and identity reconstruction spiral into fatal repetition."], ["The Invisible Man", 1933, ["Science Fiction", "Horror"], "A scientist becomes invisible and is consumed by power, paranoia, and social erasure."]];
-
-function fallbackStill(title='', type='film'){
-  const safeTitle=String(title||'SUMMON').slice(0,80);
-  const hue=[...safeTitle].reduce((a,c)=>a+c.charCodeAt(0),0)%360;
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200">
-    <defs>
-      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="hsl(${hue},18%,16%)"/>
-        <stop offset="1" stop-color="hsl(${(hue+42)%360},20%,5%)"/>
-      </linearGradient>
-      <filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".78" numOctaves="3"/></filter>
-    </defs>
-    <rect width="900" height="1200" fill="url(#g)"/>
-    <rect width="900" height="1200" filter="url(#n)" opacity=".12"/>
-    <rect x="48" y="48" width="804" height="1104" fill="none" stroke="rgba(246,241,232,.18)" stroke-width="2"/>
-    <text x="68" y="112" font-family="IBM Plex Mono,Menlo,monospace" font-size="24" fill="rgba(246,241,232,.58)" letter-spacing="4">SUMMON / ${String(type||'film').toUpperCase()}</text>
-    <foreignObject x="68" y="420" width="764" height="360">
-      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Georgia,serif;font-size:78px;line-height:.9;font-weight:600;letter-spacing:-3px;color:rgb(246,241,232);word-wrap:break-word;">${esc(safeTitle)}</div>
-    </foreignObject>
-  </svg>`;
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-}
-
-function staticFilmRecord(row){
-  const [title,year,genres,overview]=row;
-  const image=fallbackStill(title,'film');
-  return {
-    type:'film',
-    title,
-    year:String(year||''),
-    genres,
-    overview,
-    image,
-    src:image,
-    posterPath:'',
-    backdropPath:'',
-    externalUrl:`https://www.imdb.com/find?q=${encodeURIComponent(title)}`
-  };
-}
-
-async function fetchAlgoliaPage(page=0){
-  const url=typeof ALGOLIA_URL!=='undefined' ? ALGOLIA_URL : `https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/${ALGOLIA_INDEX}/query`;
-  const res=await fetch(url,{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'X-Algolia-Application-Id':ALGOLIA_APP_ID,
-      'X-Algolia-API-Key':ALGOLIA_API_KEY
-    },
-    body:JSON.stringify({
-      query:'',
-      hitsPerPage:typeof HITS!=='undefined'?HITS:250,
-      page,
-      attributesToRetrieve:['title','overview','poster_path','backdrop_path','posterPath','backdropPath','image','poster','year','release_date','genres','genre']
-    })
-  });
-  if(!res.ok)throw new Error(`algolia ${res.status}`);
-  return res.json();
-}
-
-function normalizeFilmHit(h) {
-  const title=h.title||h.name||'';
-  const overview=h.overview||h.description||h.plot||'';
-  if(!title || !overview)return null;
-
-  let genres=[];
-  if(Array.isArray(h.genres))genres=h.genres.map(g=>typeof g==='object'?(g.name||''):g).filter(Boolean);
-  else if(Array.isArray(h.genre))genres=h.genre.filter(Boolean);
-  else if(typeof h.genre==='string')genres=h.genre.split(',').map(s=>s.trim()).filter(Boolean);
-
-  const year=h.year || (h.release_date?String(h.release_date).slice(0,4):'');
-  const posterPath=norm(h.poster_path||h.posterPath||'');
-  const backdropPath=norm(h.backdrop_path||h.backdropPath||'');
-  const directImage=h.image||h.poster||h.thumbnail||'';
-  const image=directImage || (posterPath?img(posterPath,'w500'):'') || (backdropPath?img(backdropPath,'w780'):'') || fallbackStill(title,'film');
-
-  return {
-    type:'film',
-    title,
-    overview,
-    year:String(year||''),
-    genres,
-    posterPath,
-    backdropPath,
-    image,
-    src:image,
-    externalUrl:`https://www.imdb.com/find?q=${encodeURIComponent(title)}`
-  };
-}
-
-async function loadFilms(limit=filmLimit()) {
-  const movies=[];
-  const seen=new Set();
-  try {
-    const pages=typeof PAGES!=='undefined'?PAGES:2;
-    const pageBase=(typeof corpusPageOffset!=='undefined'?corpusPageOffset:0)%4;
-    const loaded=await Promise.all(Array.from({length:pages},(_,i)=>fetchAlgoliaPage((pageBase+i)%4).catch(()=>({hits:[]}))));
-    for(const page of loaded) {
-      for(const h of(page.hits||[])) {
-        const m=normalizeFilmHit(h);
-        if(!m || seen.has(m.title))continue;
-        seen.add(m.title);
-        movies.push(m);
-        if(movies.length>=limit)break;
-      }
-      if(movies.length>=limit)break;
-    }
-  } catch(e) {
-    console.warn('Algolia film load failed, using static fallback',e);
-  }
-
-  if(movies.length<Math.min(24,limit)) {
-    for(const row of STATIC_FILMS) {
-      const m=staticFilmRecord(row);
-      if(seen.has(m.title))continue;
-      seen.add(m.title);
-      movies.push(m);
-      if(movies.length>=limit)break;
-    }
-  }
-
-  return movies.slice(0,limit);
 }
 
 </script>
