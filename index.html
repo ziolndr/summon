@@ -1422,6 +1422,38 @@ body[data-mode="signal"]:not(.has-results) .film-wall{
   }
 }
 
+
+/* GDELT world corpora */
+body[data-mode="events"]:not(.has-results) .wall-cell,
+body[data-mode="themes"]:not(.has-results) .wall-cell,
+body[data-mode="actors"]:not(.has-results) .wall-cell,
+body[data-mode="images"]:not(.has-results) .wall-cell,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="events"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="themes"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="actors"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="images"]{
+  aspect-ratio:3 / 2 !important;
+}
+
+body[data-mode="events"]:not(.has-results) .film-wall,
+body[data-mode="themes"]:not(.has-results) .film-wall,
+body[data-mode="actors"]:not(.has-results) .film-wall,
+body[data-mode="images"]:not(.has-results) .film-wall{
+  grid-template-columns:repeat(3,minmax(180px,1fr)) !important;
+  gap:2px !important;
+  min-height:100svh !important;
+  background:#151515 !important;
+}
+
+@media(max-width:980px){
+  body[data-mode="events"]:not(.has-results) .film-wall,
+  body[data-mode="themes"]:not(.has-results) .film-wall,
+  body[data-mode="actors"]:not(.has-results) .film-wall,
+  body[data-mode="images"]:not(.has-results) .film-wall{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1445,6 +1477,10 @@ body[data-mode="signal"]:not(.has-results) .film-wall{
           <button type="button" class="toggle-btn" data-mode="tv">tv</button>
           <button type="button" class="toggle-btn" data-mode="music">music</button>
           <button type="button" class="toggle-btn" data-mode="signal">signal</button>
+          <button type="button" class="toggle-btn" data-mode="events">events</button>
+          <button type="button" class="toggle-btn" data-mode="themes">themes</button>
+          <button type="button" class="toggle-btn" data-mode="actors">actors</button>
+          <button type="button" class="toggle-btn" data-mode="images">images</button>
           <button type="button" class="toggle-btn" data-mode="mixed">mix</button>
         </div>
         <div class="toggle-group" role="group" aria-label="Search depth">
@@ -1544,9 +1580,9 @@ const GDELT_URL='https://api.gdeltproject.org/api/v2/doc/doc';
 const RAWG_PAGE_SIZE=40;
 
 const DEPTHS={
-  surface:{film:80,games:80,books:80,tv:80,music:80,signal:80,mixedFilm:25,mixedGames:25,mixedBooks:25,mixedTv:25,mixedMusic:25,mixedSignal:25,rawgPages:3},
-  field:{film:220,games:140,books:160,tv:160,music:160,signal:160,mixedFilm:45,mixedGames:45,mixedBooks:45,mixedTv:45,mixedMusic:45,mixedSignal:45,rawgPages:5},
-  archive:{film:500,games:500,books:500,tv:500,music:500,signal:500,mixedFilm:82,mixedGames:82,mixedBooks:82,mixedTv:82,mixedMusic:82,mixedSignal:82,rawgPages:13}
+  surface:{film:80,games:80,books:80,tv:80,music:80,signal:80,events:80,themes:80,actors:80,images:80,mixedFilm:18,mixedGames:18,mixedBooks:18,mixedTv:18,mixedMusic:18,mixedSignal:18,mixedEvents:18,mixedThemes:18,mixedActors:18,mixedImages:18,rawgPages:3},
+  field:{film:220,games:140,books:160,tv:160,music:160,signal:160,events:160,themes:160,actors:160,images:160,mixedFilm:32,mixedGames:32,mixedBooks:32,mixedTv:32,mixedMusic:32,mixedSignal:32,mixedEvents:32,mixedThemes:32,mixedActors:32,mixedImages:32,rawgPages:5},
+  archive:{film:500,games:500,books:500,tv:500,music:500,signal:500,events:500,themes:500,actors:500,images:500,mixedFilm:50,mixedGames:50,mixedBooks:50,mixedTv:50,mixedMusic:50,mixedSignal:50,mixedEvents:50,mixedThemes:50,mixedActors:50,mixedImages:50,rawgPages:13}
 };
 
 let corpusMode='film',searchDepth='field';
@@ -1563,11 +1599,11 @@ function norm(p){return p?(String(p).startsWith('/')?String(p):'/'+String(p)):nu
 function img(p,size='original'){return p?`${IMG}${size}${norm(p)}`:''}
 
 function still(m,size='w780'){
-  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal') return m.image||m.cover||'';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal'||m.type==='events'||m.type==='themes'||m.type==='actors'||m.type==='images') return m.image||m.cover||'';
   return img(m?.backdropPath||m?.posterPath,size);
 }
 function poster(m,size='w342'){
-  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal') return m.image||m.cover||'';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal'||m.type==='events'||m.type==='themes'||m.type==='actors'||m.type==='images') return m.image||m.cover||'';
   return img(m?.posterPath,size);
 }
 function heroSrc(m){
@@ -1577,13 +1613,14 @@ function heroSrc(m){
   if(m.type==='tv') return m.cover||m.image||'';
   if(m.type==='music') return m.cover||m.image||'';
   if(m.type==='signal') return m.cover||m.image||'';
+  if(['events','themes','actors','images'].includes(m.type)) return m.cover||m.image||'';
   if(m.backdropPath) return img(m.backdropPath,'original')||img(m.backdropPath,'w1280');
   if(m.posterPath) return img(m.posterPath,'original')||img(m.posterPath,'w780');
   return '';
 }
 function thumbSrc(m){
   if(!m) return '';
-  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal') return m.image||m.cover||'';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal'||m.type==='events'||m.type==='themes'||m.type==='actors'||m.type==='images') return m.image||m.cover||'';
   return img(m.backdropPath||m.posterPath,'w342')||img(m.posterPath,'w185');
 }
 
@@ -1598,6 +1635,10 @@ function isolateCorpusByMode(items){
     corpusMode==='tv' ? 'tv' :
     corpusMode==='music' ? 'music' :
     corpusMode==='signal' ? 'signal' :
+    corpusMode==='events' ? 'events' :
+    corpusMode==='themes' ? 'themes' :
+    corpusMode==='actors' ? 'actors' :
+    corpusMode==='images' ? 'images' :
     null;
 
   if(!expected)return items;
@@ -1605,6 +1646,7 @@ function isolateCorpusByMode(items){
 }
 
 function candidate(m){
+  if(['events','themes','actors','images'].includes(m.type))return `${m.title}. ${m.domain||''}. ${m.sourceCountry||''}. ${m.language||''}. ${(m.subjects||[]).slice(0,12).join(', ')}. Corpus: ${m.worldType||''}. Lane: ${m.worldLane||m.signalLane||''}. ${m.overview.substring(0,620)}`;
   if(m.type==='music'){
     return `${m.title}. ${(m.artists||m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,8).join(', ')}. ${m.musicSignal||''}. Scene/source: ${m.searchLane||''}. ${m.overview.substring(0,460)}`;
   }
@@ -1627,7 +1669,11 @@ function bookLimit(){return corpusMode==='mixed'?getLimit('mixedBooks'):getLimit
 function tvLimit(){return corpusMode==='mixed'?getLimit('mixedTv'):getLimit('tv')}
 function musicLimit(){return corpusMode==='mixed'?getLimit('mixedMusic'):getLimit('music')}
 function signalLimit(){return corpusMode==='mixed'?getLimit('mixedSignal'):getLimit('signal')}
-function totalLimit(){return filmLimit()+gameLimit()+bookLimit()+tvLimit()+musicLimit()+signalLimit()}
+function eventsLimit(){return corpusMode==='mixed'?getLimit('mixedEvents'):getLimit('events')}
+function themesLimit(){return corpusMode==='mixed'?getLimit('mixedThemes'):getLimit('themes')}
+function actorsLimit(){return corpusMode==='mixed'?getLimit('mixedActors'):getLimit('actors')}
+function imagesLimit(){return corpusMode==='mixed'?getLimit('mixedImages'):getLimit('images')}
+function totalLimit(){return filmLimit()+gameLimit()+bookLimit()+tvLimit()+musicLimit()+signalLimit()+eventsLimit()+themesLimit()+actorsLimit()+imagesLimit()}
 
 // ─── API Fetchers ───
 
@@ -2053,6 +2099,149 @@ function isQualitySignalRecord(rec){
   return true;
 }
 
+
+const WORLD_CORPORA={
+  events:{
+    label:'events',
+    lanes:[
+      'protest OR riot OR strike',
+      'military conflict OR ceasefire',
+      'diplomatic meeting OR sanctions',
+      'election dispute OR government crisis',
+      'cyberattack OR infrastructure disruption',
+      'supply chain disruption OR port delay',
+      'energy crisis OR oil supply',
+      'public health emergency',
+      'migration border crisis',
+      'water scarcity OR food security'
+    ]
+  },
+  themes:{
+    label:'themes',
+    lanes:[
+      'institutional trust',
+      'political instability',
+      'energy security',
+      'artificial intelligence governance',
+      'climate adaptation',
+      'economic anxiety',
+      'public safety surveillance',
+      'national security technology',
+      'labor automation',
+      'supply chain resilience'
+    ]
+  },
+  actors:{
+    label:'actors',
+    lanes:[
+      'government official said',
+      'company announced',
+      'central bank warned',
+      'military commander said',
+      'regulator investigated',
+      'union leaders said',
+      'court ruled',
+      'minister met',
+      'agency reported',
+      'researchers found'
+    ]
+  },
+  images:{
+    label:'images',
+    lanes:[
+      'protest crowd',
+      'military equipment',
+      'flood wildfire disaster',
+      'factory semiconductor',
+      'shipping port container',
+      'city skyline government',
+      'energy grid pipeline',
+      'hospital public health',
+      'space rocket satellite',
+      'surveillance camera technology'
+    ]
+  }
+};
+
+function worldCorpusLabel(type){
+  return WORLD_CORPORA[type]?.label||type;
+}
+
+function worldRecord(article,lane,type){
+  const rec=signalRecord(article,lane);
+  if(!rec)return null;
+
+  const label=worldCorpusLabel(type);
+  const typeCopy={
+    events:'structured world action',
+    themes:'narrative pressure surface',
+    actors:'entity and institution surface',
+    images:'visual world signal'
+  }[type]||'world signal';
+
+  return {
+    ...rec,
+    type,
+    genres:[label,rec.domain||'Live world'].filter(Boolean),
+    subjects:[label,lane,rec.domain,rec.sourceCountry,rec.language,typeCopy,'GDELT','live world'].filter(Boolean),
+    overview:`${rec.title}. ${typeCopy}. Source: ${rec.domain||'unknown source'}.${rec.seenDate?' Published: '+rec.seenDate+'.':''}${rec.sourceCountry?' Country: '+rec.sourceCountry+'.':''} GDELT live article indexed as ${label}: source, country, recency, visual signal, event context, actors, themes, and narrative pressure. Discovery lane: ${lane}.`,
+    worldType:type,
+    worldLane:lane
+  };
+}
+
+async function loadWorldCorpus(type,limit){
+  setCorpusLoading(true,`loading ${limit} ${worldCorpusLabel(type)} · ${searchDepth}`);
+  const config=WORLD_CORPORA[type];
+  if(!config)throw new Error(`unknown world corpus ${type}`);
+
+  const seen=new Set();
+  const out=[];
+  const per=Math.min(150,Math.max(35,Math.ceil(limit/4)));
+  const span=searchDepth==='archive'?'7d':searchDepth==='field'?'3d':'24h';
+  const lanes=config.lanes;
+
+  const laneIndexes=lanes.map((_,i)=>i).sort((a,b)=>{
+    const ax=(a*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
+    const bx=(b*9301+shuffleSeed*49297+corpusPageOffset*233280)%233280;
+    return ax-bx;
+  });
+
+  let lastError=null;
+  for(let i=0;i<laneIndexes.length && out.length<limit;i++){
+    const lane=lanes[laneIndexes[i]];
+    try{
+      const data=await fetchSignalBatch(lane,per,span);
+      const articles=Array.isArray(data?.articles)?data.articles:[];
+      for(const article of articles){
+        const rec=worldRecord(article,lane,type);
+        if(!rec)continue;
+        const key=rec.title+'|'+rec.domain+'|'+type;
+        if(seen.has(key))continue;
+        seen.add(key);
+        out.push(rec);
+        if(out.length>=limit)break;
+      }
+    }catch(e){
+      lastError=e;
+      console.warn(`${type} lane failed`,lane,e);
+    }
+  }
+
+  const cleaned=out.filter(isQualitySignalRecord);
+  const imageBacked=out.filter(x=>x&&x.image&&!signalImageLooksBad(x.image));
+  const finalRows=cleaned.length?cleaned:imageBacked;
+
+  if(!finalRows.length){
+    const message=lastError?.message||`GDELT returned no image-backed ${worldCorpusLabel(type)}`;
+    setStatus(`${worldCorpusLabel(type)} failed · ${message}`);
+    throw new Error(message);
+  }
+
+  return finalRows.slice(0,limit);
+}
+
+
 async function loadSignal(limit){
   setCorpusLoading(true,`loading ${limit} live signals · ${searchDepth}`);
   const seen=new Set();
@@ -2231,7 +2420,7 @@ function finalizeCorpus(movies){
   const map=new Map();
   candidates.forEach((c,i)=>map.set(c,movies[i]));
   cache={movies,candidates,map};
-  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'records':corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':'films';
+  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'records':corpusMode==='signal'?'signals':corpusMode==='events'?'events':corpusMode==='themes'?'themes':corpusMode==='actors'?'actors':corpusMode==='images'?'images':corpusMode==='mixed'?'mixed records':'films';
   setStatus(`${movies.length} ${label} loaded`);
   renderWall(movies);
   return cache;
@@ -2245,18 +2434,26 @@ async function loadCorpus(){
   if(corpusMode==='tv') return finalizeCorpus(await loadTV(tvLimit()));
   if(corpusMode==='music') return finalizeCorpus(await loadMusic(musicLimit()));
   if(corpusMode==='signal') return finalizeCorpus(await loadSignal(signalLimit()));
+  if(corpusMode==='events') return finalizeCorpus(await loadWorldCorpus('events',eventsLimit()));
+  if(corpusMode==='themes') return finalizeCorpus(await loadWorldCorpus('themes',themesLimit()));
+  if(corpusMode==='actors') return finalizeCorpus(await loadWorldCorpus('actors',actorsLimit()));
+  if(corpusMode==='images') return finalizeCorpus(await loadWorldCorpus('images',imagesLimit()));
 
   if(corpusMode==='mixed'){
-    const [f,g,b,t,m,s]=await Promise.all([
+    const [f,g,b,t,m,s,e,th,a,imgc]=await Promise.all([
       loadFilms(filmLimit()),
       loadGames(gameLimit()),
       loadBooks(bookLimit()),
       loadTV(tvLimit()),
       loadMusic(musicLimit()),
-      loadSignal(signalLimit()).catch(()=>[])
+      loadSignal(signalLimit()).catch(()=>[]),
+      loadWorldCorpus('events',eventsLimit()).catch(()=>[]),
+      loadWorldCorpus('themes',themesLimit()).catch(()=>[]),
+      loadWorldCorpus('actors',actorsLimit()).catch(()=>[]),
+      loadWorldCorpus('images',imagesLimit()).catch(()=>[])
     ]);
     const mixed=[];
-    const mx=Math.max(f.length,g.length,b.length,t.length,m.length,s.length);
+    const mx=Math.max(f.length,g.length,b.length,t.length,m.length,s.length,e.length,th.length,a.length,imgc.length);
     for(let i=0;i<mx;i++){
       if(f[i])mixed.push(f[i]);
       if(g[i])mixed.push(g[i]);
@@ -2264,6 +2461,10 @@ async function loadCorpus(){
       if(t[i])mixed.push(t[i]);
       if(m[i])mixed.push(m[i]);
       if(s[i])mixed.push(s[i]);
+      if(e[i])mixed.push(e[i]);
+      if(th[i])mixed.push(th[i]);
+      if(a[i])mixed.push(a[i]);
+      if(imgc[i])mixed.push(imgc[i]);
     }
     return finalizeCorpus(mixed);
   }
@@ -2283,7 +2484,7 @@ async function loadCorpusWithRetry(attempts=2){
 
 function parse(data,map){
   const rows=Array.isArray(data?.all)?data.all:(Array.isArray(data?.top)?data.top:[]);
-  const expected=corpusMode==='mixed'?null:(corpusMode==='games'?'game':corpusMode==='film'?'film':corpusMode==='books'?'book':corpusMode==='tv'?'tv':corpusMode==='music'?'music':corpusMode==='signal'?'signal':null);
+  const expected=corpusMode==='mixed'?null:(corpusMode==='games'?'game':corpusMode==='film'?'film':corpusMode==='books'?'book':corpusMode==='tv'?'tv':corpusMode==='music'?'music':corpusMode==='signal'?'signal':corpusMode==='events'?'events':corpusMode==='themes'?'themes':corpusMode==='actors'?'actors':corpusMode==='images'?'images':null);
   return rows.map(r=>{const m=map.get(r.text);return (m&&(!expected||m.type===expected))?{...m,score:Number(r.score||0),candidate:r.text}:null}).filter(Boolean).slice(0,RETURN_COUNT);
 }
 
@@ -2337,6 +2538,7 @@ function sourceUrl(m){
   if(!m)return '#';
   if(m.type==='music')return m.itunesUrl||`https://music.apple.com/search?term=${encodeURIComponent((m.title||'')+' '+((m.artists||[])[0]||''))}`;
   if(m.type==='signal')return m.sourceUrl||'#';
+  if(['events','themes','actors','images'].includes(m.type))return m.sourceUrl||'#';
   if(m.type==='game')return m.rawgSlug?`https://rawg.io/games/${m.rawgSlug}`:`https://rawg.io/search?query=${encodeURIComponent(m.title||'')}`;
   if(m.type==='book')return m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title||'')}`;
   if(m.type==='tv')return m.tvMazeUrl||`https://www.tvmaze.com/search?q=${encodeURIComponent(m.title||'')}`;
@@ -2347,6 +2549,7 @@ function sourceLabel(m){
   if(!m)return 'open source ↗';
   if(m.type==='music')return 'view on apple music ↗';
   if(m.type==='signal')return 'open source ↗';
+  if(['events','themes','actors','images'].includes(m.type))return 'open source ↗';
   if(m.type==='game')return 'view on rawg ↗';
   if(m.type==='book')return 'view on gutenberg ↗';
   if(m.type==='tv')return 'view on tvmaze ↗';
@@ -2419,7 +2622,7 @@ function renderRankList(){
 async function shuffleFilms(){
   corpusPageOffset=(corpusPageOffset+1+Math.floor(Math.random()*3))%4;
   shuffleSeed++;cache=null;
-  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='music'?'music':corpusMode==='signal'?'signal':corpusMode==='mixed'?'mix':'films';
+  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='music'?'music':corpusMode==='signal'?'signal':corpusMode==='events'?'events':corpusMode==='themes'?'themes':corpusMode==='actors'?'actors':corpusMode==='images'?'images':corpusMode==='mixed'?'mix':'films';
   setStatus(`shuffling ${label}`);
   setCorpusLoading(true,corpusLoadLabel('loading'));
   try{
@@ -2461,7 +2664,7 @@ function syncResultQuery(){
 // ─── Mode / Depth / Theme ───
 
 async function setCorpusMode(mode){
-  if(!['film','games','books','tv','music','signal','mixed'].includes(mode)||corpusMode===mode)return;
+  if(!['film','games','books','tv','music','signal','events','themes','actors','images','mixed'].includes(mode)||corpusMode===mode)return;
   corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;
   applyModeLabels();
   setCorpusLoading(true,corpusLoadLabel('loading'));
@@ -2505,17 +2708,21 @@ function applyModeLabels(){
       corpusMode==='tv' ? 'tv shows' :
       corpusMode==='music' ? 'records' :
       corpusMode==='signal' ? 'live signals' :
-      corpusMode==='mixed' ? 'films + games + books + tv + music + signal' :
+      corpusMode==='events' ? 'world events' :
+      corpusMode==='themes' ? 'world themes' :
+      corpusMode==='actors' ? 'world actors' :
+      corpusMode==='images' ? 'world images' :
+      corpusMode==='mixed' ? 'films + games + books + tv + music + signal + world' :
       'films';
     hint.textContent = `search ${n} ${modeLabel} by meaning`;
   }
   const pl=$('.prompt-label');
-  if(pl)pl.textContent=corpusMode==='games'?'find a game':corpusMode==='books'?'find a book':corpusMode==='tv'?'find a show':corpusMode==='music'?'find music':corpusMode==='signal'?'read the signal':corpusMode==='mixed'?'find anything':'find a film';
+  if(pl)pl.textContent=corpusMode==='games'?'find a game':corpusMode==='books'?'find a book':corpusMode==='tv'?'find a show':corpusMode==='music'?'find music':corpusMode==='signal'?'read the signal':corpusMode==='events'?'read events':corpusMode==='themes'?'read themes':corpusMode==='actors'?'read actors':corpusMode==='images'?'read images':corpusMode==='mixed'?'find anything':'find a film';
   const qi=$('#query');
-  if(qi)qi.placeholder=corpusMode==='games'?'describe the world, loop, mechanic, feeling, or system':corpusMode==='books'?'describe the voice, mood, idea, world, or wound':corpusMode==='tv'?'describe the world, episode, mood, institution, or obsession':corpusMode==='music'?'describe the mood, era, rhythm, artist, or memory':corpusMode==='signal'?'describe the live pattern, institution, conflict, or world state':corpusMode==='mixed'?'describe the signal, world, scene, mood, or system':'describe the scene, mood, memory, or idea';
+  if(qi)qi.placeholder=corpusMode==='games'?'describe the world, loop, mechanic, feeling, or system':corpusMode==='books'?'describe the voice, mood, idea, world, or wound':corpusMode==='tv'?'describe the world, episode, mood, institution, or obsession':corpusMode==='music'?'describe the mood, era, rhythm, artist, or memory':corpusMode==='signal'?'describe the live pattern, institution, conflict, or world state':corpusMode==='events'?'describe the action, conflict, protest, exchange, or rupture':corpusMode==='themes'?'describe the narrative pressure, mood, fear, or drift':corpusMode==='actors'?'describe the institution, person, company, or network role':corpusMode==='images'?'describe the visual pattern, scene, object, or atmosphere':corpusMode==='mixed'?'describe the signal, world, scene, mood, or system':'describe the scene, mood, memory, or idea';
   const rm=$('#resultMode');
   if(rm)rm.textContent=`${n}-${corpusMode==='mixed'?'mixed':corpusMode} corpus · ${searchDepth}`;
-  const sl=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='music'?'music':corpusMode==='signal'?'signal':corpusMode==='mixed'?'mix':'films';
+  const sl=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='music'?'music':corpusMode==='signal'?'signal':corpusMode==='events'?'events':corpusMode==='themes'?'themes':corpusMode==='actors'?'actors':corpusMode==='images'?'images':corpusMode==='mixed'?'mix':'films';
   const hb=$('#shuffleFilms');if(hb)hb.textContent=`shuffle ${sl}`;
   const rb=$('#shuffleFilmsResult');if(rb)rb.textContent=`shuffle ${sl}`;
 }
@@ -2588,6 +2795,10 @@ const TRACES={
     'hidden systems under pressure',
     'a world older than the player'
   ],
+  events:['a protest becoming governance data','a peace appeal that feels like pressure','a supply chain rupture becoming political','a border event with institutional consequences','a military action described as routine'],
+  themes:['fear becoming policy','institutional drift under calm language','energy security as atmosphere','public trust turning brittle','technology becoming governance'],
+  actors:['a company becoming infrastructure','a regulator appearing as protagonist','a military office shaping markets','a court changing the terrain','an institution acting like a nervous system'],
+  images:['state power without saying state power','a crowd realizing the institution is not listening','technology presented as salvation','scarcity rendered visually','a disaster image that feels political'],
   signal:['a procurement notice that sounds like a war drum','a country avoiding saying it is already at war','the market realizing water is political','a headline where infrastructure becomes ideology','energy conflict hiding inside logistics','the future arriving through a boring agency notice','a live signal of institutional drift'],
   music:[
     'synthetic music that feels intelligent without saying so',
