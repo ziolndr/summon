@@ -1457,6 +1457,25 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
   }
 }
 
+
+/* ─── TMDb film image style correction ───
+   Film wall cells are poster geometry; provider backdrops stay reserved for hero imagery. */
+body[data-mode="film"]:not(.has-results) .wall-cell img,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"] img{
+  object-position:center top !important;
+  filter:contrast(1.08) saturate(1.02) brightness(.95) !important;
+}
+
+body[data-mode="film"]:not(.has-results) .wall-cell::before,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"]::before{
+  opacity:.62 !important;
+}
+
+body[data-mode="film"]:not(.has-results) .wall-cell::after,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"]::after{
+  opacity:.105 !important;
+}
+
 </style>
 </head>
 <body data-mode="film">
@@ -1637,6 +1656,17 @@ function thumbSrc(m){
   if(!m)return '';
   if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='signal')return m.image||m.cover||m.src||'';
   return firstImage([m.backdropPath,m.backdrop_path,m.image,m.cover,m.posterPath,m.poster_path],'w342');
+}
+
+function wallSrc(m){
+  if(!m)return '';
+  if(m.type==='film'){
+    // Film tiles are poster-shaped. TMDb backdrops are landscape and look wrong when cropped into poster cells.
+    // Use provider posters for the wall, keep backdrops for hero/rank thumbnails.
+    return poster(m,'w780')||poster(m,'w500')||still(m,'w1280')||still(m,'w780');
+  }
+  if(m.type==='book')return poster(m,'w500')||still(m,'w780');
+  return still(m,'w780')||poster(m,'w500');
 }
 function candidate(m){
   // Kept for older call paths. The live ARBITER payload uses candidateText().
@@ -2251,7 +2281,7 @@ function renderWall(movies,mode=corpusMode){
       ?filmWallTarget()
       :(mode==='mixed'?(searchDepth==='archive'?320:searchDepth==='field'?220:140):48));
   const sample=[...visibleItems]
-    .map((m,i)=>({...m,wallIndex:i,src:still(m,'w780')||poster(m,'w500')}))
+    .map((m,i)=>({...m,wallIndex:i,src:wallSrc(m)}))
     .filter(m=>m.src&&m.src.length>15)
     .sort(()=>Math.random()-.5)
     .slice(0,wallTarget);
