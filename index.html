@@ -1457,105 +1457,6 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
   }
 }
 
-
-/* ─── Mode-switch transition ───
-   Preserve the previous wall while the next corpus loads.
-   No black replacement surface. No fake loading cards. */
-body.wall-refreshing:not(.has-results) .film-wall{
-  opacity:.42 !important;
-  filter:brightness(.68) saturate(.72) contrast(.96) !important;
-  transition:opacity .18s ease,filter .18s ease !important;
-  pointer-events:none !important;
-}
-
-body.wall-refreshing:not(.has-results) .wall-cell[data-type="film"],
-body.wall-refreshing:not(.has-results) .wall-cell.media-film{
-  aspect-ratio:2 / 3 !important;
-}
-
-body.wall-refreshing:not(.has-results) .wall-cell[data-type="book"],
-body.wall-refreshing:not(.has-results) .wall-cell.media-book,
-body.wall-refreshing:not(.has-results) .wall-cell[data-type="tv"],
-body.wall-refreshing:not(.has-results) .wall-cell.media-tv{
-  aspect-ratio:2 / 3 !important;
-}
-
-body.wall-refreshing:not(.has-results) .wall-cell[data-type="game"],
-body.wall-refreshing:not(.has-results) .wall-cell.media-game,
-body.wall-refreshing:not(.has-results) .wall-cell[data-type="signal"],
-body.wall-refreshing:not(.has-results) .wall-cell.media-signal{
-  aspect-ratio:16 / 9 !important;
-}
-
-.wall-transition-overlay{
-  position:absolute;
-  z-index:80;
-  left:18px;
-  top:18px;
-  max-width:min(360px,calc(100% - 36px));
-  padding:10px 12px 9px;
-  border:1px solid rgba(246,241,232,.18);
-  background:rgba(5,5,5,.38);
-  color:rgba(246,241,232,.78);
-  font-family:var(--mono);
-  font-size:10px;
-  line-height:1.45;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-  backdrop-filter:blur(8px) saturate(.84);
-  -webkit-backdrop-filter:blur(8px) saturate(.84);
-  box-shadow:0 18px 44px rgba(0,0,0,.18);
-  pointer-events:none;
-}
-
-.wall-transition-overlay b{
-  display:block;
-  margin-bottom:5px;
-  color:rgba(246,241,232,.92);
-  font-weight:500;
-  letter-spacing:.16em;
-}
-
-.wall-transition-overlay span{
-  color:rgba(246,241,232,.46);
-}
-
-.wall-transition-overlay i{
-  display:block;
-  position:relative;
-  overflow:hidden;
-  margin-top:8px;
-  width:100%;
-  height:1px;
-  background:rgba(246,241,232,.14);
-}
-
-.wall-transition-overlay i::after{
-  content:'';
-  position:absolute;
-  inset:0 auto 0 0;
-  width:34%;
-  background:rgba(246,241,232,.62);
-  transform:translateX(-120%);
-  animation:barSweep 1.15s cubic-bezier(.4,0,.2,1) infinite;
-}
-
-@media(max-width:980px){
-  .wall-transition-overlay{
-    left:12px;
-    top:12px;
-    max-width:calc(100% - 24px);
-    padding:9px 10px 8px;
-    font-size:9px;
-  }
-}
-
-
-/* single loading indicator: use the left corpus loader only, never a floating wall badge */
-.wall-transition-overlay{
-  display:none !important;
-}
-
 </style>
 </head>
 <body data-mode="film">
@@ -1734,7 +1635,8 @@ function thumbSrc(m){
   return firstImage([m.backdropPath,m.backdrop_path,m.image,m.cover,m.posterPath,m.poster_path],'w342');
 }
 function candidate(m){
-  return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,6).join(', ')}. ${(m.platforms||[]).join(', ')}. ${m.overview.substring(0,360)}`;
+  // Kept for older call paths. The live ARBITER payload uses candidateText().
+  return candidateText(m);
 }
 function setStatus(t){if(statusEl)statusEl.textContent=t}
 function toast(t){
@@ -2059,9 +1961,6 @@ async function loadTV(limit){
 // ─── Wall Rendering ───
 
 function renderWall(movies,mode=corpusMode){
-  document.body.classList.remove('wall-refreshing');
-  const overlay=document.getElementById('wallTransitionOverlay');
-  if(overlay)overlay.remove();
   const visibleItems=isolateCorpusItems(Array.isArray(movies)?movies:[],mode);
   const wallTarget=mode==='signal'
     ?signalWallTarget()
@@ -2084,70 +1983,6 @@ function renderWall(movies,mode=corpusMode){
   requestAnimationFrame(()=>setTimeout(startOracleDrift,500));
 }
 
-function loadingWallCount(mode=corpusMode){
-  if(mode==='signal')return searchDepth==='archive'?72:searchDepth==='field'?56:40;
-  if(mode==='film')return searchDepth==='archive'?72:searchDepth==='field'?56:40;
-  if(mode==='mixed')return searchDepth==='archive'?84:searchDepth==='field'?64:44;
-  return searchDepth==='archive'?48:searchDepth==='field'?40:28;
-}
-
-function loadingCardSrc(mode,i){
-  const label=MODE_LABEL?.[mode]||mode||'corpus';
-  if(mode==='signal')return fallbackSignalCard('Loading live geopolitical signal field','SIGNAL','SUMMON',i);
-  if(mode==='film')return fallbackFilmStill('Loading film corpus','', ['film','archive','meaning']);
-  if(mode==='book'||mode==='books')return fallbackBookCover('Loading book corpus','SUMMON');
-  return fallbackSignalCard(`Loading ${label} corpus`,String(label).toUpperCase(),'SUMMON',i);
-}
-
-function removeWallTransitionOverlay(){
-  const overlay=document.getElementById('wallTransitionOverlay');
-  if(overlay)overlay.remove();
-}
-
-function wallTransitionCopy(mode=corpusMode){
-  const label=MODE_LABEL?.[mode]||mode||'corpus';
-  const noun=mode==='mixed'?'records':label;
-  const count=Number(totalLimit(mode)||0).toLocaleString();
-  if(mode==='signal')return {title:'Loading signals',meta:`${searchDepth} · ${count} live geopolitical signals`};
-  if(mode==='mixed')return {title:'Loading mix',meta:`${searchDepth} · ${count} cross-corpus records`};
-  return {title:`Loading ${label}`,meta:`${searchDepth} · ${count} ${noun}`};
-}
-
-function showWallTransitionOverlay(mode=corpusMode){
-  const pane=document.querySelector('.film-wall-pane');
-  if(!pane)return;
-  const copy=wallTransitionCopy(mode);
-  let overlay=document.getElementById('wallTransitionOverlay');
-  if(!overlay){
-    overlay=document.createElement('div');
-    overlay.id='wallTransitionOverlay';
-    overlay.className='wall-transition-overlay';
-    pane.appendChild(overlay);
-  }
-  overlay.innerHTML=`<b>${esc(copy.title)}</b><span>${esc(copy.meta)}</span><i></i>`;
-}
-
-function renderLoadingWall(mode=corpusMode){
-  const wall=$('#wall');
-  if(!wall)return;
-  stopOracleDrift();
-  document.body.classList.add('wall-refreshing');
-  removeWallTransitionOverlay();
-  /* Preserve existing tiles during mode/depth/shuffle loads.
-     The left corpus loader is the only visible loading indicator. */
-  if(!wall.querySelector('.wall-cell') && !wall.children.length){
-    wall.innerHTML='';
-  }
-}
-
-function clearResultSurface(){
-  results=[];active=0;hasExecutedSearch=false;
-  const rankList=$('#rankList');
-  if(rankList)rankList.innerHTML='';
-  const rankCount=$('#rankCount');
-  if(rankCount)rankCount.textContent='0 returned';
-}
-
 // ─── Corpus Assembly ───
 
 function finalizeCorpus(movies){
@@ -2163,11 +1998,10 @@ function finalizeCorpus(movies){
 }
 
 
-async function loadCorpus(requestToken=null){
+async function loadCorpus(){
   if(cache && cache.mode===corpusMode && cache.depth===searchDepth)return cache;
 
-  const requestId=requestToken ?? ++corpusRequestId;
-  if(requestToken!=null && requestToken!==corpusRequestId)throw new Error('stale corpus load ignored');
+  const requestId=++corpusRequestId;
   const requestedMode=corpusMode;
   const requestedDepth=searchDepth;
   const requestedTotal=totalLimit(requestedMode);
@@ -2210,13 +2044,20 @@ async function loadCorpus(requestToken=null){
   }
 
   const map=new Map();
-  const candidates=items.map(m=>{
-    const text=candidateText(m);
+  const candidates=[];
+  items=items
+    .map(m=>m?{...m,genres:asArray(m.genres),subjects:asArray(m.subjects),authors:asArray(m.authors),platforms:asArray(m.platforms),actors:asArray(m.actors)}:null)
+    .filter(Boolean);
+
+  items.forEach((m,i)=>{
+    const baseText=candidateText(m);
+    if(!baseText)return;
+    const text=`${baseText}\nRecord id: ${requestedMode}:${m.type||'record'}:${i}.`;
     map.set(text,m);
-    return text;
+    candidates.push(text);
   });
 
-  if(!items.length)throw new Error(`empty ${requestedMode} corpus`);
+  if(!items.length||!candidates.length)throw new Error(`empty ${requestedMode} corpus`);
   cache={mode:requestedMode,depth:requestedDepth,items,map,candidates};
   const label=MODE_LABEL[requestedMode]||'films';
   setStatus(`${items.length} ${label} loaded`);
@@ -2224,10 +2065,10 @@ async function loadCorpus(requestToken=null){
   return cache;
 }
 
-async function loadCorpusWithRetry(tries=2,requestToken=null){
+async function loadCorpusWithRetry(tries=2){
   let last;
   for(let i=0;i<tries;i++){
-    try{return await loadCorpus(requestToken)}
+    try{return await loadCorpus()}
     catch(e){last=e; await new Promise(r=>setTimeout(r,250))}
   }
   throw last;
@@ -2256,7 +2097,7 @@ async function search(text){
 
     const res=await fetch(ARBITER_URL,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({query:q,candidates:corpus.candidates.slice(0,totalLimit()),use_freq:true,top_k:RETURN_COUNT})
+      body:JSON.stringify({query:q,candidates:corpus.candidates,use_freq:true,top_k:RETURN_COUNT})
     });
     if(!res.ok)throw new Error(`arbiter ${res.status}`);
 
@@ -2306,11 +2147,7 @@ function renderResult(){
   const ov=(m.overview||'No overview available.').trim();
   $('#overview').textContent=ov.length>260?ov.slice(0,257).trimEnd()+'…':ov;
 
-  $('#meta').innerHTML=[
-    m.year?`<span>${esc(m.year)}</span>`:'',
-    ...(m.authors||[]).slice(0,1).map(a=>`<span>${esc(a)}</span>`),
-    ...(m.genres||[]).slice(0,2).map(g=>`<span>${esc(g)}</span>`)
-  ].join('');
+  $('#meta').innerHTML=metaBitsFor(m,4).map(bit=>`<span>${esc(bit)}</span>`).join('');
 
   const rc=$('#rankCount');if(rc)rc.textContent=`${results.length} returned`;
   applyModeLabels();
@@ -2339,7 +2176,7 @@ function renderResult(){
 function renderRankList(){
   $('#rankList').innerHTML=results.map((m,i)=>{
     const t=thumbSrc(m);
-    const bits=[m.year||'',...(m.authors||[]).slice(0,1),...(m.genres||[]).slice(0,2)].filter(Boolean);
+    const bits=metaBitsFor(m,3);
     return `<button class="rank-row ${i===active?'active':''}" data-i="${i}">
       <span class="rank-num">${String(i+1).padStart(2,'0')}</span>
       ${t?`<img class="rank-thumb" src="${t}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`:'<span style="width:72px;height:48px;background:var(--wall);display:block"></span>'}
@@ -2357,18 +2194,14 @@ function renderRankList(){
 
 async function shuffleFilms(){
   corpusPageOffset=(corpusPageOffset+1+Math.floor(Math.random()*7))%48;
-  shuffleSeed++;cache=null;const requestId=++corpusRequestId;
+  shuffleSeed++;cache=null;corpusRequestId++;
   const label=corpusMode==='signal'?'signals':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='mixed'?'mix':'films';
   setStatus(`shuffling ${label}`);
-  if(!document.body.classList.contains('has-results'))renderLoadingWall(corpusMode);
   setCorpusLoading(true,corpusLoadLabel('loading'));
   try{
-    await loadCorpusWithRetry(2,requestId);
-    if(requestId===corpusRequestId)setCorpusLoading(false);
-  }catch(e){
-    if(requestId!==corpusRequestId)return;
-    console.error(e);toast('shuffle failed');setCorpusLoading(false)
-  }
+    await loadCorpusWithRetry(2);
+    setCorpusLoading(false);
+  }catch(e){console.error(e);toast('shuffle failed');setCorpusLoading(false)}
 }
 
 function newSearch(){
@@ -2405,38 +2238,26 @@ function syncResultQuery(){
 
 async function setCorpusMode(mode){
   if(!CORPUS_MODES.includes(mode)||corpusMode===mode)return;
-  const requestId=++corpusRequestId;
-  corpusMode=mode;cache=null;clearResultSurface();
-  document.body.classList.remove('has-results','searching','cutting');
-  safeClearHash();
+  corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;corpusRequestId++;
   applyModeLabels();
-  renderLoadingWall(mode);
   setCorpusLoading(true,corpusLoadLabel('loading'));
-  window.scrollTo({top:0,behavior:'auto'});
   try{
-    await loadCorpusWithRetry(2,requestId);
-    if(requestId===corpusRequestId)setCorpusLoading(false);
-  }catch(e){
-    if(requestId!==corpusRequestId)return;
-    console.error(e);
-    setCorpusLoading(false,'load failed');
-    removeWallTransitionOverlay();
+    await loadCorpusWithRetry(2);setCorpusLoading(false);
+  }catch(e){console.error(e);setCorpusLoading(false,'load failed');return}
+  if(document.body.classList.contains('has-results')){
+    document.body.classList.remove('has-results','searching','cutting');
+    safeClearHash();
+    window.scrollTo({top:0,behavior:'auto'});
   }
 }
 
 async function setSearchDepth(depth){
   if(!DEPTHS[depth]||searchDepth===depth)return;
-  const requestId=++corpusRequestId;
-  searchDepth=depth;cache=null;clearResultSurface();applyModeLabels();
-  if(!document.body.classList.contains('has-results'))renderLoadingWall(corpusMode);
+  searchDepth=depth;cache=null;corpusRequestId++;applyModeLabels();
   setCorpusLoading(true,corpusLoadLabel('loading'));
   try{
-    await loadCorpusWithRetry(2,requestId);
-    if(requestId===corpusRequestId)setCorpusLoading(false);
-  }catch(e){
-    if(requestId!==corpusRequestId)return;
-    console.error(e);setCorpusLoading(false,'load failed');removeWallTransitionOverlay()
-  }
+    await loadCorpusWithRetry(2);setCorpusLoading(false);
+  }catch(e){console.error(e);setCorpusLoading(false,'load failed')}
 }
 
 function applyTheme(t){
@@ -2449,7 +2270,7 @@ function toggleTheme(){
 
 function applyModeLabels(){
   document.body.dataset.mode=corpusMode;
-  document.querySelectorAll('button[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===corpusMode));
+  document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===corpusMode));
   document.querySelectorAll('[data-depth]').forEach(b=>b.classList.toggle('active',b.dataset.depth===searchDepth));
 
   const n=totalLimit();
@@ -3390,11 +3211,109 @@ async function loadSignals(limit){
   }
 }
 
+function asArray(value){
+  if(Array.isArray(value))return value.map(v=>String(v||'').trim()).filter(Boolean);
+  if(value==null||value==='')return [];
+  return String(value).split(/[,;|]/).map(v=>v.trim()).filter(Boolean);
+}
+
+function compactCandidate(parts,max=1400){
+  return parts
+    .filter(Boolean)
+    .map(part=>String(part).replace(/\s+/g,' ').trim())
+    .filter(Boolean)
+    .join('\n')
+    .slice(0,max);
+}
+
+function field(name,value){
+  const text=Array.isArray(value)?value.filter(Boolean).join(', '):String(value||'').trim();
+  return text?`${name}: ${text}.`:'';
+}
+
+function metaBitsFor(m,limit=4){
+  if(!m)return [];
+  if(m.type==='signal')return [m.source,m.section,m.year].filter(Boolean).slice(0,limit);
+  if(m.type==='game')return [m.year,...asArray(m.genres).slice(0,2),...asArray(m.platforms).slice(0,1)].filter(Boolean).slice(0,limit);
+  if(m.type==='book')return [m.year,...asArray(m.authors).slice(0,1),...asArray(m.subjects||m.genres).slice(0,2)].filter(Boolean).slice(0,limit);
+  if(m.type==='tv')return [m.year,m.network,...asArray(m.genres).slice(0,2)].filter(Boolean).slice(0,limit);
+  return [m.year,...asArray(m.genres).slice(0,2)].filter(Boolean).slice(0,limit);
+}
+
 function candidateText(m){
-  if(m.type==='signal')return `${m.title}. ${m.section||''}. ${m.source||''}. ${m.overview||''}`;
-  if(m.type==='book')return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.subjects||[]).join(', ')}. ${m.overview||''}`;
-  if(m.type==='film')return `${m.title}. ${m.year||''}. ${(m.genres||[]).join(', ')}. ${(m.actors||[]).join(', ')}. ${m.director||''}. ${m.overview||''}`;
-  return `${m.title}. ${m.year||''}. ${(m.genres||[]).join(' ')}. ${m.overview||''}`;
+  if(!m)return '';
+  const type=String(m.type||'record').toLowerCase();
+  const title=String(m.title||'Untitled').trim();
+  const overview=String(m.overview||'').replace(/\s+/g,' ').trim();
+
+  if(type==='signal'){
+    return compactCandidate([
+      'Record type: geopolitical news signal.',
+      field('Title',title),
+      field('Source',m.source),
+      field('Section / lane',m.section),
+      field('Published year',m.year),
+      field('Published timestamp',m.publishedAt),
+      field('Tags / topics',asArray(m.genres).slice(0,8)),
+      field('Source domain',domainFromUrl(m.externalUrl)),
+      field('Signal summary',overview)
+    ],1600);
+  }
+
+  if(type==='film'){
+    return compactCandidate([
+      'Record type: film.',
+      field('Title',title),
+      field('Release year',m.year),
+      field('Genres / moods',asArray(m.genres).slice(0,8)),
+      field('Cast',asArray(m.actors).slice(0,6)),
+      field('Director',m.director),
+      field('Rating',m.rating),
+      field('Film synopsis / semantic surface',overview)
+    ],1400);
+  }
+
+  if(type==='game'){
+    return compactCandidate([
+      'Record type: game.',
+      field('Title',title),
+      field('Release year',m.year),
+      field('Genres',asArray(m.genres).slice(0,8)),
+      field('Platforms',asArray(m.platforms).slice(0,8)),
+      field('Critical rating',m.rating?`Metacritic ${m.rating}`:''),
+      field('Game world / mechanics / play signal',overview)
+    ],1400);
+  }
+
+  if(type==='book'){
+    return compactCandidate([
+      'Record type: book.',
+      field('Title',title),
+      field('Author',asArray(m.authors).slice(0,4)),
+      field('Publication / era',m.year),
+      field('Subjects / shelves',asArray(m.subjects||m.genres).slice(0,10)),
+      field('Literary / thematic signal',overview)
+    ],1400);
+  }
+
+  if(type==='tv'){
+    return compactCandidate([
+      'Record type: television series.',
+      field('Title',title),
+      field('Premiere year',m.year),
+      field('Network / platform',m.network),
+      field('Genres',asArray(m.genres).slice(0,8)),
+      field('Premise / episodic signal',overview)
+    ],1400);
+  }
+
+  return compactCandidate([
+    `Record type: ${type}.`,
+    field('Title',title),
+    field('Year',m.year),
+    field('Genres / topics',asArray(m.genres).slice(0,8)),
+    field('Summary',overview)
+  ],1400);
 }
 
 </script>
