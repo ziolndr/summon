@@ -1383,10 +1383,10 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="book"] img[src^=
 
 /* signal mode restored */
 body[data-mode="signal"]:not(.has-results) .wall-cell{
-  aspect-ratio:16 / 10 !important;
+  aspect-ratio:16 / 9 !important;
 }
 body[data-mode="signal"]:not(.has-results) .film-wall{
-  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
 }
 @media(max-width:980px){
   body[data-mode="signal"]:not(.has-results) .film-wall{
@@ -1397,15 +1397,15 @@ body[data-mode="signal"]:not(.has-results) .film-wall{
 
 /* signal mode actual restore */
 body[data-mode="signal"]:not(.has-results) .film-wall{
-  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
   gap:2px !important;
 }
 body[data-mode="signal"]:not(.has-results) .wall-cell{
-  aspect-ratio:16 / 10 !important;
+  aspect-ratio:16 / 9 !important;
 }
 body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"],
 body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
-  aspect-ratio:16 / 10 !important;
+  aspect-ratio:16 / 9 !important;
 }
 @media(max-width:980px){
   body[data-mode="signal"]:not(.has-results) .film-wall{
@@ -1433,6 +1433,28 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]::before
 body[data-mode="signal"]:not(.has-results) .wall-cell::after,
 body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]::after{
   opacity:.08 !important;
+}
+
+
+/* final signal tile sizing: match games exactly */
+body[data-mode="signal"]:not(.has-results) .film-wall{
+  grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
+  gap:2px !important;
+}
+body[data-mode="signal"]:not(.has-results) .wall-cell{
+  aspect-ratio:16 / 9 !important;
+}
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
+  aspect-ratio:16 / 9 !important;
+}
+@media(max-width:980px){
+  body[data-mode="signal"]:not(.has-results) .film-wall{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+  body[data-mode="signal"]:not(.has-results) .wall-cell{
+    aspect-ratio:16 / 9 !important;
+  }
 }
 
 </style>
