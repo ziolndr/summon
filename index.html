@@ -1577,6 +1577,8 @@ const RAWG_PAGE_SIZE=40;
 
 const CORPUS_MODES=['film','games','books','tv','signal','mixed'];
 const MIXED_CORPUS_MODES=CORPUS_MODES.filter(mode=>mode!=='mixed');
+const MODE_TYPE={film:'film',games:'game',books:'book',tv:'tv',signal:'signal'};
+const MODE_LABEL={film:'films',games:'games',books:'books',tv:'tv shows',signal:'signals',mixed:'mixed records'};
 
 const DEPTHS={
   surface:{film:80,games:80,books:80,tv:80,mixedFilm:35,mixedGames:35,mixedBooks:35,mixedTv:35,rawgPages:3},
@@ -1586,6 +1588,7 @@ const DEPTHS={
 
 let corpusMode='film',searchDepth='field';
 let cache=null,results=[],active=0,currentQuery='',corpusPageOffset=0,shuffleSeed=0;
+let corpusRequestId=0;
 let hasExecutedSearch=false;
 
 const $=s=>document.querySelector(s);
@@ -1645,20 +1648,26 @@ function getLimit(key){
   const d=DEPTHS[searchDepth]||DEPTHS.field;
   return d[key]||d.film;
 }
-function filmLimit(){return corpusMode==='mixed'?getLimit('mixedFilm'):getLimit('film')}
-function gameLimit(){return corpusMode==='mixed'?getLimit('mixedGames'):getLimit('games')}
-function bookLimit(){return corpusMode==='mixed'?getLimit('mixedBooks'):getLimit('books')}
-function tvLimit(){return corpusMode==='mixed'?getLimit('mixedTv'):getLimit('tv')}
+function filmLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedFilm'):getLimit('film')}
+function gameLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedGames'):getLimit('games')}
+function bookLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedBooks'):getLimit('books')}
+function tvLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedTv'):getLimit('tv')}
 
-function totalLimit(){
-  if(corpusMode==='signal')return signalLimit();
-  if(corpusMode==='mixed'){
+function totalLimit(mode=corpusMode){
+  if(mode==='signal')return signalLimit();
+  if(mode==='mixed'){
     return searchDepth==='archive'?720:searchDepth==='field'?360:160;
   }
-  if(corpusMode==='books')return bookLimit();
-  if(corpusMode==='games')return gameLimit();
-  if(corpusMode==='tv')return tvLimit();
-  return filmLimit();
+  if(mode==='books')return bookLimit(mode);
+  if(mode==='games')return gameLimit(mode);
+  if(mode==='tv')return tvLimit(mode);
+  return filmLimit(mode);
+}
+
+function isolateCorpusItems(items,mode){
+  if(mode==='mixed')return items.filter(Boolean);
+  const expected=MODE_TYPE[mode]||mode;
+  return items.filter(item=>item&&item.type===expected);
 }
 
 
@@ -1931,11 +1940,12 @@ async function loadTV(limit){
 
 // ─── Wall Rendering ───
 
-function renderWall(movies){
-  const wallTarget=corpusMode==='signal'
+function renderWall(movies,mode=corpusMode){
+  const visibleItems=isolateCorpusItems(Array.isArray(movies)?movies:[],mode);
+  const wallTarget=mode==='signal'
     ?signalWallTarget()
-    :(corpusMode==='mixed'?(searchDepth==='archive'?180:searchDepth==='field'?128:96):48);
-  const sample=[...movies]
+    :(mode==='mixed'?(searchDepth==='archive'?260:searchDepth==='field'?180:120):48);
+  const sample=[...visibleItems]
     .map((m,i)=>({...m,wallIndex:i,src:still(m,'w780')||poster(m,'w500')}))
     .filter(m=>m.src&&m.src.length>15)
     .sort(()=>Math.random()-.5)
@@ -1969,17 +1979,22 @@ function finalizeCorpus(movies){
 async function loadCorpus(){
   if(cache && cache.mode===corpusMode && cache.depth===searchDepth)return cache;
 
+  const requestId=++corpusRequestId;
+  const requestedMode=corpusMode;
+  const requestedDepth=searchDepth;
+  const requestedTotal=totalLimit(requestedMode);
+
   let items=[];
-  if(corpusMode==='signal'){
-    items=await loadSignals(totalLimit());
-  }else if(corpusMode==='books'){
-    items=await loadBooks(totalLimit());
-  }else if(corpusMode==='games'){
-    items=await loadGames(totalLimit());
-  }else if(corpusMode==='tv'){
-    items=await loadTV(totalLimit());
-  }else if(corpusMode==='mixed'){
-    const target=totalLimit();
+  if(requestedMode==='signal'){
+    items=await loadSignals(requestedTotal);
+  }else if(requestedMode==='books'){
+    items=await loadBooks(requestedTotal);
+  }else if(requestedMode==='games'){
+    items=await loadGames(requestedTotal);
+  }else if(requestedMode==='tv'){
+    items=await loadTV(requestedTotal);
+  }else if(requestedMode==='mixed'){
+    const target=requestedTotal;
     const per=Math.max(24,Math.ceil(target/MIXED_CORPUS_MODES.length));
     const loaders={
       film:()=>loadFilms(per),
@@ -1989,15 +2004,21 @@ async function loadCorpus(){
       signal:()=>loadSignals(per)
     };
     const pools=await Promise.all(
-      MIXED_CORPUS_MODES.map(mode=>loaders[mode]().catch(err=>{
+      MIXED_CORPUS_MODES.map(mode=>loaders[mode]().then(rows=>isolateCorpusItems(rows,mode)).catch(err=>{
         console.warn(`mixed ${mode} load failed`,err);
         return [];
       }))
     );
     items=pools.flat().slice(0,target);
   }else{
-    corpusMode='film';
-    items=await loadFilms(totalLimit());
+    items=await loadFilms(requestedTotal);
+  }
+
+  // Hard isolation: only mix may contain multiple record types.
+  items=isolateCorpusItems(items,requestedMode).slice(0,requestedTotal);
+
+  if(requestId!==corpusRequestId||requestedMode!==corpusMode||requestedDepth!==searchDepth){
+    throw new Error('stale corpus load ignored');
   }
 
   const map=new Map();
@@ -2007,14 +2028,13 @@ async function loadCorpus(){
     return text;
   });
 
-  if(!items.length)throw new Error(`empty ${corpusMode} corpus`);
-  cache={mode:corpusMode,depth:searchDepth,items,map,candidates};
-  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':'films';
+  if(!items.length)throw new Error(`empty ${requestedMode} corpus`);
+  cache={mode:requestedMode,depth:requestedDepth,items,map,candidates};
+  const label=MODE_LABEL[requestedMode]||'films';
   setStatus(`${items.length} ${label} loaded`);
-  renderWall(items);
+  renderWall(items,requestedMode);
   return cache;
 }
-
 
 async function loadCorpusWithRetry(tries=2){
   let last;
@@ -2149,8 +2169,8 @@ function renderRankList(){
 
 async function shuffleFilms(){
   corpusPageOffset=(corpusPageOffset+1+Math.floor(Math.random()*3))%4;
-  shuffleSeed++;cache=null;
-  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='mixed'?'mix':'films';
+  shuffleSeed++;cache=null;corpusRequestId++;
+  const label=corpusMode==='signal'?'signals':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='mixed'?'mix':'films';
   setStatus(`shuffling ${label}`);
   setCorpusLoading(true,corpusLoadLabel('loading'));
   try{
@@ -2193,7 +2213,7 @@ function syncResultQuery(){
 
 async function setCorpusMode(mode){
   if(!CORPUS_MODES.includes(mode)||corpusMode===mode)return;
-  corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;
+  corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;corpusRequestId++;
   applyModeLabels();
   setCorpusLoading(true,corpusLoadLabel('loading'));
   try{
@@ -2208,7 +2228,7 @@ async function setCorpusMode(mode){
 
 async function setSearchDepth(depth){
   if(!DEPTHS[depth]||searchDepth===depth)return;
-  searchDepth=depth;cache=null;applyModeLabels();
+  searchDepth=depth;cache=null;corpusRequestId++;applyModeLabels();
   setCorpusLoading(true,corpusLoadLabel('loading'));
   try{
     await loadCorpusWithRetry(2);setCorpusLoading(false);
@@ -2439,8 +2459,8 @@ resultQuery.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.pr
  $('#shuffleFilms').addEventListener('click',shuffleFilms);
  $('#shuffleFilmsResult').addEventListener('click',shuffleFilms);
  $('#newSearch').addEventListener('click',newSearch);
-document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setCorpusMode(b.dataset.mode)));
-document.querySelectorAll('[data-depth]').forEach(b=>b.addEventListener('click',()=>setSearchDepth(b.dataset.depth)));
+document.querySelectorAll('button[data-mode]').forEach(b=>b.addEventListener('click',()=>setCorpusMode(b.dataset.mode)));
+document.querySelectorAll('button[data-depth]').forEach(b=>b.addEventListener('click',()=>setSearchDepth(b.dataset.depth)));
 document.querySelectorAll('[data-theme-switch]').forEach(b=>b.addEventListener('click',toggleTheme));
 document.addEventListener('keydown',e=>{
   if(!results.length)return;
