@@ -2371,20 +2371,17 @@ async function loadTV(limit){
 }
 
 
-// ─── Music Corpus: provider-backed, no hand-curated title list ───
+// ─── Music Corpus: provider-backed, browser-safe, no hand-curated title list ───
 
-const APPLE_MUSIC_RSS_BASES=[
-  'https://rss.marketingtools.apple.com/api/v2',
-  'https://rss.applemarketingtools.com/api/v2'
-];
 const ITUNES_SEARCH_URL='https://itunes.apple.com/search';
+const DEEZER_API_URL='https://api.deezer.com';
 const MUSIC_COUNTRIES=['us','gb','ca','au','ng','za','br','mx','jp','kr','fr','de','in'];
-const MUSIC_CHARTS=[
-  {chart:'most-played',kind:'songs'},
-  {chart:'most-played',kind:'albums'},
-  {chart:'new-releases',kind:'albums'}
+const MUSIC_SEARCH_TERMS=[
+  'electronic','alternative','indie','hip hop','r&b','soul','jazz','rock','ambient','dance','folk','soundtrack',
+  'afrobeat','reggae','latin','punk','metal','classical','experimental','synthpop','house','techno','funk','blues'
 ];
-const MUSIC_SEARCH_TERMS=['music','song','album','artist','new music','independent music','soundtrack','electronic','jazz','soul','rock','hip hop','ambient','dance','folk'];
+const MUSIC_BATCH_SIZE=4;
+const MUSIC_JSONP_TIMEOUT=9000;
 
 function upgradeArtwork(url,size=600){
   const s=String(url||'').replace(/^http:/,'https:');
@@ -2394,16 +2391,22 @@ function upgradeArtwork(url,size=600){
     .replace(/\/\d+x\d+\w*\.(jpg|png|webp)(\?.*)?$/i,`/${size}x${size}bb.$1`);
 }
 
-function musicRecord(row={},source='Apple Music'){
-  const title=row.name||row.trackName||row.collectionName||row.title||'Untitled';
-  const artist=row.artistName||row.artist||row.artistNameDefault||'';
-  const album=row.collectionName||row.albumName||row.album||row.name||'';
-  const release=row.releaseDate||row.release_date||row.releaseDateTime||'';
+function musicRecord(row={},source='music provider'){
+  const artistObj=row.artist&&typeof row.artist==='object'?row.artist:null;
+  const albumObj=row.album&&typeof row.album==='object'?row.album:null;
+  const title=row.title_short||row.title||row.name||row.trackName||row.collectionName||'Untitled';
+  const artist=row.artistName||artistObj?.name||row.artist||row.artistNameDefault||'';
+  const album=row.collectionName||albumObj?.title||row.albumName||row.album||row.name||'';
+  const release=row.releaseDate||row.release_date||albumObj?.release_date||row.releaseDateTime||'';
   const genres=asArray(row.genres).map(g=>typeof g==='object'?(g.name||''):g).filter(Boolean);
   if(row.primaryGenreName&&!genres.includes(row.primaryGenreName))genres.unshift(row.primaryGenreName);
-  const artwork=row.artworkUrl100||row.artworkUrl60||row.artworkUrl512||row.artworkUrl||row.image||row.cover||row.artwork;
+  if(row.genre&&!genres.includes(row.genre))genres.unshift(row.genre);
+  const artwork=
+    albumObj?.cover_xl||albumObj?.cover_big||albumObj?.cover_medium||albumObj?.cover||
+    row.cover_xl||row.cover_big||row.cover_medium||row.cover||
+    row.artworkUrl100||row.artworkUrl60||row.artworkUrl512||row.artworkUrl||row.image||row.cover||row.artwork;
   const image=upgradeArtwork(artwork,600);
-  const url=row.url||row.trackViewUrl||row.collectionViewUrl||row.artistViewUrl||row.externalUrl||'';
+  const url=row.link||row.url||row.trackViewUrl||row.collectionViewUrl||row.artistViewUrl||row.externalUrl||'';
   const kind=row.kind||row.wrapperType||row.type||'music';
   return {
     type:'music',title:String(title),artist:String(artist||''),album:String(album||''),
@@ -2424,7 +2427,7 @@ function fetchJsonWithTimeout(url,timeout=9000){
     .finally(()=>clearTimeout(timer));
 }
 
-function fetchJsonp(url,callbackParam='callback',timeout=10000){
+function fetchJsonp(url,callbackParam='callback',timeout=MUSIC_JSONP_TIMEOUT){
   return new Promise((resolve,reject)=>{
     const cb=`__summon_jsonp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const script=document.createElement('script');
@@ -2446,29 +2449,27 @@ function fetchJsonp(url,callbackParam='callback',timeout=10000){
   });
 }
 
-async function fetchAppleMusicRss(country='us',chart='most-played',kind='songs',limit=50){
-  const capped=Math.min(50,Math.max(10,limit));
-  let last;
-  for(const base of APPLE_MUSIC_RSS_BASES){
-    try{
-      const url=`${base}/${encodeURIComponent(country)}/music/${encodeURIComponent(chart)}/${capped}/${encodeURIComponent(kind)}.json`;
-      return await fetchJsonWithTimeout(url,8500);
-    }catch(e){last=e}
-  }
-  throw last||new Error('apple music rss unavailable');
+async function fetchDeezer(path,params={},timeout=MUSIC_JSONP_TIMEOUT){
+  const url=new URL(`${DEEZER_API_URL}${path}`);
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,String(v)));
+  url.searchParams.set('output','jsonp');
+  return fetchJsonp(url.toString(),'callback',timeout);
+}
+
+async function fetchDeezerSearch(term='music',limit=100,index=0){
+  return fetchDeezer('/search/track',{q:term,limit:Math.min(100,Math.max(1,limit)),index});
+}
+
+async function fetchDeezerChart(limit=100,index=0){
+  return fetchDeezer('/chart/0/tracks',{limit:Math.min(100,Math.max(1,limit)),index});
 }
 
 async function fetchItunesMusic(term='music',country='us',limit=200,entity='musicTrack'){
   const p=new URLSearchParams({term,country,media:'music',entity,limit:String(Math.min(200,Math.max(1,limit)))});
   const url=`${ITUNES_SEARCH_URL}?${p}`;
-
-  // Try normal fetch first for deployed HTTPS builds. If CORS/file-origin blocks it,
-  // fall back to the official iTunes JSONP shape via callback=...
-  try{
-    return await fetchJsonWithTimeout(url,8500);
-  }catch(_){
-    return await fetchJsonp(url,'callback',10000);
-  }
+  // Direct fetch is intentionally skipped here. Apple RSS/Search fetch is CORS-blocked on the deployed site.
+  // JSONP keeps the static frontend provider-backed without requiring a proxy.
+  return fetchJsonp(url,'callback',MUSIC_JSONP_TIMEOUT);
 }
 
 async function loadMusicProxy(limit){
@@ -2495,6 +2496,17 @@ function dedupeMusic(rows,limit){
   return out;
 }
 
+async function runMusicBatch(tasks,rows,target){
+  const batch=tasks.splice(0,MUSIC_BATCH_SIZE);
+  if(!batch.length)return rows;
+  const results=await Promise.allSettled(batch.map(fn=>fn()));
+  for(const res of results){
+    if(res.status==='fulfilled')rows.push(...res.value);
+    else console.warn('music provider failed',res.reason);
+  }
+  return dedupeMusic(rows,target).length>=target?rows:runMusicBatch(tasks,rows,target);
+}
+
 async function loadMusic(limit=musicLimit()){
   const target=Math.max(40,limit);
 
@@ -2504,43 +2516,44 @@ async function loadMusic(limit=musicLimit()){
     if(clean.length>=Math.min(target,24))return clean.slice(0,limit);
   }catch(e){console.warn('music proxy failed',e)}
 
-  const offset=Number(corpusPageOffset||0)%MUSIC_COUNTRIES.length;
-  const countries=[...MUSIC_COUNTRIES.slice(offset),...MUSIC_COUNTRIES.slice(0,offset)];
+  const offset=Number(corpusPageOffset||0)%MUSIC_SEARCH_TERMS.length;
+  const terms=[...MUSIC_SEARCH_TERMS.slice(offset),...MUSIC_SEARCH_TERMS.slice(0,offset)];
+  const countryOffset=Number(corpusPageOffset||0)%MUSIC_COUNTRIES.length;
+  const countries=[...MUSIC_COUNTRIES.slice(countryOffset),...MUSIC_COUNTRIES.slice(0,countryOffset)];
   const rows=[];
 
-  // Apple chart RSS is tried first, but sequentially and capped at 50 because
-  // the public RSS builder only exposes 10/25/50 result sizes reliably.
-  for(const country of countries.slice(0,searchDepth==='archive'?8:searchDepth==='field'?5:3)){
-    for(const chart of MUSIC_CHARTS){
-      try{
-        const data=await fetchAppleMusicRss(country,chart.chart,chart.kind,50);
-        const source=`Apple Music ${country.toUpperCase()} ${chart.chart} ${chart.kind}`;
-        rows.push(...asArray(data?.feed?.results).map(row=>musicRecord(row,source)));
-        const clean=dedupeMusic(rows,target);
-        if(clean.length>=Math.min(target,searchDepth==='surface'?80:160))return clean.slice(0,limit);
-      }catch(e){console.warn('apple music rss failed',country,chart.chart,chart.kind,e)}
-    }
-  }
+  // Deezer is the browser-safe primary path: no key, album art, JSONP, and real provider records.
+  const deezerTasks=[
+    async()=>{
+      const data=await fetchDeezerChart(100,0);
+      return asArray(data?.data).map(row=>musicRecord(row,'Deezer chart'));
+    },
+    ...terms.map((term,idx)=>async()=>{
+      const data=await fetchDeezerSearch(term,100,(idx%3)*100);
+      return asArray(data?.data).map(row=>musicRecord(row,`Deezer search ${term}`));
+    })
+  ];
 
-  const termOffset=Number(corpusPageOffset||0)%MUSIC_SEARCH_TERMS.length;
-  const terms=[...MUSIC_SEARCH_TERMS.slice(termOffset),...MUSIC_SEARCH_TERMS.slice(0,termOffset)];
+  await runMusicBatch(deezerTasks,rows,target);
+  let clean=dedupeMusic(rows,target);
+  if(clean.length>=Math.min(target,searchDepth==='surface'?80:160))return clean.slice(0,limit);
+
+  // iTunes JSONP fallback adds additional catalogue breadth without CORS-blocked RSS calls.
   const entities=['musicTrack','album'];
-
-  // iTunes Search supports callback JSONP, so this is the resilient static-file
-  // fallback when normal fetch/RSS is blocked by CORS or local file origin.
+  const itunesTasks=[];
   for(const term of terms){
-    for(const entity of entities){
-      try{
-        const data=await fetchItunesMusic(term,'us',200,entity);
-        const source=`iTunes Search ${entity}`;
-        rows.push(...asArray(data?.results).map(row=>musicRecord(row,source)));
-        const clean=dedupeMusic(rows,target);
-        if(clean.length>=target)return clean.slice(0,limit);
-      }catch(e){console.warn('itunes music failed',term,entity,e)}
+    for(const country of countries.slice(0,searchDepth==='archive'?5:searchDepth==='field'?3:2)){
+      for(const entity of entities){
+        itunesTasks.push(async()=>{
+          const data=await fetchItunesMusic(term,country,200,entity);
+          return asArray(data?.results).map(row=>musicRecord(row,`iTunes ${country.toUpperCase()} ${entity}`));
+        });
+      }
     }
   }
-
-  return dedupeMusic(rows,limit);
+  await runMusicBatch(itunesTasks,rows,target);
+  clean=dedupeMusic(rows,target);
+  return clean.slice(0,limit);
 }
 
 function musicWallTarget(){
