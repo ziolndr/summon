@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#ffffff">
 <title>SUMMON</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23050505'/%3E%3Cpath d='M14 43h36M14 32h36M14 21h36' stroke='%23f4f1eb' stroke-width='4'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
 <meta name="description" content="Find anything by meaning.">
 <meta property="og:title" content="SUMMON">
@@ -1035,15 +1037,6 @@ body[data-mode="tv"]:not(.has-results) .wall-cell{
   aspect-ratio:2 / 3 !important;
 }
 
-/* Music uses native album-art geometry */
-body[data-mode="music"]:not(.has-results) .film-wall{
-  grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
-  gap:2px !important;
-}
-body[data-mode="music"]:not(.has-results) .wall-cell{
-  aspect-ratio:1 / 1 !important;
-}
-
 /* Games keep the screenshot geometry that worked */
 body[data-mode="games"]:not(.has-results) .film-wall{
   grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
@@ -1141,11 +1134,6 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell.media-tv{
   aspect-ratio:2 / 3 !important;
 }
 
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="music"],
-body[data-mode="mixed"]:not(.has-results) .wall-cell.media-music{
-  aspect-ratio:1 / 1 !important;
-}
-
 /* Desktop drift still works for grid modes, not masonry mix */
 @media(min-width:981px){
   body[data-mode="mixed"]:not(.has-results) .film-wall{
@@ -1161,8 +1149,7 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell.media-music{
     gap:1px !important;
   }
 
-  body[data-mode="games"]:not(.has-results) .film-wall,
-  body[data-mode="music"]:not(.has-results) .film-wall{
+  body[data-mode="games"]:not(.has-results) .film-wall{
     grid-template-columns:repeat(2,minmax(0,1fr)) !important;
   }
 
@@ -1179,11 +1166,6 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell.media-music{
   body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="book"],
   body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="tv"]{
     aspect-ratio:2 / 3 !important;
-  }
-
-  body[data-mode="music"]:not(.has-results) .wall-cell,
-  body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="music"]{
-    aspect-ratio:1 / 1 !important;
   }
 
   body[data-mode="games"]:not(.has-results) .wall-cell,
@@ -1403,10 +1385,10 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="book"] img[src^=
 
 /* signal mode restored */
 body[data-mode="signal"]:not(.has-results) .wall-cell{
-  aspect-ratio:16 / 9 !important;
+  aspect-ratio:16 / 10 !important;
 }
 body[data-mode="signal"]:not(.has-results) .film-wall{
-  grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
 }
 @media(max-width:980px){
   body[data-mode="signal"]:not(.has-results) .film-wall{
@@ -1417,15 +1399,15 @@ body[data-mode="signal"]:not(.has-results) .film-wall{
 
 /* signal mode actual restore */
 body[data-mode="signal"]:not(.has-results) .film-wall{
-  grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
   gap:2px !important;
 }
 body[data-mode="signal"]:not(.has-results) .wall-cell{
-  aspect-ratio:16 / 9 !important;
+  aspect-ratio:16 / 10 !important;
 }
 body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"],
 body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
-  aspect-ratio:16 / 9 !important;
+  aspect-ratio:16 / 10 !important;
 }
 @media(max-width:980px){
   body[data-mode="signal"]:not(.has-results) .film-wall{
@@ -1434,67 +1416,12 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
 }
 
 
-/* ─── Signal mode: no stock photography, no duplicate-looking image wall ─── */
-body[data-mode="signal"]:not(.has-results) .wall-cell,
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]{
-  background:#0a0a0a !important;
-  box-shadow:0 0 0 1px rgba(244,241,235,.08) !important;
-}
-body[data-mode="signal"]:not(.has-results) .wall-cell img,
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"] img{
-  filter:none !important;
-  transform:none !important;
-  object-fit:cover !important;
-}
-body[data-mode="signal"]:not(.has-results) .wall-cell::before,
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]::before{
-  opacity:.28 !important;
-}
-body[data-mode="signal"]:not(.has-results) .wall-cell::after,
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]::after{
-  opacity:.08 !important;
-}
-
-
-/* final signal tile sizing: match games exactly */
-body[data-mode="signal"]:not(.has-results) .film-wall{
-  grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
-  gap:2px !important;
-}
-body[data-mode="signal"]:not(.has-results) .wall-cell{
-  aspect-ratio:16 / 9 !important;
-}
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"],
-body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
-  aspect-ratio:16 / 9 !important;
-}
-@media(max-width:980px){
-  body[data-mode="signal"]:not(.has-results) .film-wall{
-    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-  }
-  body[data-mode="signal"]:not(.has-results) .wall-cell{
-    aspect-ratio:16 / 9 !important;
-  }
-}
-
-
-/* ─── TMDb film image style correction ───
-   Film wall cells are poster geometry; provider backdrops stay reserved for hero imagery. */
-body[data-mode="film"]:not(.has-results) .wall-cell img,
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"] img{
-  object-position:center top !important;
-  filter:contrast(1.08) saturate(1.02) brightness(.95) !important;
-}
-
-body[data-mode="film"]:not(.has-results) .wall-cell::before,
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"]::before{
-  opacity:.62 !important;
-}
-
-body[data-mode="film"]:not(.has-results) .wall-cell::after,
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"]::after{
-  opacity:.105 !important;
-}
+/* restored music mode */
+body[data-mode="music"]:not(.has-results) .film-wall{grid-template-columns:repeat(4,minmax(150px,1fr)) !important;gap:2px !important;}
+body[data-mode="music"]:not(.has-results) .wall-cell,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="music"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell.media-music{aspect-ratio:1 / 1 !important;}
+@media(max-width:980px){body[data-mode="music"]:not(.has-results) .film-wall{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}}
 
 </style>
 </head>
@@ -1503,7 +1430,7 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"]::after{
   <div class="search-pane">
     <div>
       <div class="brand" aria-label="SUMMON">SUMMON</div>
-      <div class="prompt-label" id="eyebrow">find a film</div>
+      <div class="prompt-label">find a film</div>
       <form id="searchForm" class="search-form">
         <input id="query" autocomplete="off" spellcheck="false" inputmode="search" enterkeyhint="search" placeholder="describe the scene, mood, memory, or idea">
         <button id="go" aria-label="Search">→</button>
@@ -1518,8 +1445,8 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"]::after{
           <button type="button" class="toggle-btn" data-mode="books">books</button>
           <button type="button" class="toggle-btn" data-mode="tv">tv</button>
           <button type="button" class="toggle-btn" data-mode="music">music</button>
-          <button type="button" class="toggle-btn" data-mode="signal">signal</button>
           <button type="button" class="toggle-btn" data-mode="mixed">mix</button>
+        <button type="button" class="toggle-btn" data-mode="signal">signal</button>
         </div>
         <div class="toggle-group" role="group" aria-label="Search depth">
           <button type="button" class="toggle-btn active" data-depth="surface">surface</button>
@@ -1600,16 +1527,12 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"]::after{
 </section>
 
 <script>
-// Local prototype TMDb integration. Move this behind FILM_API_PROXY_URL before committing/deploying publicly.
-window.TMDB_API_KEY = window.TMDB_API_KEY || '1616a31a4f3bbcb387e74cbe0ae3c7b6';
 const ALGOLIA_APP_ID='C3XKD4DFTX';
 const ALGOLIA_API_KEY='af8f49e765acc850e83ae75c64303cf3';
 const ALGOLIA_INDEX='algolia_movie_sample_dataset';
 const ALGOLIA_URL=`https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/${ALGOLIA_INDEX}/query`;
 const ARBITER_URL='https://api.arbiter.traut.ai/public/compare';
 const IMG='https://image.tmdb.org/t/p/';
-const TMDB_API_BASE='https://api.themoviedb.org/3';
-const TMDB_WEB='https://www.themoviedb.org/movie/';
 const HITS=250;
 const RETURN_COUNT=10;
 const RAWG_KEY='3765495b17254a2393b9be2c5cc0dd77';
@@ -1619,30 +1542,14 @@ const OL_COVER='https://covers.openlibrary.org/b/id/';
 const TVMAZE_URL='https://api.tvmaze.com/shows';
 const RAWG_PAGE_SIZE=40;
 
-// Performance: ARBITER should receive one full candidate array per search.
-// Film provider detail expansion must not block that request.
-const CORPUS_MEMORY_CACHE_LIMIT=12;
-const TMDB_DISCOVERY_CONCURRENCY=8;
-const TMDB_DISCOVERY_OVERFETCH=1.45;
-const TMDB_DISCOVERY_MAX_REQUESTS=160;
-const TMDB_DISCOVERY_MIN_REQUESTS=24;
-const TMDB_FAST_FILM_LOAD=window.SUMMON_FAST_FILM_LOAD!==false;
-
-const CORPUS_MODES=['film','games','books','tv','music','signal','mixed'];
-const MIXED_CORPUS_MODES=CORPUS_MODES.filter(mode=>mode!=='mixed');
-const MODE_TYPE={film:'film',games:'game',books:'book',tv:'tv',music:'music',signal:'signal'};
-const MODE_LABEL={film:'films',games:'games',books:'books',tv:'tv shows',music:'music',signal:'signals',mixed:'mixed records'};
-
 const DEPTHS={
-  surface:{film:240,games:80,books:80,tv:80,music:160,mixedFilm:50,mixedGames:30,mixedBooks:30,mixedTv:30,mixedMusic:40,rawgPages:3},
-  field:{film:900,games:140,books:160,tv:160,music:420,mixedFilm:115,mixedGames:55,mixedBooks:55,mixedTv:55,mixedMusic:80,rawgPages:5},
-  archive:{film:1600,games:500,books:500,tv:500,music:900,mixedFilm:200,mixedGames:100,mixedBooks:100,mixedTv:100,mixedMusic:140,rawgPages:13}
+  surface:{film:80,games:80,books:80,tv:80,music:160,mixedFilm:35,mixedGames:35,mixedBooks:35,mixedTv:35,rawgPages:3},
+  field:{film:220,games:140,books:160,tv:160,music:420,mixedFilm:65,mixedGames:65,mixedBooks:65,mixedTv:65,rawgPages:5},
+  archive:{film:500,games:500,books:500,tv:500,music:900,mixedFilm:125,mixedGames:125,mixedBooks:125,mixedTv:125,rawgPages:13}
 };
 
 let corpusMode='film',searchDepth='field';
 let cache=null,results=[],active=0,currentQuery='',corpusPageOffset=0,shuffleSeed=0;
-let corpusRequestId=0;
-const corpusPoolCache=new Map();
 let hasExecutedSearch=false;
 
 const $=s=>document.querySelector(s);
@@ -1652,77 +1559,34 @@ const statusEl=$('#status');
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function norm(p){return p?(String(p).startsWith('/')?String(p):'/'+String(p)):null}
-function isUrl(v){return /^https?:\/\//i.test(String(v||''))||String(v||'').startsWith('data:image')}
-function img(p,size='original'){
-  if(!p)return '';
-  const s=String(p).trim();
-  if(!s)return '';
-  if(isUrl(s))return s.replace(/^http:/i,'https:');
-  return `${IMG}${size}${norm(s)}`;
-}
-function firstImage(values=[],size='w780'){
-  for(const v of values){
-    const out=img(v,size);
-    if(out)return out;
-  }
-  return '';
-}
+function img(p,size='original'){return p?`${IMG}${size}${norm(p)}`:''}
 
 function still(m,size='w780'){
-  if(!m)return '';
-  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal')return m.image||m.cover||m.src||'';
-  return firstImage([m.backdropPath,m.backdrop_path,m.image,m.cover,m.posterPath,m.poster_path],size);
+  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
+  return img(m?.backdropPath||m?.posterPath,size);
 }
 function poster(m,size='w342'){
-  if(!m)return '';
-  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal')return m.cover||m.image||m.src||'';
-  return firstImage([m.posterPath,m.poster_path,m.image,m.cover,m.backdropPath,m.backdrop_path],size);
+  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
+  return img(m?.posterPath,size);
 }
 function heroSrc(m){
-  if(!m)return '';
-  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal')return m.cover||m.image||m.src||'';
-  return firstImage([m.backdropPath,m.backdrop_path,m.image,m.cover,m.posterPath,m.poster_path],'original');
+  if(!m) return '';
+  if(m.type==='game') return m.image||m.cover||'';
+  if(m.type==='book') return m.cover||m.image||'';
+  if(m.type==='tv') return m.cover||m.image||'';
+  if(m.backdropPath) return img(m.backdropPath,'original')||img(m.backdropPath,'w1280');
+  if(m.posterPath) return img(m.posterPath,'original')||img(m.posterPath,'w780');
+  return '';
 }
 function thumbSrc(m){
-  if(!m)return '';
-  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal')return m.image||m.cover||m.src||'';
-  return firstImage([m.backdropPath,m.backdrop_path,m.image,m.cover,m.posterPath,m.poster_path],'w342');
-}
-
-function wallSrc(m){
-  if(!m)return '';
-  if(m.type==='film'){
-    // Film tiles are poster-shaped. TMDb backdrops are landscape and look wrong when cropped into poster cells.
-    // Use provider posters for the wall, keep backdrops for hero/rank thumbnails.
-    return poster(m,'w780')||poster(m,'w500')||still(m,'w1280')||still(m,'w780');
-  }
-  if(m.type==='book')return poster(m,'w500')||still(m,'w780');
-  return still(m,'w780')||poster(m,'w500');
+  if(!m) return '';
+  if(m.type==='game'||m.type==='book'||m.type==='tv') return m.image||m.cover||'';
+  return img(m.backdropPath||m.posterPath,'w342')||img(m.posterPath,'w185');
 }
 function candidate(m){
-  // Kept for older call paths. The live ARBITER payload uses candidateText().
-  return candidateText(m);
+  return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,6).join(', ')}. ${(m.platforms||[]).join(', ')}. ${m.overview.substring(0,360)}`;
 }
 function setStatus(t){if(statusEl)statusEl.textContent=t}
-function corpusCacheKey(mode=corpusMode,depth=searchDepth,offset=corpusPageOffset){
-  return `${mode}:${depth}:${Number(offset)||0}`;
-}
-function rememberCorpus(key,value){
-  if(!key||!value)return;
-  corpusPoolCache.set(key,value);
-  while(corpusPoolCache.size>CORPUS_MEMORY_CACHE_LIMIT){
-    const first=corpusPoolCache.keys().next().value;
-    corpusPoolCache.delete(first);
-  }
-}
-function readCorpusMemory(key){
-  const hit=corpusPoolCache.get(key);
-  if(!hit)return null;
-  // Refresh LRU order.
-  corpusPoolCache.delete(key);
-  corpusPoolCache.set(key,hit);
-  return hit;
-}
 function toast(t){
   const el=document.createElement('div');el.className='toast';el.textContent=t;
   document.body.appendChild(el);
@@ -1733,445 +1597,23 @@ function getLimit(key){
   const d=DEPTHS[searchDepth]||DEPTHS.field;
   return d[key]||d.film;
 }
-function filmLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedFilm'):getLimit('film')}
-function gameLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedGames'):getLimit('games')}
-function bookLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedBooks'):getLimit('books')}
-function tvLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedTv'):getLimit('tv')}
+function filmLimit(){return corpusMode==='mixed'?getLimit('mixedFilm'):getLimit('film')}
+function gameLimit(){return corpusMode==='mixed'?getLimit('mixedGames'):getLimit('games')}
+function bookLimit(){return corpusMode==='mixed'?getLimit('mixedBooks'):getLimit('books')}
 function musicLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedMusic'):getLimit('music')}
+function tvLimit(){return corpusMode==='mixed'?getLimit('mixedTv'):getLimit('tv')}
 
-function totalLimit(mode=corpusMode){
-  if(mode==='signal')return signalLimit();
-  if(mode==='mixed'){
-    return searchDepth==='archive'?720:searchDepth==='field'?360:160;
+function totalLimit(){
+  if(corpusMode==='signal')return searchDepth==='archive'?3000:1000;
+  if(corpusMode==='mixed'){
+    return searchDepth==='archive'?500:searchDepth==='field'?260:120;
   }
-  if(mode==='books')return bookLimit(mode);
-  if(mode==='games')return gameLimit(mode);
-  if(mode==='tv')return tvLimit(mode);
-  if(mode==='music')return musicLimit(mode);
-  return filmLimit(mode);
+  if(corpusMode==='books')return bookLimit();
+  if(corpusMode==='games')return gameLimit();
+  if(corpusMode==='tv')return tvLimit();
+  if(corpusMode==='music')return musicLimit();
+  return filmLimit();
 }
-
-function isolateCorpusItems(items,mode){
-  if(mode==='mixed')return items.filter(Boolean);
-  const expected=MODE_TYPE[mode]||mode;
-  return items.filter(item=>item&&item.type===expected);
-}
-
-
-async function fetchAlgoliaPage(page=0,queryText='',hits=HITS){
-  const params=new URLSearchParams({
-    query:String(queryText||''),
-    hitsPerPage:String(Math.max(1,Math.min(Number(hits)||HITS,1000))),
-    page:String(Math.max(0,page||0)),
-    attributesToRetrieve:['title','name','overview','description','plot','release_date','year','poster_path','backdrop_path','posterPath','backdropPath','image','poster','poster_url','image_url','genres','genre','actors','director','rating'].join(',')
-  });
-
-  const res=await fetch(ALGOLIA_URL,{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'X-Algolia-Application-Id':ALGOLIA_APP_ID,
-      'X-Algolia-API-Key':ALGOLIA_API_KEY
-    },
-    body:JSON.stringify({params:params.toString()})
-  });
-
-  if(!res.ok)throw new Error(`algolia ${res.status}`);
-  return res.json();
-}
-
-// Film corpus is provider-backed only. No hand-curated title lists, no query-specific lanes, no penalties.
-// A diverse result set comes from broad provider ingestion across popularity, rating, date, and vote-count surfaces.
-const FILM_PROVIDER_CACHE_MS=10*60*1000;
-const TMDB_DETAIL_CACHE_MS=7*24*60*60*1000;
-const TMDB_DISCOVER_SORTS=['popularity.desc','vote_count.desc','vote_average.desc','primary_release_date.desc'];
-let tmdbGenreMapPromise=null;
-const tmdbMoviePageMemoryCache=new Map();
-
-function tmdbBearerToken(){return String(window.TMDB_BEARER_TOKEN||window.TMDB_ACCESS_TOKEN||'').trim()}
-function tmdbApiKey(){return String(window.TMDB_API_KEY||'').trim()}
-function tmdbEnabled(){return !!(tmdbBearerToken()||tmdbApiKey())}
-function tmdbHeaders(){
-  const h={'Content-Type':'application/json'};
-  const bearer=tmdbBearerToken();
-  if(bearer)h.Authorization=`Bearer ${bearer}`;
-  return h;
-}
-async function fetchTmdbJson(path,params={}){
-  if(!tmdbEnabled())throw new Error('tmdb credentials missing');
-  const url=new URL(`${TMDB_API_BASE}${path}`);
-  Object.entries(params||{}).forEach(([k,v])=>{
-    if(v!==undefined&&v!==null&&String(v)!=='')url.searchParams.set(k,String(v));
-  });
-  if(!tmdbBearerToken())url.searchParams.set('api_key',tmdbApiKey());
-  const res=await fetch(url.toString(),{headers:tmdbHeaders()});
-  if(!res.ok)throw new Error(`tmdb ${res.status}`);
-  return res.json();
-}
-function tmdbImage(path,size='w780'){
-  if(!path)return '';
-  const s=String(path).trim();
-  if(!s)return '';
-  if(isUrl(s))return s.replace(/^http:/i,'https:');
-  return `${IMG}${size}${norm(s)}`;
-}
-async function tmdbGenreMap(){
-  if(!tmdbEnabled())return {};
-  if(!tmdbGenreMapPromise){
-    tmdbGenreMapPromise=fetchTmdbJson('/genre/movie/list',{language:'en-US'})
-      .then(data=>Object.fromEntries((data.genres||[]).map(g=>[String(g.id),g.name]).filter(x=>x[0]&&x[1])))
-      .catch(err=>{console.warn('tmdb genre map failed',err);return {}});
-  }
-  return tmdbGenreMapPromise;
-}
-function tmdbGenres(m={},genreMap={}){
-  const names=asArray(m.genres).map(g=>typeof g==='object'?g.name:g).filter(Boolean);
-  const ids=asArray(m.genre_ids).map(id=>genreMap[String(id)]).filter(Boolean);
-  return [...new Set([...names,...ids])].slice(0,8);
-}
-function filmKey(m){
-  const title=String(m?.title||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-  const year=String(m?.year||'').trim();
-  return `${title}::${year}`;
-}
-function addFilmIfNew(out,seen,m){
-  if(!m||m.type!=='film'||!m.title)return false;
-  const key=filmKey(m);
-  if(!key||seen.has(key))return false;
-  seen.add(key);
-  out.push(m);
-  return true;
-}
-function tmdbMovieRecord(m={},source='TMDB',genreMap={}){
-  const title=String(m.title||m.name||m.original_title||'').trim();
-  if(!title)return null;
-  const year=String(m.release_date||m.first_air_date||'').slice(0,4);
-  const image=tmdbImage(m.backdrop_path||m.poster_path,'w780');
-  const cover=tmdbImage(m.poster_path||m.backdrop_path,'w500');
-  if(!image&&!cover)return null;
-  const overview=String(m.overview||'').trim()||`${title}. Provider-backed film record returned by ${source}.`;
-  return {
-    type:'film',
-    title,
-    year,
-    overview,
-    genres:tmdbGenres(m,genreMap),
-    actors:[],
-    director:'',
-    rating:m.vote_average?Number(m.vote_average).toFixed(1):null,
-    corpusTags:[...new Set(['provider-backed film',source].filter(Boolean))],
-    corpusSource:source,
-    posterPath:m.poster_path||'',
-    backdropPath:m.backdrop_path||'',
-    image,
-    cover,
-    tmdbId:m.id||null,
-    externalUrl:m.id?`${TMDB_WEB}${m.id}`:`https://www.imdb.com/find?q=${encodeURIComponent(title+' '+year)}`
-  };
-}
-function compactTmdbDetails(d={}){
-  const crew=asArray(d.credits?.crew)
-    .filter(p=>['Director','Writer','Screenplay','Story','Producer'].includes(p.job))
-    .slice(0,24)
-    .map(p=>({name:p.name||'',job:p.job||'',department:p.department||''}));
-  const cast=asArray(d.credits?.cast)
-    .slice(0,12)
-    .map(p=>({name:p.name||'',character:p.character||''}));
-  const keywords=asArray(d.keywords?.keywords||d.keywords?.results)
-    .map(k=>k.name||k)
-    .filter(Boolean)
-    .slice(0,24);
-  return {
-    id:d.id,
-    title:d.title||d.name||'',
-    overview:d.overview||'',
-    tagline:d.tagline||'',
-    runtime:d.runtime||'',
-    original_language:d.original_language||'',
-    popularity:d.popularity||'',
-    vote_count:d.vote_count||'',
-    production_countries:asArray(d.production_countries).map(c=>c.name||c.iso_3166_1).filter(Boolean).slice(0,8),
-    production_companies:asArray(d.production_companies).map(c=>c.name).filter(Boolean).slice(0,8),
-    credits:{crew,cast},
-    keywords:{keywords:keywords.map(name=>({name}))}
-  };
-}
-function tmdbDetailCacheKey(id){return `summon:tmdb:movie:${id}:v2`}
-function readTmdbDetailCache(id){
-  try{
-    const raw=localStorage.getItem(tmdbDetailCacheKey(id));
-    if(!raw)return null;
-    const payload=JSON.parse(raw);
-    if(!payload||Date.now()-payload.t>TMDB_DETAIL_CACHE_MS)return null;
-    return payload.v||null;
-  }catch(_){return null}
-}
-function writeTmdbDetailCache(id,value){
-  try{localStorage.setItem(tmdbDetailCacheKey(id),JSON.stringify({t:Date.now(),v:compactTmdbDetails(value)}))}
-  catch(_){/* localStorage can fill; enrichment should still continue */}
-}
-async function fetchTmdbMovieDetails(id){
-  if(!id||!tmdbEnabled())return null;
-  const cached=readTmdbDetailCache(id);
-  if(cached)return cached;
-  const data=await fetchTmdbJson(`/movie/${id}`,{language:'en-US',append_to_response:'credits,keywords'});
-  writeTmdbDetailCache(id,data);
-  return compactTmdbDetails(data);
-}
-function mergeTmdbDetailsIntoFilm(rec,details){
-  if(!rec||!details)return rec;
-  const crew=asArray(details.credits?.crew);
-  const directors=crew.filter(p=>p.job==='Director').map(p=>p.name).filter(Boolean);
-  const writers=crew.filter(p=>['Writer','Screenplay','Story'].includes(p.job)).map(p=>p.name).filter(Boolean);
-  const producers=crew.filter(p=>p.job==='Producer').map(p=>p.name).filter(Boolean);
-  const cast=asArray(details.credits?.cast).map(p=>p.name).filter(Boolean);
-  const characters=asArray(details.credits?.cast).map(p=>p.character).filter(Boolean).slice(0,8);
-  const keywords=asArray(details.keywords?.keywords||details.keywords?.results).map(k=>k.name||k).filter(Boolean);
-  const richerOverview=[details.tagline,details.overview||rec.overview].filter(Boolean).join(' ').trim();
-  return {
-    ...rec,
-    overview:richerOverview||rec.overview,
-    actors:cast.length?cast.slice(0,10):asArray(rec.actors),
-    characters,
-    director:directors.join(', ')||rec.director||'',
-    writers:writers.slice(0,6),
-    producers:producers.slice(0,6),
-    runtime:details.runtime||rec.runtime||'',
-    productionCountries:asArray(details.production_countries).slice(0,8),
-    productionCompanies:asArray(details.production_companies).slice(0,8),
-    originalLanguage:details.original_language||rec.originalLanguage||'',
-    tmdbPopularity:details.popularity||rec.tmdbPopularity||'',
-    tmdbVoteCount:details.vote_count||rec.tmdbVoteCount||'',
-    corpusTags:[...new Set([...asArray(rec.corpusTags),...keywords.slice(0,18)].filter(Boolean))]
-  };
-}
-function tmdbEnrichCap(requested){
-  const fallback=searchDepth==='archive'?900:searchDepth==='field'?620:260;
-  return Math.min(Number(requested)||fallback,fallback);
-}
-async function enrichTmdbFilms(rows=[],requested=filmLimit()){
-  if(!tmdbEnabled()||!rows.length)return rows;
-  const cap=tmdbEnrichCap(requested);
-  const out=[...rows];
-  const targets=out
-    .map((rec,i)=>({rec,i}))
-    .filter(x=>x.rec?.tmdbId)
-    .slice(0,cap);
-  const concurrency=5;
-  let cursor=0;
-  async function worker(){
-    while(cursor<targets.length){
-      const item=targets[cursor++];
-      try{
-        const details=await fetchTmdbMovieDetails(item.rec.tmdbId);
-        out[item.i]=mergeTmdbDetailsIntoFilm(item.rec,details);
-      }catch(err){
-        console.warn('tmdb detail enrichment failed',item.rec.title,err);
-      }
-    }
-  }
-  await Promise.all(Array.from({length:Math.min(concurrency,targets.length)},()=>worker()));
-  return out;
-}
-function buildTmdbBroadSources(genreMap={}){
-  const sourceList=[
-    {path:'/movie/popular',params:{},name:'TMDB popular'},
-    {path:'/movie/top_rated',params:{},name:'TMDB top rated'},
-    {path:'/movie/now_playing',params:{},name:'TMDB now playing'},
-    {path:'/discover/movie',params:{sort_by:'popularity.desc','vote_count.gte':10},name:'TMDB broad popularity'},
-    {path:'/discover/movie',params:{sort_by:'revenue.desc','vote_count.gte':10},name:'TMDB broad box office'},
-    {path:'/discover/movie',params:{sort_by:'vote_count.desc','vote_count.gte':10},name:'TMDB broad vote count'},
-    {path:'/discover/movie',params:{sort_by:'vote_average.desc','vote_count.gte':40},name:'TMDB broad critical'},
-    {path:'/discover/movie',params:{sort_by:'primary_release_date.desc','vote_count.gte':5},name:'TMDB recent release'}
-  ];
-
-  Object.entries(genreMap||{}).forEach(([id,name])=>{
-    if(!id||!name)return;
-    sourceList.push({
-      path:'/discover/movie',
-      params:{with_genres:id,sort_by:'popularity.desc','vote_count.gte':5},
-      name:`TMDB genre taxonomy: ${name}`
-    });
-  });
-
-  const now=new Date().getFullYear();
-  for(let start=1950;start<=now;start+=10){
-    const end=Math.min(start+9,now);
-    sourceList.push({
-      path:'/discover/movie',
-      params:{
-        sort_by:'popularity.desc',
-        'vote_count.gte':8,
-        'primary_release_date.gte':`${start}-01-01`,
-        'primary_release_date.lte':`${end}-12-31`
-      },
-      name:`TMDB decade surface: ${start}s`
-    });
-  }
-
-  return sourceList;
-}
-function stableParamString(params={}){
-  return Object.keys(params||{}).sort().map(k=>`${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`).join('&');
-}
-async function fetchTmdbMoviePage(path,params={},page=1,source='TMDB',genreMap={}){
-  const key=`${path}?${stableParamString({language:'en-US',include_adult:'false',page,...params})}`;
-  if(tmdbMoviePageMemoryCache.has(key))return tmdbMoviePageMemoryCache.get(key).map(x=>({...x}));
-  const data=await fetchTmdbJson(path,{language:'en-US',include_adult:'false',page,...params});
-  const rows=(data.results||[]).map(m=>tmdbMovieRecord(m,source,genreMap)).filter(Boolean);
-  tmdbMoviePageMemoryCache.set(key,rows);
-  while(tmdbMoviePageMemoryCache.size>320){
-    const first=tmdbMoviePageMemoryCache.keys().next().value;
-    tmdbMoviePageMemoryCache.delete(first);
-  }
-  return rows.map(x=>({...x}));
-}
-async function runLimited(tasks=[],limit=TMDB_DISCOVERY_CONCURRENCY,fn){
-  const queue=[...(tasks||[])];
-  const workers=Array.from({length:Math.min(limit,queue.length)},async()=>{
-    while(queue.length){
-      const task=queue.shift();
-      await fn(task);
-    }
-  });
-  await Promise.all(workers);
-}
-async function loadTmdbBroadFilms(limit=filmLimit()){
-  if(!tmdbEnabled())return [];
-  const requested=Math.max(1,Number(limit)||filmLimit());
-  const genreMap=await tmdbGenreMap();
-  const sources=buildTmdbBroadSources(genreMap);
-  const seen=new Set();
-  const out=[];
-
-  // Build a bounded, interleaved provider-backed corpus.
-  // Old behavior walked every source across dozens of rounds and then fetched hundreds
-  // of movie details before ARBITER could run. This keeps broad coverage while
-  // making the corpus step a small parallel page fanout.
-  const pagesNeeded=Math.ceil(requested/20);
-  const targetRequests=Math.min(
-    TMDB_DISCOVERY_MAX_REQUESTS,
-    Math.max(TMDB_DISCOVERY_MIN_REQUESTS,Math.ceil(pagesNeeded*TMDB_DISCOVERY_OVERFETCH))
-  );
-  const pagesPerSource=Math.max(1,Math.ceil(targetRequests/Math.max(1,sources.length)));
-  const basePage=1+(((corpusPageOffset||0)*pagesPerSource)%440);
-  const tasks=[];
-
-  for(let pageRound=0;pageRound<pagesPerSource&&tasks.length<targetRequests;pageRound++){
-    for(const src of sources){
-      if(tasks.length>=targetRequests)break;
-      const page=((basePage+pageRound-1)%500)+1;
-      tasks.push({...src,page});
-    }
-  }
-
-  await runLimited(tasks,TMDB_DISCOVERY_CONCURRENCY,async task=>{
-    if(out.length>=requested)return;
-    try{
-      const rows=await fetchTmdbMoviePage(task.path,task.params,task.page,task.name,genreMap);
-      for(const row of rows){
-        addFilmIfNew(out,seen,row);
-        if(out.length>=requested)break;
-      }
-    }catch(err){
-      console.warn('tmdb broad film page failed',task.name,task.page,err);
-    }
-  });
-
-  const fastRows=out.slice(0,requested);
-
-  // Optional only. Detail expansion is expensive and should never block normal search.
-  if(!TMDB_FAST_FILM_LOAD&&fastRows.length){
-    return enrichTmdbFilms(fastRows,Math.min(fastRows.length,120));
-  }
-
-  return fastRows;
-}
-function normalizeProxyFilmRecord(row={},source='film proxy'){
-  const rec=filmRecord(row);
-  const image=firstImage([row.backdrop_url,row.backdrop,row.image,row.poster,row.poster_url,row.image_url,row.backdrop_path,row.poster_path,rec.image,rec.cover],'w780');
-  const cover=firstImage([row.poster_url,row.poster,row.image,row.image_url,row.poster_path,row.backdrop_path,rec.cover,rec.image],'w500');
-  if(!rec.title||(!image&&!cover))return null;
-  return {
-    ...rec,
-    image,
-    cover,
-    corpusSource:row.corpusSource||source,
-    corpusTags:[...new Set(['provider-backed film',...asArray(row.tags),...asArray(row.corpusTags)])],
-    externalUrl:row.externalUrl||row.url||rec.externalUrl
-  };
-}
-async function loadFilmDiscoveryProxy(limit){
-  const endpoint=String(window.FILM_API_PROXY_URL||'').trim();
-  if(!endpoint)return [];
-  try{
-    const url=new URL(endpoint,location.href);
-    url.searchParams.set('mode','film');
-    url.searchParams.set('limit',String(limit));
-    url.searchParams.set('depth',searchDepth);
-    url.searchParams.set('offset',String(corpusPageOffset||0));
-    const res=await fetch(url.toString(),{headers:{Accept:'application/json'}});
-    if(!res.ok)throw new Error(`film proxy ${res.status}`);
-    const data=await res.json();
-    const rows=Array.isArray(data)?data:(data.results||data.items||data.movies||[]);
-    return rows.map(row=>normalizeProxyFilmRecord(row,'film proxy')).filter(Boolean).slice(0,limit);
-  }catch(err){
-    console.warn('film proxy failed',err);
-    return [];
-  }
-}
-function mergeProviderFilms(groups=[],requested=filmLimit()){
-  const want=Math.max(1,Number(requested)||filmLimit());
-  const seen=new Set();
-  const out=[];
-  const lists=(groups||[]).map(g=>(g||[]).filter(Boolean));
-  let cursor=0;
-  while(out.length<want&&lists.some((list,i)=>cursor<list.length)){
-    for(const list of lists){
-      if(cursor<list.length)addFilmIfNew(out,seen,list[cursor]);
-      if(out.length>=want)break;
-    }
-    cursor++;
-  }
-  return out.slice(0,want);
-}
-
-function fallbackFilmStill(title='',year='',genres=[]){
-  const safeTitle=String(title||'FILM').slice(0,72);
-  const safeMeta=[year,(genres||[]).slice(0,2).join(' / ')].filter(Boolean).join(' · ');
-  const hue=[...safeTitle].reduce((a,c)=>a+c.charCodeAt(0),0)%360;
-  const svg=`
-  <svg xmlns="http://www.w3.org/2000/svg" width="900" height="1350" viewBox="0 0 900 1350">
-    <defs>
-      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="hsl(${hue},18%,14%)"/>
-        <stop offset="1" stop-color="hsl(${(hue+42)%360},20%,5%)"/>
-      </linearGradient>
-      <filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="4"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .20"/></feComponentTransfer></filter>
-    </defs>
-    <rect width="900" height="1350" fill="url(#g)"/>
-    <rect width="900" height="1350" filter="url(#n)" opacity=".38"/>
-    <rect x="54" y="54" width="792" height="1242" fill="none" stroke="rgba(246,241,232,.17)" stroke-width="2"/>
-    <text x="74" y="124" font-family="IBM Plex Mono, Menlo, monospace" font-size="26" fill="rgba(246,241,232,.52)" letter-spacing="5">SUMMON / FILM</text>
-    <foreignObject x="74" y="430" width="752" height="430">
-      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Georgia,serif;font-size:76px;line-height:.92;font-weight:600;letter-spacing:-3px;color:rgb(246,241,232);word-wrap:break-word;">
-        ${esc(safeTitle)}
-      </div>
-    </foreignObject>
-    <foreignObject x="74" y="1070" width="752" height="120">
-      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:IBM Plex Mono,Menlo,monospace;font-size:24px;line-height:1.35;color:rgba(246,241,232,.62);text-transform:uppercase;letter-spacing:3px;word-wrap:break-word;">
-        ${esc(safeMeta)}
-      </div>
-    </foreignObject>
-  </svg>`;
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-}
-
-function fallbackFilmCorpus(limit=filmLimit()){
-  // No local title fallback. Empty means the configured providers did not return usable film media.
-  return [];
-}
-
 
 
 async function fetchRawgPage(page=1){
@@ -2197,38 +1639,9 @@ async function fetchTVPage(page=0){
 // ─── Record Builders ───
 
 function filmRecord(h){
-  const title=h.title||h.name||'';
-  const rawGenres=Array.isArray(h.genres)?h.genres:(Array.isArray(h.genre)?h.genre:[]);
-  const genres=rawGenres.map(g=>typeof g==='object'?(g.name||''):g).filter(Boolean);
-  const actors=(Array.isArray(h.actors)?h.actors:[]).map(a=>typeof a==='object'?(a.name||''):a).filter(Boolean).slice(0,5);
-  const year=h.release_date?String(h.release_date).slice(0,4):(h.year?String(h.year):'');
-  const posterPath=norm(h.poster_path||h.posterPath||'');
-  const backdropPath=norm(h.backdrop_path||h.backdropPath||'');
-  const directImage=firstImage([h.image,h.poster,h.poster_url,h.image_url], 'w500');
-  const overview=String(
-    h.overview||h.description||h.plot||[
-      title,
-      year?`Released ${year}`:'',
-      genres.length?genres.join(', '):'',
-      actors.length?`Actors: ${actors.join(', ')}`:''
-    ].filter(Boolean).join('. ')
-  ).trim();
-
-  return {
-    type:'film',
-    title,
-    overview:overview||`${title}. Film indexed by title, genre, cast, era, and visual signal.`,
-    year,
-    posterPath,
-    backdropPath,
-    image:directImage,
-    cover:directImage,
-    genres,
-    actors,
-    director:h.director||'',
-    rating:h.rating||null,
-    externalUrl:`https://www.imdb.com/find?q=${encodeURIComponent(title)}`
-  };
+  let genres=[];
+  if(Array.isArray(h.genres)) genres=h.genres.map(g=>typeof g==='object'?(g.name||''):g).filter(Boolean);
+  return {type:'film',title:h.title,overview:h.overview||'',year:h.release_date?String(h.release_date).slice(0,4):'',posterPath:norm(h.poster_path),backdropPath:norm(h.backdrop_path),genres};
 }
 
 function gameRecord(g){
@@ -2273,65 +1686,6 @@ function tvRecord(s){
 
 // ─── Corpus Loaders ───
 
-async function loadFilms(limit){
-  const requested=Math.max(1,Number(limit)||filmLimit());
-
-  const proxyRows=await loadFilmDiscoveryProxy(requested).catch(err=>{
-    console.warn('film proxy corpus failed',err);
-    return [];
-  });
-
-  const tmdbTarget=proxyRows.length>=requested?0:requested;
-  const tmdbRows=tmdbTarget?await loadTmdbBroadFilms(tmdbTarget).catch(err=>{
-    console.warn('tmdb broad corpus failed',err);
-    return [];
-  }):[];
-
-  const algoliaTarget=Math.max(0,requested-(proxyRows.length+tmdbRows.length));
-  const algoliaRows=[];
-
-  if(algoliaTarget>0){
-    const pageCount=Math.max(1,Math.ceil(algoliaTarget/HITS));
-    const meta=await fetchAlgoliaPage(0,'',HITS).catch(err=>{
-      console.warn('Algolia film metadata failed',err);
-      return null;
-    });
-
-    const nbPages=Math.max(0,Number(meta?.nbPages||0));
-    const rawBase=Math.max(0,(corpusPageOffset||0)*pageCount);
-    const base=nbPages?rawBase%nbPages:rawBase;
-    const pageNums=Array.from({length:pageCount},(_,i)=>nbPages?(base+i)%nbPages:base+i);
-    const algoliaSeen=new Set();
-
-    for(const pageNum of pageNums){
-      let page=null;
-      if(pageNum===0&&meta)page=meta;
-      else{
-        try{
-          page=await fetchAlgoliaPage(pageNum,'',HITS);
-          if(pageCount>4)await new Promise(r=>setTimeout(r,45));
-        }catch(err){
-          console.warn('Algolia film page failed',pageNum,err);
-          page={hits:[]};
-        }
-      }
-      for(const h of(page?.hits||[])){
-        const rec=filmRecord(h||{});
-        if(!rec.title)continue;
-        if(!heroSrc(rec)&&!thumbSrc(rec))continue;
-        rec.corpusSource=rec.corpusSource||'Algolia movie sample dataset';
-        rec.corpusTags=[...new Set(['provider-backed film',...asArray(rec.corpusTags)])];
-        addFilmIfNew(algoliaRows,algoliaSeen,rec);
-        if(algoliaRows.length>=algoliaTarget)break;
-      }
-      if(algoliaRows.length>=algoliaTarget)break;
-    }
-  }
-
-  const merged=mergeProviderFilms([proxyRows,tmdbRows,algoliaRows],requested);
-  if(!merged.length)setStatus('film providers returned no usable media');
-  return merged;
-}
 
 
 async function loadGames(limit){
@@ -2353,6 +1707,55 @@ async function loadGames(limit){
 }
 
 
+async function loadBooks(limit=bookLimit()){
+  const base='';
+  const fields='title,author_name,first_publish_year,subject,cover_i,edition_count';
+  const queries=[
+    'subject:fiction OR subject:literature OR subject:science_fiction OR subject:fantasy',
+    'subject:classic_literature OR subject:science_fiction OR subject:fantasy',
+    'subject:dystopia OR subject:robots OR subject:philosophy'
+  ];
+
+  const docs=[];
+  for(const q of queries){
+    if(docs.length>=limit)break;
+    const url=`${base}?q=${encodeURIComponent(q)}&limit=${Math.min(100,limit)}&fields=${encodeURIComponent(fields)}`;
+    try{
+      const data=await fetch(url);
+      docs.push(...(data.docs||[]));
+    }catch(e){
+      console.warn('Open Library blocked, using fallback books', e);
+      break;
+    }
+  }
+
+  const seen=new Set();
+  const books=[];
+  for(const d of docs){
+    const title=d.title||'';
+    if(!title||seen.has(title))continue;
+    seen.add(title);
+    const author=(d.author_name||[])[0]||'Unknown author';
+    const subjects=(d.subject||[]).slice(0,8).filter(Boolean);
+    const cover=d.cover_i?`https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg`:'';
+    books.push({
+      type:'book',
+      title,
+      author,
+      year:d.first_publish_year?String(d.first_publish_year):'',
+      subjects,
+      genres:subjects.slice(0,2),
+      overview:`${title}. By ${author}. Subjects: ${subjects.join(', ') || 'Literature'}. A literary object indexed through authorship, subject, era, and thematic signal.`,
+      src:cover || `https://covers.openlibrary.org/b/title/${encodeURIComponent(title)}-L.jpg`,
+      externalUrl:`https://openlibrary.org/search?q=${encodeURIComponent(title+' '+author)}`
+    });
+    if(books.length>=limit)break;
+  }
+
+  return books.length ? books : fallbackBookCorpus(limit);
+}
+
+
 async function loadTV(limit){
   const np=Math.max(1,Math.ceil(limit/250));
   const pages=await Promise.all(Array.from({length:np},(_,i)=>fetchTVPage(i).catch(()=>[])));
@@ -2370,147 +1773,20 @@ async function loadTV(limit){
   return out;
 }
 
-
-// ─── Music Corpus: provider-backed, no hand-curated title list ───
-
-const APPLE_MUSIC_RSS_BASE='https://rss.applemarketingtools.com/api/v2';
-const ITUNES_SEARCH_URL='https://itunes.apple.com/search';
-const MUSIC_COUNTRIES=['us','gb','ca','au','ng','za','br','mx','jp','kr','fr','de','in'];
-const MUSIC_CHARTS=[
-  {chart:'most-played',kind:'songs'},
-  {chart:'most-played',kind:'albums'},
-  {chart:'new-releases',kind:'albums'}
-];
-const MUSIC_SEARCH_TERMS=['music','song','album','artist','new music','independent music','soundtrack'];
-
-function upgradeArtwork(url,size=600){
-  const s=String(url||'').replace(/^http:/,'https:');
-  if(!s)return '';
-  return s
-    .replace(/\/\d+x\d+bb\.(jpg|png|webp)(\?.*)?$/i,`/${size}x${size}bb.$1`)
-    .replace(/\/\d+x\d+\w*\.(jpg|png|webp)(\?.*)?$/i,`/${size}x${size}bb.$1`);
-}
-
-function musicRecord(row={},source='Apple Music'){
-  const title=row.name||row.trackName||row.collectionName||row.title||'Untitled';
-  const artist=row.artistName||row.artist||'';
-  const album=row.collectionName||row.albumName||row.album||row.name||'';
-  const release=row.releaseDate||row.release_date||'';
-  const genres=asArray(row.genres).map(g=>typeof g==='object'?(g.name||''):g).filter(Boolean);
-  if(row.primaryGenreName&&!genres.includes(row.primaryGenreName))genres.unshift(row.primaryGenreName);
-  const image=upgradeArtwork(row.artworkUrl100||row.artworkUrl60||row.artworkUrl512||row.artworkUrl||row.image||row.cover,600);
-  const url=row.url||row.trackViewUrl||row.collectionViewUrl||row.artistViewUrl||row.externalUrl||'';
-  const kind=row.kind||row.wrapperType||row.type||'music';
-  return {
-    type:'music',title:String(title),artist:String(artist||''),album:String(album||''),
-    year:release?String(release).slice(0,4):'',releaseDate:release,genres,kind,
-    source,externalUrl:url,image,cover:image,
-    overview:`${title}. ${artist?`Artist: ${artist}. `:''}${album&&album!==title?`Album: ${album}. `:''}${genres.length?`Genre signal: ${genres.slice(0,6).join(', ')}. `:''}${release?`Released ${String(release).slice(0,10)}. `:''}${source} music record indexed through artist, album, genre, release era, and sonic/cultural metadata.`
-  };
-}
-
-async function fetchAppleMusicRss(country='us',chart='most-played',kind='songs',limit=100){
-  const url=`${APPLE_MUSIC_RSS_BASE}/${encodeURIComponent(country)}/music/${encodeURIComponent(chart)}/${Math.min(100,Math.max(10,limit))}/${encodeURIComponent(kind)}.json`;
-  const res=await fetch(url,{cache:'force-cache'});
-  if(!res.ok)throw new Error(`apple music rss ${res.status}`);
-  return res.json();
-}
-
-async function fetchItunesMusic(term='music',country='us',limit=200,entity='song'){
-  const p=new URLSearchParams({term,country,media:'music',entity,limit:String(Math.min(200,Math.max(1,limit)))});
-  const res=await fetch(`${ITUNES_SEARCH_URL}?${p}`,{cache:'force-cache'});
-  if(!res.ok)throw new Error(`itunes ${res.status}`);
-  return res.json();
-}
-
-async function loadMusicProxy(limit){
-  const base=window.MUSIC_API_PROXY_URL;
-  if(!base)return [];
-  const url=new URL(base,location.protocol==='file:'?'https://summon.local':location.href);
-  url.searchParams.set('limit',String(limit));
-  url.searchParams.set('depth',searchDepth);
-  url.searchParams.set('offset',String(corpusPageOffset||0));
-  const res=await fetch(url.toString());
-  if(!res.ok)throw new Error(`music proxy ${res.status}`);
-  const data=await res.json();
-  const rows=Array.isArray(data)?data:(data.results||data.items||data.tracks||data.albums||[]);
-  return rows.map(row=>musicRecord(row,data.source||'music proxy')).filter(m=>m.image);
-}
-
-function dedupeMusic(rows,limit){
-  const seen=new Set(),out=[];
-  for(const rec of rows){
-    if(!rec||!rec.title||!rec.image)continue;
-    const key=[rec.title,rec.artist,rec.album].join('|').toLowerCase().replace(/\s+/g,' ').trim();
-    if(seen.has(key))continue;
-    seen.add(key);out.push(rec);
-    if(out.length>=limit)break;
-  }
-  return out;
-}
-
-async function loadMusic(limit=musicLimit()){
-  try{
-    const proxied=await loadMusicProxy(limit);
-    if(proxied.length>=Math.min(limit,80))return dedupeMusic(proxied,limit);
-  }catch(e){console.warn('music proxy failed',e)}
-
-  const target=Math.max(40,limit);
-  const offset=Number(corpusPageOffset||0)%MUSIC_COUNTRIES.length;
-  const countries=[...MUSIC_COUNTRIES.slice(offset),...MUSIC_COUNTRIES.slice(0,offset)];
-  const requests=[];
-  for(const country of countries){
-    for(const chart of MUSIC_CHARTS){
-      requests.push(fetchAppleMusicRss(country,chart.chart,chart.kind,100).then(data=>{
-        const source=`Apple Music ${country.toUpperCase()} ${chart.chart} ${chart.kind}`;
-        return asArray(data?.feed?.results).map(row=>musicRecord(row,source));
-      }).catch(()=>[]));
-      if(requests.length>=Math.ceil(target/45))break;
-    }
-    if(requests.length>=Math.ceil(target/45))break;
-  }
-
-  let rows=(await Promise.all(requests)).flat();
-  rows=dedupeMusic(rows,target);
-  if(rows.length>=Math.min(limit,80))return rows.slice(0,limit);
-
-  const fallbackReqs=[];
-  const termOffset=Number(corpusPageOffset||0)%MUSIC_SEARCH_TERMS.length;
-  const terms=[...MUSIC_SEARCH_TERMS.slice(termOffset),...MUSIC_SEARCH_TERMS.slice(0,termOffset)];
-  for(const term of terms){
-    fallbackReqs.push(fetchItunesMusic(term,'us',200,'song').then(data=>asArray(data?.results).map(row=>musicRecord(row,'iTunes Search song'))).catch(()=>[]));
-    fallbackReqs.push(fetchItunesMusic(term,'us',200,'album').then(data=>asArray(data?.results).map(row=>musicRecord(row,'iTunes Search album'))).catch(()=>[]));
-    if(rows.length+fallbackReqs.length*80>=target)break;
-  }
-  rows=dedupeMusic([...rows,...(await Promise.all(fallbackReqs)).flat()],limit);
-  return rows;
-}
-
-function musicWallTarget(){
-  return searchDepth==='archive'?420:searchDepth==='field'?260:150;
-}
-
 // ─── Wall Rendering ───
 
-function renderWall(movies,mode=corpusMode){
-  const visibleItems=isolateCorpusItems(Array.isArray(movies)?movies:[],mode);
-  const wallTarget=mode==='signal'
-    ?signalWallTarget()
-    :(mode==='film'
-      ?filmWallTarget()
-      :(mode==='music'
-        ?musicWallTarget()
-        :(mode==='mixed'?(searchDepth==='archive'?360:searchDepth==='field'?250:160):48)));
-  const sample=[...visibleItems]
-    .map((m,i)=>({...m,wallIndex:i,src:wallSrc(m)}))
+function renderWall(movies){
+  // Strict filter: only tiles with real, non-empty image URLs
+  const sample=[...movies]
+    .map(m=>({...m,src:still(m,'w780')||poster(m,'w500')}))
     .filter(m=>m.src&&m.src.length>15)
     .sort(()=>Math.random()-.5)
-    .slice(0,wallTarget);
+    .slice(0,48);
 
   $('#wall').innerHTML=sample.map(m=>
-    `<div class="wall-cell media-${esc(m.type||'film')}" data-type="${esc(m.type||'film')}" data-title="${esc(m.title)}" data-author="${esc((m.authors||[])[0]||m.author||'')}" data-year="${esc(m.year||'')}" data-section="${esc(m.section||'')}" data-source="${esc(m.source||'')}" data-index="${esc(m.wallIndex||0)}" data-genres="${esc((m.genres||[]).join(', '))}">
+    `<div class="wall-cell media-${esc(m.type||'film')}" data-type="${esc(m.type||'film')}" data-title="${esc(m.title)}" data-author="${esc((m.authors||[])[0]||m.author||'')}">
       <img src="${m.src}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"
-           onerror="this.onerror=null;const c=this.closest('.wall-cell');const t=c?.dataset?.type;if(t==='book'){this.src=fallbackBookCover(c.dataset.title,c.dataset.author||'')}else if(t==='film'){c?.remove()}else if(t==='signal'){this.src=fallbackSignalCard(c.dataset.title,c.dataset.section||'',c.dataset.source||'',Number(c.dataset.index||0))}else if(t==='music'){c?.remove()}else{c?.remove()}">
+           onerror="this.onerror=null;const c=this.closest('.wall-cell');if(c?.dataset?.type==='book'){this.src=fallbackBookCover(c.dataset.title,c.dataset.author||'')}else{this.src=fallbackStill(c?.dataset?.title||'SUMMON',c?.dataset?.type||'film')}">
     </div>`
   ).join('');
 
@@ -2525,7 +1801,7 @@ function finalizeCorpus(movies){
   const map=new Map();
   candidates.forEach((c,i)=>map.set(c,movies[i]));
   cache={movies,candidates,map};
-  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'music':corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':'films';
+  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':'films';
   setStatus(`${movies.length} ${label} loaded`);
   renderWall(movies);
   return cache;
@@ -2533,87 +1809,46 @@ function finalizeCorpus(movies){
 
 
 async function loadCorpus(){
-  const activeKey=corpusCacheKey();
-  if(cache && cache.key===activeKey && cache.mode===corpusMode && cache.depth===searchDepth)return cache;
-
-  const memoryHit=readCorpusMemory(activeKey);
-  if(memoryHit){
-    cache=memoryHit;
-    const label=MODE_LABEL[cache.mode]||'films';
-    setStatus(`${cache.items.length} ${label} ready`);
-    renderWall(cache.items,cache.mode);
-    return cache;
-  }
-
-  const requestId=++corpusRequestId;
-  const requestedMode=corpusMode;
-  const requestedDepth=searchDepth;
-  const requestedOffset=corpusPageOffset;
-  const requestedKey=corpusCacheKey(requestedMode,requestedDepth,requestedOffset);
-  const requestedTotal=totalLimit(requestedMode);
+  if(cache && cache.mode===corpusMode && cache.depth===searchDepth)return cache;
 
   let items=[];
-  if(requestedMode==='signal'){
-    items=await loadSignals(requestedTotal);
-  }else if(requestedMode==='books'){
-    items=await loadBooks(requestedTotal);
-  }else if(requestedMode==='games'){
-    items=await loadGames(requestedTotal);
-  }else if(requestedMode==='tv'){
-    items=await loadTV(requestedTotal);
-  }else if(requestedMode==='music'){
-    items=await loadMusic(requestedTotal);
-  }else if(requestedMode==='mixed'){
-    const target=requestedTotal;
-    const per=Math.max(24,Math.ceil(target/MIXED_CORPUS_MODES.length));
-    const loaders={
-      film:()=>loadFilms(per),
-      games:()=>loadGames(per),
-      books:()=>loadBooks(per),
-      tv:()=>loadTV(per),
-      music:()=>loadMusic(per),
-      signal:()=>loadSignals(per)
-    };
-    const pools=await Promise.all(
-      MIXED_CORPUS_MODES.map(mode=>loaders[mode]().then(rows=>isolateCorpusItems(rows,mode)).catch(err=>{
-        console.warn(`mixed ${mode} load failed`,err);
-        return [];
-      }))
-    );
-    items=pools.flat().slice(0,target);
+  if(corpusMode==='signal'){
+    items=await loadSignals(totalLimit());
+  }else if(corpusMode==='books'){
+    items=await loadBooks(totalLimit());
+  }else if(corpusMode==='games'){
+    items=await loadGames(totalLimit());
+  }else if(corpusMode==='tv'){
+    items=await loadTV(totalLimit());
+  }else if(corpusMode==='mixed'){
+    const per=Math.max(20,Math.ceil(totalLimit()/5));
+    const pools=await Promise.all([
+      loadFilms(per),
+      loadGames(per),
+      loadBooks(per),
+      loadTV(per),
+      loadMusic(per),
+      loadSignals(per)
+    ]);
+    items=pools.flat().slice(0,totalLimit());
   }else{
-    items=await loadFilms(requestedTotal);
-  }
-
-  // Hard isolation: only mix may contain multiple record types.
-  items=isolateCorpusItems(items,requestedMode).slice(0,requestedTotal);
-
-  if(requestId!==corpusRequestId||requestedMode!==corpusMode||requestedDepth!==searchDepth||requestedOffset!==corpusPageOffset){
-    throw new Error('stale corpus load ignored');
+    corpusMode='film';
+    items=await loadFilms(totalLimit());
   }
 
   const map=new Map();
-  const candidates=[];
-  items=items
-    .map(m=>m?{...m,genres:asArray(m.genres),subjects:asArray(m.subjects),authors:asArray(m.authors),platforms:asArray(m.platforms),actors:asArray(m.actors)}:null)
-    .filter(Boolean);
-
-  items.forEach((m,i)=>{
-    const baseText=candidateText(m);
-    if(!baseText)return;
-    const text=`${baseText}\nRecord id: ${requestedMode}:${m.type||'record'}:${i}.`;
+  const candidates=items.map(m=>{
+    const text=candidateText(m);
     map.set(text,m);
-    candidates.push(text);
+    return text;
   });
 
-  if(!items.length||!candidates.length)throw new Error(`empty ${requestedMode} corpus`);
-  cache={key:requestedKey,mode:requestedMode,depth:requestedDepth,offset:requestedOffset,items,map,candidates};
-  rememberCorpus(requestedKey,cache);
-  const label=MODE_LABEL[requestedMode]||'films';
-  setStatus(`${items.length} ${label} loaded`);
-  renderWall(items,requestedMode);
+  cache={mode:corpusMode,depth:searchDepth,items,map,candidates};
+  if(!items.length){throw new Error(`empty corpus ${corpusMode}`)}
+  renderWall(items);
   return cache;
 }
+
 
 async function loadCorpusWithRetry(tries=2){
   let last;
@@ -2644,18 +1879,16 @@ async function search(text){
   try{
     const corpus=await loadCorpusWithRetry(2);
     setTimeout(startOracleDrift,120);
-    setStatus(`ranking ${corpus.candidates.length} candidates`);
 
     const res=await fetch(ARBITER_URL,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({query:q,candidates:corpus.candidates,use_freq:true,top_k:RETURN_COUNT})
+      body:JSON.stringify({query:q,candidates:corpus.candidates.slice(0,totalLimit()),use_freq:true,top_k:RETURN_COUNT})
     });
     if(!res.ok)throw new Error(`arbiter ${res.status}`);
 
     const data=await res.json();
     results=parse(data,corpus.map);
     active=0;hasExecutedSearch=true;
-    setStatus(`ranked ${corpus.candidates.length} candidates`);
 
     if(!results.length){toast('no response');return}
 
@@ -2667,7 +1900,7 @@ async function search(text){
       $('#results')?.scrollIntoView({behavior:'auto',block:'start'});
       document.body.classList.remove('cutting');
     });
-    safeSetHash(q);
+    history.replaceState(null,'',`#${encodeURIComponent(q)}`);
   }catch(e){
     console.error(e);toast('connection failed');
   }finally{
@@ -2699,24 +1932,25 @@ function renderResult(){
   const ov=(m.overview||'No overview available.').trim();
   $('#overview').textContent=ov.length>260?ov.slice(0,257).trimEnd()+'…':ov;
 
-  $('#meta').innerHTML=metaBitsFor(m,4).map(bit=>`<span>${esc(bit)}</span>`).join('');
+  $('#meta').innerHTML=[
+    m.year?`<span>${esc(m.year)}</span>`:'',
+    ...(m.authors||[]).slice(0,1).map(a=>`<span>${esc(a)}</span>`),
+    ...(m.genres||[]).slice(0,2).map(g=>`<span>${esc(g)}</span>`)
+  ].join('');
 
   const rc=$('#rankCount');if(rc)rc.textContent=`${results.length} returned`;
   applyModeLabels();
   syncResultQuery();
 
-  const sourceUrl =
-    m.type==='game'?`https://rawg.io/games/${m.rawgSlug||encodeURIComponent(String(m.title||'').toLowerCase().replaceAll(' ','-'))}`:
-    m.type==='signal'?(m.externalUrl||`https://www.google.com/search?q=${encodeURIComponent(m.title)}`):
-    m.type==='music'?(m.externalUrl||`https://music.apple.com/us/search?term=${encodeURIComponent(m.title+' '+(m.artist||''))}`):
-    m.type==='book'?(m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title)}`):
+  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='signal'?`${m.title}. ${m.overview||''}`:m.type==='signal'?'open article ↗':m.type==='music'?'listen/search ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':'view on imdb ↗';
+  $('#imdb').onclick=()=>window.open(
+    m.type==='game'?`https://rawg.io/games/${m.rawgSlug||encodeURIComponent(m.title.toLowerCase().replaceAll(' ','-'))}`:
+    m.type==='signal'?`${m.title}. ${m.overview||''}`:m.type==='signal'?(m.externalUrl||`https://www.google.com/search?q=${encodeURIComponent(m.title)}`):m.type==='music'?(m.externalUrl||`https://www.youtube.com/results?search_query=${encodeURIComponent((m.artist||'')+' '+m.title)}`):m.type==='book'?(m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title)}`):
     m.type==='tv'?(m.tvMazeUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`):
-    (m.externalUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`);
-  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='signal'?'open source ↗':m.type==='music'?'open music ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':'view on imdb ↗';
-  $('#imdb').onclick=()=>window.open(sourceUrl,'_blank','noopener,noreferrer');
+    `https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`,'_blank'
+  );
   $('#copyLink').onclick=()=>{
-    const base=location.protocol==='file:'?'':location.href.split('#')[0];
-    const url=base?`${base}#${encodeURIComponent(currentQuery)}`:`#${encodeURIComponent(currentQuery)}`;
+    const url=`${location.href.split('#')[0]}#${encodeURIComponent(currentQuery)}`;
     navigator.clipboard?.writeText(url).then(()=>toast('link copied'));
   };
   renderRankList();
@@ -2729,7 +1963,7 @@ function renderResult(){
 function renderRankList(){
   $('#rankList').innerHTML=results.map((m,i)=>{
     const t=thumbSrc(m);
-    const bits=metaBitsFor(m,3);
+    const bits=[m.year||'',...(m.authors||[]).slice(0,1),...(m.genres||[]).slice(0,2)].filter(Boolean);
     return `<button class="rank-row ${i===active?'active':''}" data-i="${i}">
       <span class="rank-num">${String(i+1).padStart(2,'0')}</span>
       ${t?`<img class="rank-thumb" src="${t}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`:'<span style="width:72px;height:48px;background:var(--wall);display:block"></span>'}
@@ -2746,9 +1980,9 @@ function renderRankList(){
 // ─── Actions ───
 
 async function shuffleFilms(){
-  corpusPageOffset=(corpusPageOffset+1+Math.floor(Math.random()*7))%48;
-  shuffleSeed++;cache=null;corpusRequestId++;
-  const label=corpusMode==='signal'?'signals':corpusMode==='music'?'music':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='mixed'?'mix':'films';
+  corpusPageOffset=(corpusPageOffset+1+Math.floor(Math.random()*3))%4;
+  shuffleSeed++;cache=null;
+  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='mixed'?'mix':'films';
   setStatus(`shuffling ${label}`);
   setCorpusLoading(true,corpusLoadLabel('loading'));
   try{
@@ -2761,7 +1995,7 @@ function newSearch(){
   hasExecutedSearch=false;
   stopOracleDrift();
   document.body.classList.remove('has-results','searching','cutting');
-  safeClearHash();
+  history.replaceState(null,'',location.pathname+location.search);
   window.scrollTo({top:0,behavior:'auto'});
   query.focus({preventScroll:true});
   finishResolveState();resetQueryTraces();
@@ -2790,8 +2024,8 @@ function syncResultQuery(){
 // ─── Mode / Depth / Theme ───
 
 async function setCorpusMode(mode){
-  if(!CORPUS_MODES.includes(mode)||corpusMode===mode)return;
-  corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;corpusRequestId++;
+  if(!['film','games','books','tv','mixed','signal'].includes(mode)||corpusMode===mode)return;
+  corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;
   applyModeLabels();
   setCorpusLoading(true,corpusLoadLabel('loading'));
   try{
@@ -2799,14 +2033,14 @@ async function setCorpusMode(mode){
   }catch(e){console.error(e);setCorpusLoading(false,'load failed');return}
   if(document.body.classList.contains('has-results')){
     document.body.classList.remove('has-results','searching','cutting');
-    safeClearHash();
+    history.replaceState(null,'',location.pathname+location.search);
     window.scrollTo({top:0,behavior:'auto'});
   }
 }
 
 async function setSearchDepth(depth){
   if(!DEPTHS[depth]||searchDepth===depth)return;
-  searchDepth=depth;cache=null;corpusRequestId++;applyModeLabels();
+  searchDepth=depth;cache=null;applyModeLabels();
   setCorpusLoading(true,corpusLoadLabel('loading'));
   try{
     await loadCorpusWithRetry(2);setCorpusLoading(false);
@@ -2829,11 +2063,10 @@ function applyModeLabels(){
   const n=totalLimit();
   const corpusLabel =
     corpusMode==='signal'?'signal corpus':
-    corpusMode==='mixed'?'all-section mix':
+    corpusMode==='mixed'?'mixed corpus':
     corpusMode==='games'?'games':
     corpusMode==='books'?'books':
     corpusMode==='tv'?'tv shows':
-    corpusMode==='music'?'music':
     'films';
 
   const actionLabel =
@@ -2842,34 +2075,18 @@ function applyModeLabels(){
     corpusMode==='games'?'find a game':
     corpusMode==='books'?'find a book':
     corpusMode==='tv'?'find a show':
-    corpusMode==='music'?'find music':
     'find a film';
 
   const hint = document.querySelector('#modeHint');
   if(hint) hint.textContent = `search ${n} ${corpusLabel} by meaning`;
 
-  const eyebrow = document.querySelector('#eyebrow') || document.querySelector('.prompt-label');
+  const eyebrow = document.querySelector('#eyebrow');
   if(eyebrow) eyebrow.textContent = actionLabel;
-
-  const placeholders = {
-    signal: 'describe a geopolitical pattern, risk, actor, region, or system pressure',
-    mixed: 'describe a film, game, book, show, track, signal, system, mood, memory, or idea',
-    games: 'describe the world, mechanic, feeling, or system',
-    books: 'describe the theme, voice, era, symbol, or idea',
-    tv: 'describe the premise, tone, character dynamic, or world',
-    music: 'describe the sound, scene, mood, era, artist signal, or feeling',
-    film: 'describe the scene, mood, memory, or idea'
-  };
-  if(query) query.placeholder = placeholders[corpusMode] || placeholders.film;
-  if(resultQuery) resultQuery.placeholder = corpusMode==='signal' ? 'edit the signal search' : 'edit the search';
-
-  const resultMode = document.querySelector('#resultMode');
-  if(resultMode) resultMode.textContent = `${corpusMode==='signal'?'signal':corpusMode} corpus · ${searchDepth}`;
 
   const ready = document.querySelector('#readyLine');
   if(ready) ready.textContent = `ready ${n} ${corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':corpusLabel} · ${searchDepth}`;
 
-  const shuffleLabel = corpusMode==='signal'?'signals':corpusMode==='music'?'music':corpusMode==='mixed'?'mix':corpusMode==='tv'?'tv':corpusMode;
+  const shuffleLabel = corpusMode==='signal'?'signals':corpusMode==='mixed'?'mix':corpusMode==='tv'?'tv':corpusMode;
   document.querySelectorAll('[data-action="shuffle-corpus"]').forEach(b=>b.textContent=`shuffle ${shuffleLabel}`);
 
   const resultMeta = document.querySelector('#resultMeta');
@@ -2879,7 +2096,7 @@ function applyModeLabels(){
 function corpusLoadLabel(prefix='loading'){
   const n=totalLimit();
   const d=searchDepth;
-  const m=corpusMode==='signal'?'signals':corpusMode==='music'?'music':corpusMode==='mixed'?'mixed records':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':'films';
+  const m=corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':'films';
   return `${prefix} ${n} ${m} · ${d}`;
 }
 
@@ -3040,8 +2257,8 @@ resultQuery.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.pr
  $('#shuffleFilms').addEventListener('click',shuffleFilms);
  $('#shuffleFilmsResult').addEventListener('click',shuffleFilms);
  $('#newSearch').addEventListener('click',newSearch);
-document.querySelectorAll('button[data-mode]').forEach(b=>b.addEventListener('click',()=>setCorpusMode(b.dataset.mode)));
-document.querySelectorAll('button[data-depth]').forEach(b=>b.addEventListener('click',()=>setSearchDepth(b.dataset.depth)));
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setCorpusMode(b.dataset.mode)));
+document.querySelectorAll('[data-depth]').forEach(b=>b.addEventListener('click',()=>setSearchDepth(b.dataset.depth)));
 document.querySelectorAll('[data-theme-switch]').forEach(b=>b.addEventListener('click',toggleTheme));
 document.addEventListener('keydown',e=>{
   if(!results.length)return;
@@ -3236,664 +2453,209 @@ async function loadBooks(limit){
 }
 
 
+/* Static signal corpus — deterministic, thick, no stalled remote load */
+const STATIC_SIGNALS=[["How big tech got its way on Trump’s AI executive order", "Technology", 2026, "Signal Desk", "Discovery lane: platform capture, regulatory rollback, executive-order influence, AI policy leverage.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["The devil owns Amazon: big tech has infiltrated the fashion world", "Fashion", 2026, "Signal Desk", "Discovery lane: Amazon, luxury, fashion logistics, marketplace leverage, cultural capture.", "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80"], ["Designer sues Australian Shopify over alleged ghost stores he claims copied his work", "Australia news", 2026, "Signal Desk", "Discovery lane: Shopify, ghost stores, IP enforcement, copycat commerce, platform accountability.", "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80"], ["AI fault lines on show at Cannes", "Technology", 2026, "Signal Desk", "Discovery lane: Hollywood, generative AI, creative labor, authorship, IP.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Nationwide pressed to address emerging governance issues", "Business", 2026, "Signal Desk", "Discovery lane: governance pressure, quick votes, member institutions, board accountability.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["UK supply chain unprepared for major shocks such as war", "Politics", 2026, "Signal Desk", "Discovery lane: war risk, logistics, food resilience, preparedness.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=80"], ["US and Iran inch closer to peace deal as Trump faces criticism from GOP hawks", "World news", 2026, "Signal Desk", "Discovery lane: Iran, Trump, GOP hawks, diplomacy, ceasefire pressure.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Trump to meet with US negotiators to decide on Iran’s ceasefire proposal", "World news", 2026, "Signal Desk", "Discovery lane: Tehran, negotiations, ceasefire, executive decision pressure.", "https://images.unsplash.com/photo-1516937941344-00b4e0337589?auto=format&fit=crop&w=1400&q=80"], ["Middle East crisis: oil prices fall amid optimism over US-Iran deal", "World news", 2026, "Signal Desk", "Discovery lane: oil markets, diplomatic risk, Iran, energy volatility.", "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1400&q=80"], ["Republican lawmakers warn of disastrous mistake as Trump nears Iran deal", "World news", 2026, "Signal Desk", "Discovery lane: GOP pressure, hardliners, foreign policy backlash.", "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1400&q=80"], ["Trump says he does not make bad deals, but hawks doubt that now", "World news", 2026, "Signal Desk", "Discovery lane: deal rhetoric, Iranian assets, domestic backlash.", "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1400&q=80"], ["Mood in Russia turns against Putin", "World news", 2026, "Signal Desk", "Discovery lane: Russia, Putin, war fatigue, elite uncertainty.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["GPS jammed on RAF jet near Russian border", "World news", 2026, "Signal Desk", "Discovery lane: GPS jamming, RAF, Russia, electronic warfare.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Gunman near White House was known to Secret Service", "US news", 2026, "Signal Desk", "Discovery lane: White House, Secret Service, threat intelligence, security failure.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Labor urged to restore public confidence in anti-corruption watchdog", "Australia news", 2026, "Signal Desk", "Discovery lane: anti-corruption, public trust, watchdog appointment.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Immigration detention failures and prediction market bets alarm officials", "Australia news", 2026, "Signal Desk", "Discovery lane: detention, prediction markets, institutional failure.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Central banks warn AI trading systems could amplify market shocks", "Markets", 2026, "Signal Desk", "Discovery lane: AI trading, central banks, market structure, volatility.", "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80"], ["Cloud concentration risk becomes board-level concern after cascading outages", "Technology", 2026, "Signal Desk", "Discovery lane: cloud, concentration risk, AWS, Azure, enterprise dependency.", "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80"], ["Private equity rolls up critical software vendors used by hospitals and municipalities", "Business", 2026, "Signal Desk", "Discovery lane: PE rollups, healthcare IT, municipal systems, procurement.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Defense startups move from drones to decision software", "Defense", 2026, "Signal Desk", "Discovery lane: defense tech, procurement, JADC2, autonomy.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Prediction markets become shadow polling infrastructure", "Politics", 2026, "Signal Desk", "Discovery lane: prediction markets, campaign intelligence, odds, regulation.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=80"], ["AI search companies negotiate default placement with mobile browsers", "Technology", 2026, "Signal Desk", "Discovery lane: browsers, distribution, default search, AI assistants.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Chip export controls create black-market routing through secondary jurisdictions", "Geopolitics", 2026, "Signal Desk", "Discovery lane: chips, export controls, sanctions, covert logistics.", "https://images.unsplash.com/photo-1516937941344-00b4e0337589?auto=format&fit=crop&w=1400&q=80"], ["Water rights become the next data-center bottleneck", "Infrastructure", 2026, "Signal Desk", "Discovery lane: data centers, water, AI infrastructure, local permitting.", "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1400&q=80"], ["Corporate landlords use algorithmic pricing while cities investigate rent coordination", "Housing", 2026, "Signal Desk", "Discovery lane: housing, algorithms, landlords, antitrust.", "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1400&q=80"], ["Autonomous vehicle companies pivot from robotaxis to freight corridors", "Transport", 2026, "Signal Desk", "Discovery lane: robotaxis, freight, autonomy, logistics.", "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1400&q=80"], ["Satellite imagery firms compete to own insurance risk scoring", "Insurance", 2026, "Signal Desk", "Discovery lane: satellites, insurance, climate risk, actuarial infrastructure.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Streaming platforms test synthetic actors for localized ad creative", "Media", 2026, "Signal Desk", "Discovery lane: synthetic actors, streaming, advertising, localization.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Hospital systems deploy AI triage while liability remains unresolved", "Healthcare", 2026, "Signal Desk", "Discovery lane: clinical AI, hospitals, liability, triage automation.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Universities license student data tools as enrollment pressure rises", "Education", 2026, "Signal Desk", "Discovery lane: student data, analytics, retention, behavioral prediction.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Energy traders watch AI data centers as new marginal load", "Energy", 2026, "Signal Desk", "Discovery lane: power grid, AI data centers, energy trading.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Municipal surveillance contracts bundled into traffic safety modernization", "Cities", 2026, "Signal Desk", "Discovery lane: smart cities, traffic cameras, surveillance, procurement.", "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80"], ["Banks rebuild fraud systems around behavioral biometrics", "Finance", 2026, "Signal Desk", "Discovery lane: fraud, biometrics, identity, banking.", "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80"], ["Defense contractors package LLMs as secure mission assistants", "Defense", 2026, "Signal Desk", "Discovery lane: LLMs, defense contractors, secure assistants, procurement.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Adtech firms reposition identity graphs as clean-room measurement", "Advertising", 2026, "Signal Desk", "Discovery lane: clean rooms, identity graphs, adtech, privacy language.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Shipping insurers monitor Strait of Hormuz risk through alternative data", "Markets", 2026, "Signal Desk", "Discovery lane: Hormuz, insurance, shipping, oil volatility.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=80"], ["Semiconductor suppliers audit hidden China exposure across subcontractors", "Supply Chain", 2026, "Signal Desk", "Discovery lane: semiconductors, supplier graphs, China exposure, compliance.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Media companies explore coherence search as archive monetization layer", "Media", 2026, "Signal Desk", "Discovery lane: semantic retrieval, archive monetization, licensing.", "https://images.unsplash.com/photo-1516937941344-00b4e0337589?auto=format&fit=crop&w=1400&q=80"], ["AI procurement rules split agencies between speed and safety", "Government", 2026, "Signal Desk", "Discovery lane: AI procurement, compliance, agency modernization.", "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1400&q=80"], ["Grid operators delay interconnects as data-center demand surges", "Energy", 2026, "Signal Desk", "Discovery lane: interconnect queues, data centers, grid constraints.", "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1400&q=80"], ["Fashion platforms face backlash over synthetic storefronts", "Fashion", 2026, "Signal Desk", "Discovery lane: platform commerce, synthetic stores, brand dilution.", "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1400&q=80"], ["Insurers price wildfire exposure with private satellite feeds", "Insurance", 2026, "Signal Desk", "Discovery lane: wildfire, satellites, private data, risk pricing.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Ports adopt autonomous inspection drones amid labor pressure", "Supply Chain", 2026, "Signal Desk", "Discovery lane: ports, drones, labor, inspection automation.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Regulators examine model risk in automated credit decisions", "Finance", 2026, "Signal Desk", "Discovery lane: credit models, model risk, lending, regulation.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["AI agents begin negotiating SaaS renewals for enterprise buyers", "Enterprise", 2026, "Signal Desk", "Discovery lane: agents, procurement, SaaS, negotiation.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Cities consider bans on facial recognition in transit systems", "Cities", 2026, "Signal Desk", "Discovery lane: facial recognition, transit, privacy, municipal policy.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Quantum startups chase optimization contracts before hardware maturity", "Technology", 2026, "Signal Desk", "Discovery lane: quantum, optimization, enterprise pilots.", "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80"], ["Retailers use computer vision to score shelf compliance", "Retail", 2026, "Signal Desk", "Discovery lane: computer vision, store operations, surveillance retail.", "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80"], ["Defense exercises expose gap between sensor data and command decisions", "Defense", 2026, "Signal Desk", "Discovery lane: C2, sensor fusion, decision latency.", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=80"], ["Election campaigns build influencer war rooms around short-video platforms", "Politics", 2026, "Signal Desk", "Discovery lane: influencers, campaigns, TikTok, political media.", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"], ["Pharma companies use AI to reprioritize dormant drug libraries", "Healthcare", 2026, "Signal Desk", "Discovery lane: drug discovery, AI triage, pharma pipelines.", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=80"], ["Universities weigh AI tutors against academic integrity risk", "Education", 2026, "Signal Desk", "Discovery lane: AI tutors, integrity, higher education.", "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=1400&q=80"], ["Real estate funds mark down office towers while data centers surge", "Markets", 2026, "Signal Desk", "Discovery lane: commercial real estate, data centers, capital rotation.", "https://images.unsplash.com/photo-1516937941344-00b4e0337589?auto=format&fit=crop&w=1400&q=80"], ["Airlines test biometric boarding across international routes", "Transport", 2026, "Signal Desk", "Discovery lane: biometrics, airports, identity, travel.", "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1400&q=80"], ["Law firms package AI review tools as fixed-fee litigation products", "Legal", 2026, "Signal Desk", "Discovery lane: eDiscovery, AI review, fixed-fee law.", "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1400&q=80"], ["Cyber insurers demand proof of recovery drills before coverage renewals", "Cybersecurity", 2026, "Signal Desk", "Discovery lane: cyber insurance, resilience, recovery drills.", "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1400&q=80"], ["State governments centralize unemployment systems after fraud waves", "Government", 2026, "Signal Desk", "Discovery lane: benefits systems, fraud, modernization.", "https://images.unsplash.com/photo-1642790106117-e829e14a795f?auto=format&fit=crop&w=1400&q=80"], ["Open-source maintainers become critical infrastructure chokepoints", "Technology", 2026, "Signal Desk", "Discovery lane: open source, supply chain, maintainer risk.", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"], ["Consumer banks quietly add transaction-level carbon scoring", "Finance", 2026, "Signal Desk", "Discovery lane: carbon scoring, banking, transaction data.", "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"], ["Warehouse robotics firms pivot to software subscriptions", "Logistics", 2026, "Signal Desk", "Discovery lane: robotics, warehouse automation, SaaS.", "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80"], ["Sports leagues test AI-generated alternate broadcasts", "Media", 2026, "Signal Desk", "Discovery lane: sports, synthetic media, personalized broadcasts.", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80"], ["Climate adaptation bonds attract infrastructure investors", "Infrastructure", 2026, "Signal Desk", "Discovery lane: climate finance, adaptation bonds, resilience.", "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80"], ["Luxury brands build private clienteling graphs to bypass platforms", "Retail", 2026, "Signal Desk", "Discovery lane: luxury, identity graphs, direct commerce.", "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80"]];
 
-function fallbackSignalCard(title='',section='',source='',i=0){
-  const palette=[
-    ['#0b0b0b','#f4f1eb','#b24b36'],
-    ['#11100d','#ece7dc','#7f8a78'],
-    ['#090b0e','#f2eee6','#6f8fa8'],
-    ['#0d0b0a','#f1eadf','#b07a52'],
-    ['#0a0d0c','#efe9de','#8b6f9f'],
-    ['#0c0c10','#f5efe6','#c0a35a'],
-    ['#100b0b','#f2ece3','#a94f45'],
-    ['#090d10','#f1ede5','#5f8c8d']
-  ];
-  const [bg,fg,accent]=palette[Math.abs(i)%palette.length];
-  const safeTitle=esc(title||'Signal');
-  const safeSection=esc(section||'Signal');
-  const safeSource=esc(source||'SUMMON');
-  const words=String(title||'Signal').split(/\s+/).filter(Boolean);
-  const lines=[];
-  let line='';
-  for(const word of words){
-    const test=line?`${line} ${word}`:word;
-    if(test.length>25&&line){lines.push(line);line=word}else line=test;
-    if(lines.length===3)break;
-  }
-  if(line&&lines.length<4)lines.push(line);
-  const text=lines.slice(0,4).map((line,idx)=>`<text x="34" y="${116+idx*42}" font-family="Arial, Helvetica, sans-serif" font-size="31" font-weight="700" letter-spacing="-.9" fill="${fg}">${esc(line)}</text>`).join('');
-  const density=Array.from({length:12},(_,n)=>`<rect x="${34+n*28}" y="${318+(n%3)*10}" width="${12+(n%5)*9}" height="2" fill="${n%4===0?accent:fg}" opacity="${n%4===0?.9:.22}"/>`).join('');
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560">
-    <rect width="900" height="560" fill="${bg}"/>
-    <rect x="16" y="16" width="868" height="528" fill="none" stroke="${fg}" stroke-opacity=".14"/>
-    <rect x="34" y="34" width="132" height="22" fill="${accent}"/>
-    <text x="34" y="82" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" letter-spacing="3" fill="${fg}" opacity=".64">${safeSection.toUpperCase()}</text>
-    ${text}
-    ${density}
-    <text x="34" y="492" font-family="Courier New, monospace" font-size="16" letter-spacing="2.4" fill="${fg}" opacity=".48">${safeSource.toUpperCase()} / SIGNAL-${String(i+1).padStart(3,'0')}</text>
-    <circle cx="830" cy="72" r="36" fill="none" stroke="${accent}" stroke-width="3" opacity=".86"/>
-    <path d="M805 72h50M830 47v50" stroke="${fg}" stroke-opacity=".28" stroke-width="2"/>
-  </svg>`;
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-}
-
-/* Live signal corpus — geopolitical/news-first, image-aware.
-   Primary preview provider: The Guardian Open Platform.
-   Why: free signup, real journalism corpus, CORS-friendly JSON, thumbnails via
-   show-fields=thumbnail/trailText, and good geopolitical/world/business coverage.
-
-   Production path:
-   - window.NEWS_API_PROXY_URL: preferred. Hide keys server-side and aggregate
-     Guardian, NewsData, Currents, RSS, or paid providers behind one endpoint.
-   - window.GUARDIAN_API_KEY: direct Guardian key. Defaults to "test" for preview.
-   - window.NEWSDATA_API_KEY: optional broader global provider with image_url.
-   - window.CURRENTS_API_KEY: optional broad provider with free daily quota.
-*/
-const NEWS_API_PROXY_URL=window.NEWS_API_PROXY_URL||'';
-const GUARDIAN_API_KEY=window.GUARDIAN_API_KEY||'test';
-const GUARDIAN_API_URL='https://content.guardianapis.com/search';
-const NEWSDATA_API_KEY=window.NEWSDATA_API_KEY||'';
-const NEWSDATA_API_URL='https://newsdata.io/api/1/latest';
-const CURRENTS_API_KEY=window.CURRENTS_API_KEY||'';
-const CURRENTS_API_URL='https://api.currentsapi.services/v1/search';
-const SIGNAL_CACHE_TTL_MS=20*60*1000;
-const SIGNAL_PROVIDER_DELAY_MS=120;
-const SIGNAL_MAX_CACHE_ROWS=2200;
-function signalDirectLaneCount(){
-  return searchDepth==='archive'?18:searchDepth==='field'?14:8;
-}
-
-const GEOPOLITICAL_SIGNAL_LANES=[
-  {label:'Geopolitics', q:'geopolitics OR diplomacy OR sanctions OR election OR intelligence OR statecraft', section:'world'},
-  {label:'War + Defense', q:'war OR military OR defence OR drone OR missile OR NATO OR Pentagon OR weapons', section:'world'},
-  {label:'China + Taiwan', q:'China OR Taiwan OR South China Sea OR semiconductor controls OR Beijing OR Philippines', section:'world'},
-  {label:'Russia + Europe', q:'Russia OR Ukraine OR NATO OR Europe security OR sanctions OR Kremlin OR Kyiv', section:'world'},
-  {label:'Middle East', q:'Iran OR Israel OR Gaza OR Red Sea OR Houthis OR Saudi OR oil security OR Yemen', section:'world'},
-  {label:'India + Indo-Pacific', q:'India OR Pakistan OR Strait of Hormuz OR Indo-Pacific OR maritime security OR Indian Ocean', section:'world'},
-  {label:'Africa + Critical Minerals', q:'Africa OR Sahel OR Sudan OR Congo OR critical minerals OR Wagner OR mining security', section:'world'},
-  {label:'Latin America', q:'Latin America OR Mexico OR Venezuela OR Brazil OR cartels OR migration OR lithium', section:'world'},
-  {label:'Arctic + Maritime', q:'Arctic OR shipping lane OR maritime security OR port OR undersea cable OR chokepoint', section:'world'},
-  {label:'Energy + Infrastructure', q:'energy security OR grid OR oil OR gas OR nuclear OR infrastructure OR LNG OR OPEC', section:'business'},
-  {label:'Cyber + Platforms', q:'cybersecurity OR cyberwar OR surveillance OR platform regulation OR data center OR spyware', section:'technology'},
-  {label:'Markets + Supply Chain', q:'supply chain OR semiconductors OR shipping OR rare earths OR markets OR tariffs', section:'business'},
-  {label:'AI + Compute', q:'artificial intelligence OR AI safety OR data centers OR chips OR compute OR export controls', section:'technology'},
-  {label:'Space + Defense Tech', q:'space technology OR satellite OR hypersonic OR missile defense OR military space', section:'technology'},
-  {label:'Trade + Industrial Policy', q:'trade war OR tariffs OR industrial policy OR reshoring OR export controls', section:'business'},
-  {label:'Food + Water Security', q:'food security OR water security OR drought OR grain OR agriculture OR migration', section:'environment'},
-  {label:'Climate Risk', q:'climate risk OR water security OR disaster OR food security OR migration OR extreme heat', section:'environment'},
-  {label:'Institutions + Law', q:'international court OR United Nations OR election interference OR regulation OR antitrust', section:'world'}
-];
-
-const GUARDIAN_SWEEP_SECTIONS=['world','business','technology','environment','global-development','us-news'];
-
-function signalLimit(){
-  return searchDepth==='archive'?1600:searchDepth==='field'?900:240;
-}
-
-function signalWallTarget(){
-  return searchDepth==='archive'?520:searchDepth==='field'?320:160;
-}
-
-function filmWallTarget(){
-  return searchDepth==='archive'?520:searchDepth==='field'?320:160;
-}
-
-function stripHtml(value=''){
-  return String(value||'')
-    .replace(/<[^>]*>/g,' ')
-    .replace(/&amp;/g,'&')
-    .replace(/&quot;/g,'"')
-    .replace(/&#39;/g,"'")
-    .replace(/&apos;/g,"'")
-    .replace(/&lt;/g,'<')
-    .replace(/&gt;/g,'>')
-    .replace(/\s+/g,' ')
-    .trim();
-}
-
-function normalizeNewsImage(url=''){
-  const clean=String(url||'').trim();
-  if(!clean)return '';
-  if(!/^https?:\/\//i.test(clean))return '';
-  return clean.replace(/^http:/i,'https:');
-}
-
-function domainFromUrl(url=''){
-  try{
-    const host=new URL(url).hostname.replace(/^www\./,'');
-    return host||'';
-  }catch(e){return ''}
-}
-
-function sectionFromSignal(title='',url='',fallback='Signal'){
-  const t=String(title||'').toLowerCase();
-  const d=String(domainFromUrl(url)||'').toLowerCase();
-  const hay=`${t} ${d}`;
-  if(/\b(ukraine|russia|nato|moscow|kremlin|kyiv|europe security)\b/.test(hay))return 'Russia / Europe';
-  if(/\b(china|taiwan|beijing|south china sea|indo-pacific|philippines)\b/.test(hay))return 'China / Pacific';
-  if(/\b(iran|israel|gaza|hamas|red sea|houthi|saudi|yemen|iraq|syria|lebanon)\b/.test(hay))return 'Middle East';
-  if(/\b(india|pakistan|modi|delhi|hormuz|indian ocean)\b/.test(hay))return 'India / Ocean';
-  if(/\b(war|military|defense|defence|drone|missile|navy|army|pentagon|weapons)\b/.test(hay))return 'Defense';
-  if(/\b(cyber|security|breach|surveillance|ransomware|vulnerability|spyware|platform)\b/.test(hay))return 'Cyber';
-  if(/\b(energy|grid|nuclear|oil|gas|battery|power|electricity|lng|opec)\b/.test(hay))return 'Energy';
-  if(/\b(chip|semiconductor|nvidia|tsmc|asml|rare earth|supply chain|shipping)\b/.test(hay))return 'Supply Chain';
-  if(/\b(market|bank|trade|tariff|bond|currency|dollar|sanction|finance)\b/.test(hay))return 'Markets';
-  if(/\b(climate|water|migration|food|heat|flood|fire|storm|disaster)\b/.test(hay))return 'Climate Risk';
-  if(/\b(ai|artificial intelligence|llm|openai|anthropic|model|agent|data center)\b/.test(hay))return 'AI / Compute';
-  return fallback||'Signal';
-}
-
-function formatDateYear(value=''){
-  if(!value)return '';
-  const d=new Date(value);
-  if(!Number.isNaN(d.getTime()))return String(d.getUTCFullYear());
-  return String(value).slice(0,4);
-}
-
-function normalizeDate(value=''){
-  const d=new Date(value);
-  if(Number.isNaN(d.getTime()))return '';
-  return d.toISOString();
-}
-
-function signalCacheKey(provider='guardian'){
-  return `summon:${provider}:geo-signals:${searchDepth}:v16-more`;
-}
-
-function readSignalCache(provider='guardian'){
-  try{
-    const raw=localStorage.getItem(signalCacheKey(provider));
-    if(!raw)return null;
-    const parsed=JSON.parse(raw);
-    if(!parsed?.time||!Array.isArray(parsed?.rows))return null;
-    if(Date.now()-parsed.time>SIGNAL_CACHE_TTL_MS)return null;
-    return parsed.rows;
-  }catch(e){return null}
-}
-
-function writeSignalCache(rows,provider='guardian'){
-  try{
-    localStorage.setItem(signalCacheKey(provider),JSON.stringify({time:Date.now(),rows:rows.slice(0,SIGNAL_MAX_CACHE_ROWS)}));
-  }catch(e){}
-}
-
-function safeReplaceHistory(url){
-  try{
-    if(location.protocol==='file:')return;
-    history.replaceState(null,'',url);
-  }catch(e){}
-}
-
-function safeSetHash(value){
-  if(location.protocol==='file:')return;
-  safeReplaceHistory(`#${encodeURIComponent(value)}`);
-}
-
-function safeClearHash(){
-  if(location.protocol==='file:')return;
-  safeReplaceHistory(location.pathname+location.search);
-}
-
-function signalFallbackCard(title,section,source,i){
-  return fallbackSignalCard(title,section,source,i);
-}
-
-function newsApiUnavailableRecord(error){
-  const message=String(error?.message||error||'news api unavailable').slice(0,180);
-  const title='Signal provider unavailable';
-  const section='API';
-  const source='Live News Provider';
-  const card=signalFallbackCard(title,section,source,0);
+function staticSignalRecord(row){
+  const [title,section,year,source,summary,image]=row;
   return {
     type:'signal',
     title,
     section,
-    year:new Date().getFullYear().toString(),
+    year:String(year||''),
     source,
-    genres:['API','Unavailable'],
-    overview:`${title}. ${message}. Signal mode is configured for live geopolitical/news sources and will not substitute fake headlines, stock images, or duplicated filler. Configure NEWS_API_PROXY_URL, GUARDIAN_API_KEY, NEWSDATA_API_KEY, or CURRENTS_API_KEY.`,
-    image:card,
-    cover:card,
-    src:card,
-    externalUrl:'https://open-platform.theguardian.com/documentation/'
-  };
-}
-
-function proxySignalRecord(article,i=0){
-  const title=stripHtml(article.title||article.webTitle||article.headline||article.name||'Untitled signal');
-  const url=article.url||article.webUrl||article.shortUrl||article.link||article.href||'';
-  const rawSection=article.section||article.sectionName||article.category||article.country||article.region||'';
-  const section=stripHtml(rawSection||sectionFromSignal(title,url,'News'));
-  const source=stripHtml(article.source||article.source_name||article.publication||article.publisher||article.domain||domainFromUrl(url)||'News');
-  const date=article.publishedAt||article.pubDate||article.webPublicationDate||article.date||article.published||'';
-  const year=formatDateYear(date);
-  const summary=stripHtml(article.summary||article.description||article.trailText||article.content||article.bodyText||'');
-  const tags=Array.isArray(article.tags)?article.tags.map(t=>typeof t==='string'?t:(t.webTitle||t.name||t.label||'')).filter(Boolean).slice(0,7):[];
-  const realImage=normalizeNewsImage(article.image||article.urlToImage||article.thumbnail||article.image_url||article.socialimage||article.imageUrl||article.media);
-  const image=realImage||signalFallbackCard(title,section,source,i);
-  return {
-    type:'signal',title,section,year,source,
-    publishedAt:normalizeDate(date),
-    genres:tags.length?tags:[section,source].filter(Boolean).slice(0,4),
-    overview:`${title}. Source: ${source}. ${year?'Published: '+year+'. ':''}Section: ${section}. ${summary}`.trim(),
-    image,cover:image,src:image,
-    externalUrl:url
-  };
-}
-
-function guardianSignalRecord(item,i=0,laneLabel='World'){
-  const fields=item.fields||{};
-  const title=stripHtml(item.webTitle||item.title||'Untitled signal');
-  const url=item.webUrl||fields.shortUrl||'';
-  const rawSection=item.sectionName||laneLabel||'World';
-  const section=sectionFromSignal(title,url,rawSection);
-  const source='The Guardian';
-  const date=item.webPublicationDate||fields.lastModified||'';
-  const year=formatDateYear(date);
-  const tagNames=Array.isArray(item.tags)?item.tags.map(t=>stripHtml(t.webTitle||t.id||'')).filter(Boolean):[];
-  const trail=stripHtml(fields.trailText||fields.bodyText||fields.standfirst||'');
-  const image=normalizeNewsImage(fields.thumbnail||fields.main||fields.bylineImageUrl)||signalFallbackCard(title,section,source,i);
-  return {
-    type:'signal',
-    title,
-    section,
-    year,
-    source,
-    publishedAt:normalizeDate(date),
-    genres:[section,...tagNames].filter(Boolean).slice(0,7),
-    overview:`${title}. Source: ${source}. ${year?'Published: '+year+'. ':''}Section: ${section}. ${trail}`.trim(),
+    overview:`${title}. Source: ${source}. Published: ${year}. Section: ${section}. ${summary}`,
     image,
-    cover:image,
     src:image,
-    externalUrl:url
+    externalUrl:`https://www.google.com/search?q=${encodeURIComponent(title)}`
   };
-}
-
-function newsDataSignalRecord(article,i=0){
-  return proxySignalRecord({
-    title:article.title,
-    url:article.link,
-    image_url:article.image_url,
-    description:article.description||article.content,
-    pubDate:article.pubDate,
-    source_name:article.source_name,
-    category:Array.isArray(article.category)?article.category[0]:article.category,
-    country:Array.isArray(article.country)?article.country.join(', '):article.country,
-    tags:article.keywords||article.category||[]
-  },i);
-}
-
-async function fetchProxySignals(limit){
-  const target=Math.max(1,Number(limit)||signalLimit());
-  const pageSize=100;
-  const pages=Math.ceil(target/pageSize);
-  const basePage=1+Math.abs((corpusPageOffset||0)+(shuffleSeed||0));
-  const rows=[];
-
-  for(let page=0;page<pages;page++){
-    const p=new URLSearchParams({
-      limit:String(Math.min(pageSize,target-rows.length)),
-      pageSize:String(pageSize),
-      depth:searchDepth,
-      page:String(basePage+page),
-      vertical:'geopolitics',
-      includeImages:'true'
-    });
-    const res=await fetch(`${NEWS_API_PROXY_URL}${NEWS_API_PROXY_URL.includes('?')?'&':'?'}${p.toString()}`);
-    if(!res.ok)throw new Error(`news proxy ${res.status}`);
-    const data=await res.json();
-    const batch=Array.isArray(data)?data:(data.articles||data.results||data.news||data.items||[]);
-    for(const row of batch){
-      rows.push(row);
-      if(rows.length>=target)break;
-    }
-    if(rows.length>=target||!batch.length)break;
-  }
-
-  return rows.map(proxySignalRecord);
-}
-
-async function fetchGuardianSignals(limit){
-  const target=Math.max(1,Number(limit)||signalLimit());
-  const cached=readSignalCache('guardian');
-  if(cached?.length){
-    setStatus(`${Math.min(cached.length,target)} cached geopolitical signals`);
-    return cached.slice(0,target).map((row,i)=>guardianSignalRecord(row,i,row._laneLabel));
-  }
-
-  const laneCount=Math.min(signalDirectLaneCount(),GEOPOLITICAL_SIGNAL_LANES.length);
-  const lanes=Array.from({length:laneCount},(_,i)=>GEOPOLITICAL_SIGNAL_LANES[(i+Math.abs(corpusPageOffset+shuffleSeed))%GEOPOLITICAL_SIGNAL_LANES.length]);
-  const perLane=Math.max(searchDepth==='archive'?90:searchDepth==='field'?70:30,Math.ceil(target/Math.max(1,lanes.length)));
-  const pageSize=50;
-  const rows=[];
-  const seen=new Set();
-
-  async function pullGuardianPage(params,laneLabel,statusLabel){
-    const res=await fetch(`${GUARDIAN_API_URL}?${params.toString()}`);
-    if(!res.ok)throw new Error(`guardian ${res.status}`);
-    const data=await res.json();
-    const results=Array.isArray(data?.response?.results)?data.response.results:[];
-    for(const item of results){
-      const key=String(item.webUrl||item.webTitle||'').toLowerCase();
-      if(!key||seen.has(key))continue;
-      seen.add(key);
-      rows.push({...item,_laneLabel:laneLabel||statusLabel});
-      if(rows.length>=target)break;
-    }
-    return results.length;
-  }
-
-  for(let i=0;i<lanes.length&&rows.length<target;i++){
-    const lane=lanes[i];
-    const pages=Math.max(1,Math.ceil(perLane/pageSize));
-    for(let page=1;page<=pages&&rows.length<target;page++){
-      const p=new URLSearchParams({
-        'api-key':GUARDIAN_API_KEY,
-        'q':lane.q,
-        'section':lane.section,
-        'order-by':'newest',
-        'page-size':String(pageSize),
-        'page':String(page),
-        'show-fields':'thumbnail,trailText,shortUrl,lastModified,bodyText',
-        'show-tags':'keyword',
-        'use-date':'published'
-      });
-      setStatus(`loading ${lane.label.toLowerCase()} signals ${i+1}/${lanes.length} · ${rows.length}/${target}`);
-      try{
-        const found=await pullGuardianPage(p,lane.label,lane.label);
-        if(!found)break;
-      }catch(err){
-        console.warn('guardian lane skipped',lane.label,err);
-        break;
-      }
-      await new Promise(r=>setTimeout(r,SIGNAL_PROVIDER_DELAY_MS));
-    }
-  }
-
-  /* Second pass: if the targeted lanes under-fill, sweep broad Guardian sections.
-     This keeps signal mode dense without duplicating padding or inventing articles. */
-  if(rows.length<target){
-    const sweepQuery='geopolitics OR war OR defense OR sanctions OR China OR Taiwan OR Russia OR Ukraine OR Iran OR India OR energy OR cyber OR semiconductors OR climate OR trade';
-    const maxSweepPages=searchDepth==='archive'?5:searchDepth==='field'?3:2;
-    for(const section of GUARDIAN_SWEEP_SECTIONS){
-      for(let page=1;page<=maxSweepPages&&rows.length<target;page++){
-        const p=new URLSearchParams({
-          'api-key':GUARDIAN_API_KEY,
-          'q':sweepQuery,
-          'section':section,
-          'order-by':'newest',
-          'page-size':'50',
-          'page':String(page),
-          'show-fields':'thumbnail,trailText,shortUrl,lastModified,bodyText',
-          'show-tags':'keyword',
-          'use-date':'published'
-        });
-        setStatus(`sweeping ${section} signals · ${rows.length}/${target}`);
-        try{
-          const found=await pullGuardianPage(p,section,section);
-          if(!found)break;
-        }catch(err){
-          console.warn('guardian sweep skipped',section,err);
-          break;
-        }
-        await new Promise(r=>setTimeout(r,SIGNAL_PROVIDER_DELAY_MS));
-      }
-      if(rows.length>=target)break;
-    }
-  }
-
-  if(!rows.length)throw new Error('guardian returned zero articles');
-  writeSignalCache(rows,'guardian');
-  return rows.slice(0,target).map((row,i)=>guardianSignalRecord(row,i,row._laneLabel));
-}
-
-async function fetchNewsDataSignals(limit){
-  if(!NEWSDATA_API_KEY)throw new Error('newsdata api key missing');
-  const target=Math.max(1,Number(limit)||signalLimit());
-  const cached=readSignalCache('newsdata');
-  if(cached?.length){
-    setStatus(`${Math.min(cached.length,target)} cached newsdata signals`);
-    return cached.slice(0,target).map(newsDataSignalRecord);
-  }
-
-  const rows=[];
-  let pageToken='';
-  const query='geopolitics OR defense OR sanctions OR China OR Taiwan OR Russia OR Ukraine OR Iran OR India OR energy security OR semiconductors OR cyber';
-  for(let i=0;i<8&&rows.length<target;i++){
-    const p=new URLSearchParams({
-      apikey:NEWSDATA_API_KEY,
-      q:query,
-      language:'en',
-      category:'politics,business,technology,world',
-      image:'1'
-    });
-    if(pageToken)p.set('page',pageToken);
-    setStatus(`loading newsdata signals ${i+1}`);
-    const res=await fetch(`${NEWSDATA_API_URL}?${p.toString()}`);
-    if(!res.ok)throw new Error(`newsdata ${res.status}`);
-    const data=await res.json();
-    const batch=Array.isArray(data?.results)?data.results:[];
-    rows.push(...batch);
-    pageToken=data?.nextPage||'';
-    if(!pageToken||!batch.length)break;
-  }
-  if(!rows.length)throw new Error('newsdata returned zero articles');
-  writeSignalCache(rows,'newsdata');
-  return rows.slice(0,target).map(newsDataSignalRecord);
-}
-
-async function fetchCurrentsSignals(limit){
-  if(!CURRENTS_API_KEY)throw new Error('currents api key missing');
-  const target=Math.max(1,Number(limit)||signalLimit());
-  const cached=readSignalCache('currents');
-  if(cached?.length){
-    setStatus(`${Math.min(cached.length,target)} cached currents signals`);
-    return cached.slice(0,target).map(proxySignalRecord);
-  }
-
-  const keyword='geopolitics OR defense OR sanctions OR China OR Taiwan OR Russia OR Ukraine OR Iran OR India OR energy security OR semiconductors OR cyber';
-  const pageSize=100;
-  const pages=Math.ceil(target/pageSize);
-  const rows=[];
-
-  for(let page=1;page<=pages;page++){
-    const p=new URLSearchParams({
-      keywords:keyword,
-      language:'en',
-      page_size:String(Math.min(pageSize,target-rows.length)),
-      page_number:String(page)
-    });
-    setStatus(`loading currents signals ${page}/${pages}`);
-    const res=await fetch(`${CURRENTS_API_URL}?${p.toString()}`,{
-      headers:{Authorization:CURRENTS_API_KEY}
-    });
-    if(!res.ok)throw new Error(`currents ${res.status}`);
-    const data=await res.json();
-    const news=Array.isArray(data?.news)?data.news:[];
-    rows.push(...news);
-    if(rows.length>=target||!news.length)break;
-  }
-
-  if(!rows.length)throw new Error('currents returned zero articles');
-  writeSignalCache(rows,'currents');
-  return rows.slice(0,target).map(proxySignalRecord);
-}
-
-function rankSignalRichness(row){
-  let score=0;
-  if(row.image&&!String(row.image).startsWith('data:image/svg'))score+=6;
-  if(row.overview&&row.overview.length>140)score+=2;
-  if(row.publishedAt)score+=1;
-  if(/world|defense|china|russia|middle east|energy|markets|cyber|supply/i.test(`${row.section} ${(row.genres||[]).join(' ')}`))score+=2;
-  return score;
 }
 
 async function loadSignals(limit){
-  const target=Math.max(1,Number(limit)||signalLimit());
-  try{
-    setStatus(`loading ${target} geopolitical signals`);
-    let rows=[];
-
-    if(NEWS_API_PROXY_URL){
-      rows=await fetchProxySignals(target);
-    }else if(NEWSDATA_API_KEY){
-      rows=await fetchNewsDataSignals(target);
-    }else if(CURRENTS_API_KEY){
-      rows=await fetchCurrentsSignals(target);
-    }else{
-      rows=await fetchGuardianSignals(target);
-    }
-
-    const seen=new Set(),out=[];
-    for(const row of rows){
-      const key=String(row.externalUrl||row.title||'').toLowerCase().trim();
-      if(!row.title||seen.has(key))continue;
-      seen.add(key);
-      out.push(row);
-    }
-
-    out.sort((a,b)=>{
-      const rich=rankSignalRichness(b)-rankSignalRichness(a);
-      if(rich)return rich;
-      return new Date(b.publishedAt||0)-new Date(a.publishedAt||0);
-    });
-
-    if(!out.length)throw new Error('signal provider returned zero articles');
-    return out.slice(0,target);
-  }catch(e){
-    console.error(e);
-    setStatus('signal provider unavailable');
-    return [newsApiUnavailableRecord(e)];
-  }
+  const base=STATIC_SIGNALS.map(staticSignalRecord);
+  const offset=(Math.abs((corpusPageOffset||0)+(shuffleSeed||0)))%base.length;
+  const rotated=base.slice(offset).concat(base.slice(0,offset));
+  const out=[];
+  while(out.length<limit)out.push(...rotated);
+  return out.slice(0,limit);
 }
 
-function asArray(value){
-  if(Array.isArray(value))return value.map(v=>String(v||'').trim()).filter(Boolean);
-  if(value==null||value==='')return [];
-  return String(value).split(/[,;|]/).map(v=>v.trim()).filter(Boolean);
-}
 
-function compactCandidate(parts,max=1400){
-  return parts
-    .filter(Boolean)
-    .map(part=>String(part).replace(/\s+/g,' ').trim())
-    .filter(Boolean)
-    .join('\n')
-    .slice(0,max);
-}
+function signalLimit(){return searchDepth==='archive'?3000:1000}
 
-function field(name,value){
-  const text=Array.isArray(value)?value.filter(Boolean).join(', '):String(value||'').trim();
-  return text?`${name}: ${text}.`:'';
-}
-
-function metaBitsFor(m,limit=4){
-  if(!m)return [];
-  if(m.type==='signal')return [m.source,m.section,m.year].filter(Boolean).slice(0,limit);
-  if(m.type==='game')return [m.year,...asArray(m.genres).slice(0,2),...asArray(m.platforms).slice(0,1)].filter(Boolean).slice(0,limit);
-  if(m.type==='book')return [m.year,...asArray(m.authors).slice(0,1),...asArray(m.subjects||m.genres).slice(0,2)].filter(Boolean).slice(0,limit);
-  if(m.type==='tv')return [m.year,m.network,...asArray(m.genres).slice(0,2)].filter(Boolean).slice(0,limit);
-  if(m.type==='music')return [m.artist,m.album,m.year,...asArray(m.genres).slice(0,1)].filter(Boolean).slice(0,limit);
-  return [m.year,...asArray(m.genres).slice(0,2)].filter(Boolean).slice(0,limit);
-}
 
 function candidateText(m){
-  if(!m)return '';
-  const type=String(m.type||'record').toLowerCase();
-  const title=String(m.title||'Untitled').trim();
-  const overview=String(m.overview||'').replace(/\s+/g,' ').trim();
+  if(m.type==='music')return `${m.title}. ${(m.artists||[m.artist||'']).join(', ')}. ${(m.genres||[]).join(' ')}. ${m.overview||''}`;
+  if(m.type==='signal')return `${m.title}. ${m.section||''}. ${m.source||''}. ${m.overview||''}`;
+  if(m.type==='book')return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.subjects||[]).join(', ')}. ${m.overview||''}`;
+  return `${m.title}. ${m.year||''}. ${(m.genres||[]).join(' ')}. ${m.overview||''}`;
+}
 
-  if(type==='signal'){
-    return compactCandidate([
-      'Record type: geopolitical news signal.',
-      field('Title',title),
-      field('Source',m.source),
-      field('Section / lane',m.section),
-      field('Published year',m.year),
-      field('Published timestamp',m.publishedAt),
-      field('Tags / topics',asArray(m.genres).slice(0,8)),
-      field('Source domain',domainFromUrl(m.externalUrl)),
-      field('Signal summary',overview)
-    ],1600);
+
+/* Film loader fallback helpers */
+const STATIC_FILMS=[["Blade Runner", 1982, ["Science Fiction", "Noir"], "A burned-out detective hunts artificial humans in a rain-soaked corporate future where memory, identity, and personhood collapse into one another."], ["2001: A Space Odyssey", 1968, ["Science Fiction", "Mystery"], "Human evolution, artificial intelligence, and cosmic intelligence intersect through machines, silence, and unknown architecture."], ["The Matrix", 1999, ["Science Fiction", "Action"], "A hacker discovers reality is a control system and joins a resistance against the machine infrastructure beneath ordinary life."], ["Stalker", 1979, ["Science Fiction", "Drama"], "A guide leads two men into a forbidden zone where desire, faith, and ruin become indistinguishable."], ["Solaris", 1972, ["Science Fiction", "Drama"], "A space station orbiting an alien ocean becomes a chamber for memory, guilt, and impossible return."], ["Under the Skin", 2013, ["Science Fiction", "Horror"], "An alien intelligence moves through human desire, flesh, and loneliness while trying to understand embodiment."], ["Arrival", 2016, ["Science Fiction", "Drama"], "Language, time, grief, and contact converge when a linguist decodes alien communication."], ["Ex Machina", 2014, ["Science Fiction", "Thriller"], "A controlled experiment in artificial intelligence becomes a trap of desire, power, and escape."], ["Her", 2013, ["Romance", "Science Fiction"], "A lonely man falls in love with an operating system, exposing the emotional architecture of mediated intimacy."], ["The Conversation", 1974, ["Thriller", "Drama"], "A surveillance expert becomes trapped inside the moral consequences of listening."], ["Eyes Wide Shut", 1999, ["Drama", "Mystery"], "A doctor enters a nocturnal world of ritual, desire, and elite secrecy."], ["Mulholland Drive", 2001, ["Mystery", "Drama"], "Hollywood, identity, fantasy, and dream logic fracture into a haunted map of ambition."], ["Persona", 1966, ["Drama", "Psychological"], "Two women dissolve into one another through silence, projection, and identity collapse."], ["The Third Man", 1949, ["Noir", "Thriller"], "Postwar Vienna becomes a maze of betrayal, black markets, friendship, and moral ambiguity."], ["Vertigo", 1958, ["Mystery", "Romance"], "Obsession, image-making, and identity reconstruction spiral into fatal repetition."], ["The Invisible Man", 1933, ["Science Fiction", "Horror"], "A scientist becomes invisible and is consumed by power, paranoia, and social erasure."]];
+
+function fallbackStill(title='', type='film'){
+  const safeTitle=String(title||'SUMMON').slice(0,80);
+  const hue=[...safeTitle].reduce((a,c)=>a+c.charCodeAt(0),0)%360;
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="hsl(${hue},18%,16%)"/>
+        <stop offset="1" stop-color="hsl(${(hue+42)%360},20%,5%)"/>
+      </linearGradient>
+      <filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".78" numOctaves="3"/></filter>
+    </defs>
+    <rect width="900" height="1200" fill="url(#g)"/>
+    <rect width="900" height="1200" filter="url(#n)" opacity=".12"/>
+    <rect x="48" y="48" width="804" height="1104" fill="none" stroke="rgba(246,241,232,.18)" stroke-width="2"/>
+    <text x="68" y="112" font-family="IBM Plex Mono,Menlo,monospace" font-size="24" fill="rgba(246,241,232,.58)" letter-spacing="4">SUMMON / ${String(type||'film').toUpperCase()}</text>
+    <foreignObject x="68" y="420" width="764" height="360">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Georgia,serif;font-size:78px;line-height:.9;font-weight:600;letter-spacing:-3px;color:rgb(246,241,232);word-wrap:break-word;">${esc(safeTitle)}</div>
+    </foreignObject>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function staticFilmRecord(row){
+  const [title,year,genres,overview]=row;
+  const image=fallbackStill(title,'film');
+  return {
+    type:'film',
+    title,
+    year:String(year||''),
+    genres,
+    overview,
+    image,
+    src:image,
+    posterPath:'',
+    backdropPath:'',
+    externalUrl:`https://www.imdb.com/find?q=${encodeURIComponent(title)}`
+  };
+}
+
+async function fetchAlgoliaPage(page=0){
+  const url=typeof ALGOLIA_URL!=='undefined' ? ALGOLIA_URL : `https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/${ALGOLIA_INDEX}/query`;
+  const res=await fetch(url,{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'X-Algolia-Application-Id':ALGOLIA_APP_ID,
+      'X-Algolia-API-Key':ALGOLIA_API_KEY
+    },
+    body:JSON.stringify({
+      query:'',
+      hitsPerPage:typeof HITS!=='undefined'?HITS:250,
+      page,
+      attributesToRetrieve:['title','overview','poster_path','backdrop_path','posterPath','backdropPath','image','poster','year','release_date','genres','genre']
+    })
+  });
+  if(!res.ok)throw new Error(`algolia ${res.status}`);
+  return res.json();
+}
+
+function normalizeFilmHit(h) {
+  const title=h.title||h.name||'';
+  const overview=h.overview||h.description||h.plot||'';
+  if(!title || !overview)return null;
+
+  let genres=[];
+  if(Array.isArray(h.genres))genres=h.genres.map(g=>typeof g==='object'?(g.name||''):g).filter(Boolean);
+  else if(Array.isArray(h.genre))genres=h.genre.filter(Boolean);
+  else if(typeof h.genre==='string')genres=h.genre.split(',').map(s=>s.trim()).filter(Boolean);
+
+  const year=h.year || (h.release_date?String(h.release_date).slice(0,4):'');
+  const posterPath=norm(h.poster_path||h.posterPath||'');
+  const backdropPath=norm(h.backdrop_path||h.backdropPath||'');
+  const directImage=h.image||h.poster||h.thumbnail||'';
+  const image=directImage || (posterPath?img(posterPath,'w500'):'') || (backdropPath?img(backdropPath,'w780'):'') || fallbackStill(title,'film');
+
+  return {
+    type:'film',
+    title,
+    overview,
+    year:String(year||''),
+    genres,
+    posterPath,
+    backdropPath,
+    image,
+    src:image,
+    externalUrl:`https://www.imdb.com/find?q=${encodeURIComponent(title)}`
+  };
+}
+
+async function loadFilms(limit=filmLimit()) {
+  const movies=[];
+  const seen=new Set();
+  try {
+    const pages=typeof PAGES!=='undefined'?PAGES:2;
+    const pageBase=(typeof corpusPageOffset!=='undefined'?corpusPageOffset:0)%4;
+    const loaded=await Promise.all(Array.from({length:pages},(_,i)=>fetchAlgoliaPage((pageBase+i)%4).catch(()=>({hits:[]}))));
+    for(const page of loaded) {
+      for(const h of(page.hits||[])) {
+        const m=normalizeFilmHit(h);
+        if(!m || seen.has(m.title))continue;
+        seen.add(m.title);
+        movies.push(m);
+        if(movies.length>=limit)break;
+      }
+      if(movies.length>=limit)break;
+    }
+  } catch(e) {
+    console.warn('Algolia film load failed, using static fallback',e);
   }
 
-  if(type==='film'){
-    return compactCandidate([
-      'Record type: film.',
-      field('Title',title),
-      field('Release year',m.year),
-      field('Genres / moods',asArray(m.genres).slice(0,10)),
-      field('Provider tags / keywords',asArray(m.corpusTags).slice(0,18)),
-      field('Corpus source',m.corpusSource),
-      field('Cast',asArray(m.actors).slice(0,10)),
-      field('Characters',asArray(m.characters).slice(0,8)),
-      field('Director',m.director),
-      field('Writers',asArray(m.writers).slice(0,6)),
-      field('Production countries',asArray(m.productionCountries).slice(0,6)),
-      field('Production companies',asArray(m.productionCompanies).slice(0,6)),
-      field('Original language',m.originalLanguage),
-      field('Runtime minutes',m.runtime),
-      field('Rating',m.rating),
-      field('TMDb popularity / votes',[m.tmdbPopularity?`popularity ${m.tmdbPopularity}`:'',m.tmdbVoteCount?`${m.tmdbVoteCount} votes`:''].filter(Boolean)),
-      field('Film synopsis / semantic surface',overview)
-    ],1400);
+  if(movies.length<Math.min(24,limit)) {
+    for(const row of STATIC_FILMS) {
+      const m=staticFilmRecord(row);
+      if(seen.has(m.title))continue;
+      seen.add(m.title);
+      movies.push(m);
+      if(movies.length>=limit)break;
+    }
   }
 
-  if(type==='game'){
-    return compactCandidate([
-      'Record type: game.',
-      field('Title',title),
-      field('Release year',m.year),
-      field('Genres',asArray(m.genres).slice(0,8)),
-      field('Platforms',asArray(m.platforms).slice(0,8)),
-      field('Critical rating',m.rating?`Metacritic ${m.rating}`:''),
-      field('Game world / mechanics / play signal',overview)
-    ],1400);
-  }
+  return movies.slice(0,limit);
+}
 
-  if(type==='book'){
-    return compactCandidate([
-      'Record type: book.',
-      field('Title',title),
-      field('Author',asArray(m.authors).slice(0,4)),
-      field('Publication / era',m.year),
-      field('Subjects / shelves',asArray(m.subjects||m.genres).slice(0,10)),
-      field('Literary / thematic signal',overview)
-    ],1400);
-  }
 
-  if(type==='music'){
-    return compactCandidate([
-      'Record type: music.',
-      field('Title',title),
-      field('Artist',m.artist),
-      field('Album / release',m.album),
-      field('Release year',m.year),
-      field('Genres / sonic tags',asArray(m.genres).slice(0,10)),
-      field('Provider source',m.source),
-      field('Track / album type',m.kind),
-      field('Music signal / semantic surface',overview)
-    ],1400);
-  }
+/* Stable music corpus — restored no-remote-failure path */
+const STATIC_MUSIC=[["Blue Monday", "New Order", "1983", ["Synthpop", "Post-punk"], "Mechanical dance-floor melancholy: cold, precise, romantic, and engineered for motion."], ["Enjoy the Silence", "Depeche Mode", "1990", ["Synthpop", "Dark wave"], "A devotional electronic song about silence, desire, restraint, and language."], ["Bizarre Love Triangle", "New Order", "1986", ["Synthpop", "New wave"], "Romance processed through sequencers, confusion, repetition, and luminous melancholy."], ["Just Like Heaven", "The Cure", "1987", ["Alternative", "Dream pop"], "A bright rushing love song haunted by disappearance and impossible return."], ["Running Up That Hill", "Kate Bush", "1985", ["Art pop", "New wave"], "A mythic negotiation with God about exchanging bodies, pain, and comprehension."], ["Heroes", "David Bowie", "1977", ["Art rock", "Berlin"], "Romantic defiance against history, surveillance, divided cities, and impossible walls."], ["Angel", "Massive Attack", "1998", ["Trip hop", "Downtempo"], "A slow black wave of menace, bass pressure, desire, and urban ritual."], ["Teardrop", "Massive Attack", "1998", ["Trip hop", "Electronic"], "A suspended song about birth, fragility, heartbeat, and coded tenderness."], ["Everything in Its Right Place", "Radiohead", "2000", ["Electronic rock", "Art rock"], "A fractured mantra about dislocation, control, cognition, and digital pressure."], ["Idioteque", "Radiohead", "2000", ["Electronic", "Experimental"], "A frozen emergency broadcast about panic, shelter, climate dread, and machine rhythm."], ["Midnight City", "M83", "2011", ["Synthpop", "Dream pop"], "A neon freeway anthem for youth, speed, night air, and cinematic escape."], ["A Real Hero", "College & Electric Youth", "2010", ["Synthwave", "Electronic"], "A chrome ballad about anonymous virtue, driving, and cinematic solitude."], ["So Far Away", "Trevor Something", "2014", ["Synthwave", "Dark pop"], "Wallpaper synth with emotional voltage: distant, nocturnal, romantic, and empty-room electronic longing."], ["Roads", "Portishead", "1994", ["Trip hop", "Bristol"], "A slow confession of loneliness, pressure, and torch-song dread over minimal machinery."], ["Only You", "Portishead", "1997", ["Trip hop", "Experimental"], "A haunted loop of devotion, suspicion, and broken intimacy inside a surveillance haze."], ["Personal Jesus", "Depeche Mode", "1989", ["Synth rock", "Industrial pop"], "Faith, desire, mediation, and devotion converted into a machine-age hotline."], ["Sweet Dreams", "Eurythmics", "1983", ["Synthpop", "New wave"], "A cold commercial dream about desire, power, use, and being used."], ["Smalltown Boy", "Bronski Beat", "1984", ["Synthpop", "Hi-NRG"], "A clear devastating song about exile, identity, family rupture, and escape."], ["Love Will Tear Us Apart", "Joy Division", "1980", ["Post-punk", "Goth"], "Domestic collapse rendered as a cold melodic transmission from emotional ruin."], ["Disorder", "Joy Division", "1979", ["Post-punk", "Goth"], "A nervous system trying to convert collapse into rhythm and forward motion."], ["Spellbound", "Siouxsie and the Banshees", "1981", ["Post-punk", "Goth"], "A ritual rush of guitars, trance, motion, and ecstatic danger."], ["Digital Bath", "Deftones", "2000", ["Alternative metal", "Dream metal"], "Erotic danger, water, electricity, and violence disguised as atmosphere."], ["Cherry-coloured Funk", "Cocteau Twins", "1990", ["Dream pop", "Shoegaze"], "Language dissolved into texture, color, breath, and euphoric opacity."], ["Heaven or Las Vegas", "Cocteau Twins", "1990", ["Dream pop", "Ethereal"], "A luminous illegible love object floating between heaven, commerce, and desire."], ["Oblivion", "Grimes", "2012", ["Electronic", "Art pop"], "A bright synthetic defense mechanism against fear, threat, and urban vulnerability."], ["Genesis", "Grimes", "2012", ["Electronic", "Dream pop"], "An ecstatic synthetic opening spell: lightness, velocity, innocence, and alien pop architecture."], ["Tainted Love", "Soft Cell", "1981", ["Synthpop", "New wave"], "Romantic contamination, escape, shame, and club-floor confession."], ["West End Girls", "Pet Shop Boys", "1984", ["Synthpop", "New wave"], "Urban class, cool detachment, nightlife, and coded London desire."], ["Windowlicker", "Aphex Twin", "1999", ["IDM", "Electronic"], "A grotesque electronic mutation of seduction, advertising, and machine humor."], ["A Forest", "The Cure", "1980", ["Post-punk", "Goth"], "A chase through memory, dread, repetition, and trees that refuse resolution."], ["Age of Consent", "New Order", "1983", ["Post-punk", "Synthpop"], "Bright propulsion masking emotional rupture, youth, distance, and romantic asymmetry."], ["Fade Into You", "Mazzy Star", "1993", ["Dream pop", "Alternative"], "A dissolving love song about projection, softness, and unreachable intimacy."]];
 
-  if(type==='tv'){
-    return compactCandidate([
-      'Record type: television series.',
-      field('Title',title),
-      field('Premiere year',m.year),
-      field('Network / platform',m.network),
-      field('Genres',asArray(m.genres).slice(0,8)),
-      field('Premise / episodic signal',overview)
-    ],1400);
-  }
+function fallbackMusicCover(title='', artist=''){
+  const safeTitle=String(title||'MUSIC').slice(0,64);
+  const safeArtist=String(artist||'').slice(0,42);
+  const hue=[...safeTitle].reduce((a,c)=>a+c.charCodeAt(0),0)%360;
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(${hue},18%,18%)"/><stop offset="1" stop-color="hsl(${(hue+45)%360},22%,5%)"/></linearGradient><filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".82" numOctaves="3"/></filter></defs>
+    <rect width="900" height="900" fill="url(#g)"/><rect width="900" height="900" filter="url(#n)" opacity=".14"/>
+    <rect x="46" y="46" width="808" height="808" fill="none" stroke="rgba(246,241,232,.18)" stroke-width="2"/>
+    <circle cx="450" cy="450" r="168" fill="none" stroke="rgba(246,241,232,.13)" stroke-width="2"/><circle cx="450" cy="450" r="34" fill="rgba(246,241,232,.12)"/>
+    <text x="68" y="106" font-family="IBM Plex Mono,Menlo,monospace" font-size="22" fill="rgba(246,241,232,.58)" letter-spacing="4">SUMMON / MUSIC</text>
+    <foreignObject x="68" y="330" width="764" height="250"><div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Georgia,serif;font-size:66px;line-height:.92;font-weight:600;letter-spacing:-2px;color:rgb(246,241,232);word-wrap:break-word;">${esc(safeTitle)}</div></foreignObject>
+    <foreignObject x="68" y="700" width="764" height="90"><div xmlns="http://www.w3.org/1999/xhtml" style="font-family:IBM Plex Mono,Menlo,monospace;font-size:22px;line-height:1.25;color:rgba(246,241,232,.66);text-transform:uppercase;letter-spacing:2px;word-wrap:break-word;">${esc(safeArtist)}</div></foreignObject>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
 
-  return compactCandidate([
-    `Record type: ${type}.`,
-    field('Title',title),
-    field('Year',m.year),
-    field('Genres / topics',asArray(m.genres).slice(0,8)),
-    field('Summary',overview)
-  ],1400);
+function staticMusicRecord(row){
+  const [title,artist,year,genres,overview]=row;
+  const cover=fallbackMusicCover(title,artist);
+  return {
+    type:'music', title, artist, artists:[artist], year:String(year||''), genres,
+    overview:`${title}. By ${artist}. Genres: ${genres.join(', ')}. ${overview}`,
+    image:cover, cover, src:cover,
+    externalUrl:`https://www.youtube.com/results?search_query=${encodeURIComponent(artist+' '+title)}`
+  };
+}
+
+async function loadMusic(limit=musicLimit()){
+  const base=STATIC_MUSIC.map(staticMusicRecord);
+  const offset=(Math.abs((corpusPageOffset||0)+(shuffleSeed||0)*11))%base.length;
+  const rotated=base.slice(offset).concat(base.slice(0,offset));
+  const out=[];
+  while(out.length<limit)out.push(...rotated);
+  return out.slice(0,limit);
 }
 
 </script>
