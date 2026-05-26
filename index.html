@@ -1809,7 +1809,13 @@ function finalizeCorpus(movies){
 
 
 async function loadCorpus(){
-  if(cache && cache.mode===corpusMode && cache.depth===searchDepth)return cache;
+  const key=corpusCacheKey();
+  const remembered=readCorpusMemory(key);
+  if(remembered){
+    cache=remembered;
+    renderWall(cache.items||[]);
+    return cache;
+  }
 
   let items=[];
   if(corpusMode==='signal'){
@@ -1820,8 +1826,10 @@ async function loadCorpus(){
     items=await loadGames(totalLimit());
   }else if(corpusMode==='tv'){
     items=await loadTV(totalLimit());
+  }else if(corpusMode==='music'){
+    items=await loadMusic(totalLimit());
   }else if(corpusMode==='mixed'){
-    const per=Math.max(20,Math.ceil(totalLimit()/5));
+    const per=Math.max(20,Math.ceil(totalLimit()/6));
     const pools=await Promise.all([
       loadFilms(per),
       loadGames(per),
@@ -1832,9 +1840,10 @@ async function loadCorpus(){
     ]);
     items=pools.flat().slice(0,totalLimit());
   }else{
-    corpusMode='film';
     items=await loadFilms(totalLimit());
   }
+
+  if(!items.length)throw new Error(`empty corpus ${corpusMode}`);
 
   const map=new Map();
   const candidates=items.map(m=>{
@@ -1844,8 +1853,9 @@ async function loadCorpus(){
   });
 
   cache={mode:corpusMode,depth:searchDepth,items,map,candidates};
-  if(!items.length){throw new Error(`empty corpus ${corpusMode}`)}
+  rememberCorpus(key,cache);
   renderWall(items);
+  finishWallForMode?.();
   return cache;
 }
 
@@ -2024,18 +2034,22 @@ function syncResultQuery(){
 // ─── Mode / Depth / Theme ───
 
 async function setCorpusMode(mode){
-  if(!['film','games','books','tv','mixed','signal'].includes(mode)||corpusMode===mode)return;
-  corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;
+  if(!CORPUS_MODES.includes(mode) || corpusMode===mode)return;
+  corpusMode=mode;
+  cache=null;
+  results=[];
+  hasExecutedSearch=false;
+  active=0;
+  clearWallForMode?.(mode);
   applyModeLabels();
-  setCorpusLoading(true,corpusLoadLabel('loading'));
-  try{
-    await loadCorpusWithRetry(2);setCorpusLoading(false);
-  }catch(e){console.error(e);setCorpusLoading(false,'load failed');return}
-  if(document.body.classList.contains('has-results')){
-    document.body.classList.remove('has-results','searching','cutting');
-    history.replaceState(null,'',location.pathname+location.search);
-    window.scrollTo({top:0,behavior:'auto'});
-  }
+  setCorpusLoading(true,`loading ${corpusDisplayName?.(mode)||mode}`);
+  loadCorpusWithRetry(2)
+    .then(()=>setCorpusLoading(false,`${MODE_LABEL[mode]||mode} ready`))
+    .catch(e=>{
+      console.error(e);
+      setCorpusLoading(false,`${MODE_LABEL[mode]||mode} failed`);
+      toast(`${MODE_LABEL[mode]||mode} failed`);
+    });
 }
 
 async function setSearchDepth(depth){
@@ -2658,6 +2672,18 @@ async function loadMusic(limit=musicLimit()){
   return out.slice(0,limit);
 }
 
+
+/* music click guard */
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('[data-mode]');
+  if(!btn)return;
+  const mode=btn.dataset.mode;
+  if(mode==='music'){
+    e.preventDefault();
+    e.stopPropagation();
+    setCorpusMode('music');
+  }
+},true);
 </script>
 </body>
 </html>
