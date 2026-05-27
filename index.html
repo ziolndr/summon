@@ -1496,25 +1496,6 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"]::after{
   opacity:.105 !important;
 }
 
-
-
-/* music tiles: force visible native album-art grid */
-body[data-mode="music"]:not(.has-results) .film-wall{
-  display:grid !important;
-  grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
-  gap:2px !important;
-}
-body[data-mode="music"]:not(.has-results) .wall-cell,
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="music"],
-body[data-mode="mixed"]:not(.has-results) .wall-cell.media-music{
-  aspect-ratio:1 / 1 !important;
-}
-@media(max-width:980px){
-  body[data-mode="music"]:not(.has-results) .film-wall{
-    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-  }
-}
-
 </style>
 </head>
 <body data-mode="film">
@@ -1625,13 +1606,7 @@ const ALGOLIA_APP_ID='C3XKD4DFTX';
 const ALGOLIA_API_KEY='af8f49e765acc850e83ae75c64303cf3';
 const ALGOLIA_INDEX='algolia_movie_sample_dataset';
 const ALGOLIA_URL=`https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/${ALGOLIA_INDEX}/query`;
-// Local ARBITER instance. Override these in a small inline script if needed.
-window.ARBITER_BASE_URL = window.ARBITER_BASE_URL || 'http://0.0.0.0:8000';
-const ARBITER_BASE_URL=String(window.ARBITER_BASE_URL||'http://0.0.0.0:8000').replace(/\/+$/,'');
-const ARBITER_COMPARE_URL=window.ARBITER_COMPARE_URL || `${ARBITER_BASE_URL}/v1/compare`;
-const ARBITER_EMBED_URL=window.ARBITER_EMBED_URL || `${ARBITER_BASE_URL}/v1/embed`;
-const ARBITER_COMPARE_FALLBACK_URL=window.ARBITER_COMPARE_FALLBACK_URL || `${ARBITER_BASE_URL}/public/compare`;
-const ARBITER_EMBED_FALLBACK_URL=window.ARBITER_EMBED_FALLBACK_URL || `${ARBITER_BASE_URL}/public/embed`;
+const ARBITER_URL='https://api.arbiter.traut.ai/public/compare';
 const IMG='https://image.tmdb.org/t/p/';
 const TMDB_API_BASE='https://api.themoviedb.org/3';
 const TMDB_WEB='https://www.themoviedb.org/movie/';
@@ -1642,7 +1617,6 @@ const RAWG_URL='https://api.rawg.io/api/games';
 const OPENLIBRARY_URL=''; /* disabled for static book corpus */
 const OL_COVER='https://covers.openlibrary.org/b/id/';
 const TVMAZE_URL='https://api.tvmaze.com/shows';
-const ITUNES_URL='https://itunes.apple.com/search';
 const RAWG_PAGE_SIZE=40;
 
 // Performance: ARBITER should receive one full candidate array per search.
@@ -1653,24 +1627,6 @@ const TMDB_DISCOVERY_OVERFETCH=1.45;
 const TMDB_DISCOVERY_MAX_REQUESTS=160;
 const TMDB_DISCOVERY_MIN_REQUESTS=24;
 const TMDB_FAST_FILM_LOAD=window.SUMMON_FAST_FILM_LOAD!==false;
-
-
-// Optional two-stage retrieval for very large corpuses.
-// /embed is used only as a reusable local recall/index layer; /compare remains the final ARBITER ranking pass.
-const EMBED_INDEX_ENABLED=window.SUMMON_EMBED_INDEX!==false;
-const EMBED_USE_FREQ=window.SUMMON_EMBED_USE_FREQ!==false;
-const EMBED_BATCH_SIZE=Math.max(8,Number(window.SUMMON_EMBED_BATCH_SIZE)||96);
-const EMBED_RECALL_MIN_CANDIDATES=Math.max(0,Number(window.SUMMON_EMBED_RECALL_MIN_CANDIDATES)||900);
-const EMBED_RECALL_TARGETS={
-  surface:0,
-  field:Math.max(0,Number(window.SUMMON_EMBED_FIELD_TARGET)||700),
-  archive:Math.max(0,Number(window.SUMMON_EMBED_ARCHIVE_TARGET)||1100),
-  mixed:Math.max(0,Number(window.SUMMON_EMBED_MIXED_TARGET)||900)
-};
-const EMBED_DB_NAME='summon-arbiter-embed-index-v1';
-const EMBED_DB_STORE='vectors';
-const embedMemory=new Map();
-let embedDbPromise=null;
 
 const CORPUS_MODES=['film','games','books','tv','music','signal','mixed'];
 const MIXED_CORPUS_MODES=CORPUS_MODES.filter(mode=>mode!=='mixed');
@@ -2415,174 +2371,192 @@ async function loadTV(limit){
 }
 
 
-// ─── Music Corpus: working iTunes album fetch + neutral sonic payload normalization ───
-// Direct iTunes Search API fetch. No Apple RSS, no JSONP, no proxy requirement, no hardcoded tracks.
+// ─── Music Corpus: direct iTunes Search API JSON fetch; no proxy required ───
 
-async function fetchMusicAlbums(term,limit=100,offset=0){
-  const p=new URLSearchParams({
-    term,
-    media:'music',
-    entity:'album',
-    limit:String(Math.min(200,limit)),
-    country:'US'
-  });
-  const res=await fetch(`${ITUNES_URL}?${p}`);
-  if(!res.ok)throw new Error(`itunes ${res.status}`);
-  const data=await res.json();
-  return Array.isArray(data?.results)?data.results:[];
+const ITUNES_SEARCH_URL='https://itunes.apple.com/search';
+const MUSIC_SEARCH_TERMS=[
+  'music','new music','album','song','artist','soundtrack','independent music',
+  'electronic','alternative','indie','hip hop','r and b','soul','jazz','rock','ambient','dance','folk',
+  'afrobeat','reggae','latin','punk','metal','classical','experimental','synthpop','house','techno','funk','blues',
+  'post punk','new wave','dream pop','trip hop','gospel','disco','industrial','shoegaze','country','pop'
+];
+const MUSIC_REQUEST_DELAY_MS=220;
+const MUSIC_CACHE_MS=30*60*1000;
+const MUSIC_FETCH_TIMEOUT=10000;
+
+function musicCountries(){
+  const configured=asArray(window.SUMMON_MUSIC_COUNTRIES).map(x=>String(x||'').trim().toLowerCase()).filter(Boolean);
+  return configured.length?configured:['us'];
 }
 
-
-function musicFacetTerms(value){
-  return asArray(value)
-    .flatMap(v=>String(v).toLowerCase().split(/[^a-z0-9]+/))
-    .map(v=>v.trim())
-    .filter(v=>v.length>2);
+function musicCacheKey(limit){
+  return `summon:music:itunes-fetch:v1:${searchDepth}:${Number(corpusPageOffset)||0}:${Math.max(1,Number(limit)||0)}:${musicCountries().join('-')}`;
 }
 
-function musicSonicProfile(recordOrGenre,lanes=[]){
-  const text=[recordOrGenre,lanes].flat().join(' ').toLowerCase();
-  const tags=new Set();
-  const add=(items)=>items.forEach(x=>tags.add(x));
-
-  // Generic genre/lane normalization only. No artist/title lists, no query-specific boosts.
-  if(/classical|orchestral|symphony|opera|choral|piano|cello|violin/.test(text))add(['orchestral','instrumental','formal','expansive','ceremonial','harmonic']);
-  if(/soundtrack|score|cinematic|film/.test(text))add(['cinematic','scene-setting','wide-screen','emotional arc','atmospheric']);
-  if(/ambient|new age|meditation|reiki|healing|sleep|relax/.test(text))add(['ambient','slow','spacious','meditative','luminous','low-friction']);
-  if(/electronic|techno|house|dance|edm|trance|synth/.test(text))add(['electronic','synthetic','pulse-driven','textural','rhythmic']);
-  if(/jazz|bebop|fusion/.test(text))add(['jazz','improvisational','harmonic','warm','ensemble']);
-  if(/soul|r and b|r&b|funk|gospel/.test(text))add(['vocal','groove','warm','devotional','body rhythm']);
-  if(/hip hop|rap|trap/.test(text))add(['rhythmic','percussive','spoken cadence','street-level','beat-forward']);
-  if(/folk|country|americana|singer songwriter/.test(text))add(['acoustic','earthbound','narrative','intimate','human voice']);
-  if(/rock|alternative|indie|punk|post punk|metal|new wave/.test(text))add(['band-driven','electric','guitar texture','youth culture','kinetic']);
-  if(/dream pop|shoegaze|trip hop|downtempo/.test(text))add(['hazy','textural','melancholic','drifting','night air']);
-  if(/reggae|dub|afrobeats|afrobeat|latin|world/.test(text))add(['global rhythm','syncopated','sunlit','percussive','danceable']);
-  if(/blues/.test(text))add(['blues','raw','minor-key','guitar voice','lament']);
-
-  return [...tags];
+function readMusicStorage(key){
+  try{
+    const raw=localStorage.getItem(key);
+    if(!raw)return null;
+    const parsed=JSON.parse(raw);
+    if(!parsed||!Array.isArray(parsed.items))return null;
+    if(Date.now()-Number(parsed.t||0)>MUSIC_CACHE_MS)return null;
+    return parsed.items;
+  }catch(_){return null}
 }
 
-function musicRecord(a,lane=''){
-  const title=String(a.collectionName||a.trackName||'').trim();
-  const artist=String(a.artistName||'Unknown artist').trim();
-  const genre=String(a.primaryGenreName||'Music').trim();
-  const year=a.releaseDate?String(a.releaseDate).slice(0,4):'';
-  const rawArtwork=String(a.artworkUrl100||'').replace(/^http:/,'https:');
-  const image=rawArtwork
-    .replace('100x100bb','1200x1200bb')
-    .replace('100x100-999','1200x1200-999');
-  const fallbackImage=rawArtwork;
-  if(!title||!image)return null;
-  const url=a.collectionViewUrl||a.trackViewUrl||`https://music.apple.com/search?term=${encodeURIComponent(title+' '+artist)}`;
-  const discoveryLanes=asArray(lane);
-  const sonicProfile=musicSonicProfile([genre,...discoveryLanes].join(' '),discoveryLanes);
+function writeMusicStorage(key,items){
+  try{localStorage.setItem(key,JSON.stringify({t:Date.now(),items:items.slice(0,1400)}))}
+  catch(_){/* storage may be unavailable */}
+}
+
+function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+
+function upgradeArtwork(url,size=600){
+  const s=String(url||'').replace(/^http:/,'https:');
+  if(!s)return '';
+  return s
+    .replace(/\/\d+x\d+bb\.(jpg|png|webp)(\?.*)?$/i,`/${size}x${size}bb.$1`)
+    .replace(/\/\d+x\d+\w*\.(jpg|png|webp)(\?.*)?$/i,`/${size}x${size}bb.$1`);
+}
+
+function musicRecord(row={},source='iTunes Search API'){
+  const title=row.trackName||row.collectionName||row.trackCensoredName||row.collectionCensoredName||row.artistName||row.name||row.title||'Untitled';
+  const artist=row.artistName||row.artist||'';
+  const album=row.collectionName||row.albumName||row.album||'';
+  const release=row.releaseDate||row.release_date||'';
+  const genres=[];
+  if(row.primaryGenreName)genres.push(row.primaryGenreName);
+  for(const g of asArray(row.genres)){
+    const name=typeof g==='object'?(g.name||''):g;
+    if(name&&!genres.includes(name))genres.push(name);
+  }
+  const artwork=row.artworkUrl100||row.artworkUrl60||row.artworkUrl512||row.artworkUrl||row.image||row.cover||'';
+  const image=upgradeArtwork(artwork,600);
+  const url=row.trackViewUrl||row.collectionViewUrl||row.artistViewUrl||row.url||row.link||'';
+  const kind=row.kind||row.wrapperType||'music';
   return {
-    type:'music',
-    title,
-    artist,
-    artists:[artist],
-    authors:[artist],
-    album:title,
-    year,
-    genres:[genre].filter(Boolean),
-    subjects:[genre,'album','music','recording','artist',...discoveryLanes].filter(Boolean),
-    discoveryLanes,
-    sonicProfile,
-    source:'iTunes Search API',
-    corpusSource:'iTunes Search API',
-    kind:a.collectionType||a.wrapperType||'album',
-    overview:`${title}. By ${artist}. ${year?'Released '+year+'. ':''}Genre: ${genre}. Discovery context: ${discoveryLanes.join(', ')||genre}. Sonic profile: ${sonicProfile.join(', ')||genre}.`,
-    image,
-    cover:image,
-    fallbackImage,
-    externalUrl:url,
-    itunesUrl:url
+    type:'music',title:String(title),artist:String(artist||''),album:String(album||''),
+    year:release?String(release).slice(0,4):'',releaseDate:release,genres,kind,
+    source,externalUrl:url,image,cover:image,
+    overview:`${title}. ${artist?`Artist: ${artist}. `:''}${album&&album!==title?`Album: ${album}. `:''}${genres.length?`Genre signal: ${genres.slice(0,6).join(', ')}. `:''}${release?`Released ${String(release).slice(0,10)}. `:''}Provider-backed iTunes music record indexed through artist, album, genre, release era, and sonic/cultural metadata.`
   };
 }
 
-async function loadMusic(limit=musicLimit()){
-  const cacheKey=`summon:music:itunes-working:v4:${searchDepth}:${Number(corpusPageOffset)||0}:${Math.max(1,Number(limit)||0)}`;
+function cleanItunesTerm(term){
+  return String(term||'music')
+    .replace(/&/g,' and ')
+    .replace(/[“”]/g,'"')
+    .replace(/[’]/g,"'")
+    .replace(/\s+/g,' ')
+    .trim()||'music';
+}
+
+async function fetchJsonWithTimeout(url,timeout=MUSIC_FETCH_TIMEOUT){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),timeout);
   try{
-    const raw=localStorage.getItem(cacheKey);
-    if(raw){
-      const parsed=JSON.parse(raw);
-      if(parsed?.t && Array.isArray(parsed.items) && Date.now()-parsed.t<30*60*1000){
-        const cached=parsed.items.filter(x=>x&&x.type==='music'&&x.image).slice(0,limit);
-        if(cached.length){
-          setStatus(`${cached.length} cached music records`);
-          return cached;
-        }
-      }
+    const res=await fetch(url,{cache:'force-cache',signal:controller.signal});
+    if(!res.ok)throw new Error(`itunes ${res.status}`);
+    return await res.json();
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
+async function fetchItunesMusic(term='music',country='us',limit=200,entity='song'){
+  // Keep this intentionally close to the older working iTunes Search shape.
+  // No JSONP callback, no extra lang/version/explicit params, no script injection.
+  const p=new URLSearchParams({
+    term:cleanItunesTerm(term),
+    country:String(country||'us').toLowerCase(),
+    media:'music',
+    entity:String(entity||'song'),
+    limit:String(Math.min(200,Math.max(1,limit)))
+  });
+  return fetchJsonWithTimeout(`${ITUNES_SEARCH_URL}?${p.toString()}`,MUSIC_FETCH_TIMEOUT);
+}
+
+function dedupeMusic(rows,limit){
+  const seen=new Set(),out=[];
+  for(const rec of rows){
+    if(!rec||!rec.title||!rec.image)continue;
+    const key=[rec.title,rec.artist,rec.album].join('|').toLowerCase().replace(/\s+/g,' ').trim();
+    if(seen.has(key))continue;
+    seen.add(key);
+    out.push(rec);
+    if(out.length>=limit)break;
+  }
+  return out;
+}
+
+function buildItunesTasks(target){
+  const offset=Number(corpusPageOffset||0)%MUSIC_SEARCH_TERMS.length;
+  const terms=[...MUSIC_SEARCH_TERMS.slice(offset),...MUSIC_SEARCH_TERMS.slice(0,offset)];
+  const countries=musicCountries();
+  const tasks=[];
+
+  for(const term of terms){
+    for(const country of countries){
+      tasks.push(async()=>{
+        const data=await fetchItunesMusic(term,country,200,'song');
+        return asArray(data?.results).map(row=>musicRecord(row,`iTunes ${String(country).toUpperCase()} song search`));
+      });
+      if(tasks.length*120>=target*1.8)break;
     }
-  }catch(_){/* ignore cache */}
+    if(tasks.length*120>=target*1.8)break;
+  }
 
-  const lanes=[
-    'alternative rock',
-    'electronic ambient',
-    'hip hop',
-    'jazz',
-    'soul',
-    'punk',
-    'metal',
-    'classical',
-    'indie rock',
-    'experimental',
-    'soundtrack',
-    'folk',
-    'r and b',
-    'funk',
-    'new wave',
-    'post punk',
-    'trip hop',
-    'dream pop',
-    'reggae',
-    'afrobeats',
-    'new age',
-    'orchestral',
-    'cinematic score',
-    'meditation',
-    'world music',
-    'downtempo',
-    'piano',
-    'choral'
-  ];
-  const seen=new Set();
-  const out=[];
-  const per=Math.min(120,Math.max(40,Math.ceil(limit/2)));
-  const offset=(Number(corpusPageOffset)||0)+(Number(shuffleSeed)||0);
+  for(const term of terms.slice(0,Math.max(2,Math.ceil(target/220)))){
+    for(const country of countries){
+      tasks.push(async()=>{
+        const data=await fetchItunesMusic(term,country,200,'album');
+        return asArray(data?.results).map(row=>musicRecord(row,`iTunes ${String(country).toUpperCase()} album search`));
+      });
+      if(tasks.length*120>=target*2.4)break;
+    }
+    if(tasks.length*120>=target*2.4)break;
+  }
+  return tasks;
+}
 
-  setStatus('loading music');
-  for(let i=0;i<lanes.length && out.length<limit;i++){
-    const lane=lanes[(i+offset)%lanes.length];
+async function loadMusic(limit=musicLimit()){
+  const target=Math.max(40,limit);
+  const key=musicCacheKey(target);
+  const cached=readMusicStorage(key);
+  if(cached?.length){
+    setStatus(`${cached.length} cached music records`);
+    return dedupeMusic(cached,target).slice(0,limit);
+  }
+
+  setStatus('loading music from itunes');
+  const rows=[];
+  for(const task of buildItunesTasks(target)){
+    if(dedupeMusic(rows,target).length>=target)break;
     try{
-      const rows=await fetchMusicAlbums(lane,per);
-      for(const row of rows){
-        const rec=musicRecord(row,lane);
-        if(!rec)continue;
-        const key=`${rec.title}|${rec.artist}`.toLowerCase().replace(/\s+/g,' ').trim();
-        if(seen.has(key)){
-          const existing=out.find(x=>`${x.title}|${x.artist}`.toLowerCase().replace(/\s+/g,' ').trim()===key);
-          if(existing){
-            existing.discoveryLanes=[...new Set([...(existing.discoveryLanes||[]),...(rec.discoveryLanes||[])])];
-            existing.subjects=[...new Set([...(existing.subjects||[]),...(rec.subjects||[])])];
-            existing.sonicProfile=[...new Set([...(existing.sonicProfile||[]),...(rec.sonicProfile||[])])];
-          }
-          continue;
-        }
-        seen.add(key);
-        out.push(rec);
-        if(out.length>=limit)break;
-      }
-      setStatus(`${out.length} music records loading`);
-      if(out.length>=limit)break;
-    }catch(e){
-      console.warn('music api failed',e);
-      break;
+      const batch=await task();
+      rows.push(...batch);
+      const count=dedupeMusic(rows,target).length;
+      setStatus(`${count} music records loading`);
+      await sleep(MUSIC_REQUEST_DELAY_MS);
+    }catch(err){
+      console.warn('music provider failed',err);
+      // Keep going. A single iTunes request failing should not empty the mode.
+      await sleep(MUSIC_REQUEST_DELAY_MS*2);
     }
   }
 
-  try{localStorage.setItem(cacheKey,JSON.stringify({t:Date.now(),items:out.slice(0,Math.max(limit,900))}))}catch(_){/* ignore */}
-  return out.slice(0,limit);
+  const clean=dedupeMusic(rows,target);
+  if(clean.length){
+    writeMusicStorage(key,clean);
+    return clean.slice(0,limit);
+  }
+
+  setStatus('music load failed');
+  throw new Error('empty music corpus');
+}
+
+function musicWallTarget(){
+  return searchDepth==='archive'?420:searchDepth==='field'?260:150;
 }
 
 // ─── Wall Rendering ───
@@ -2603,182 +2577,13 @@ function renderWall(movies,mode=corpusMode){
     .slice(0,wallTarget);
 
   $('#wall').innerHTML=sample.map(m=>
-    `<div class="wall-cell media-${esc(m.type||'film')}" data-type="${esc(m.type||'film')}" data-title="${esc(m.title)}" data-author="${esc((m.authors||[])[0]||m.author||'')}" data-year="${esc(m.year||'')}" data-section="${esc(m.section||'')}" data-source="${esc(m.source||'')}" data-index="${esc(m.wallIndex||0)}" data-alt-src="${esc(m.fallbackImage||m.cover||m.image||'')}" data-genres="${esc((m.genres||[]).join(', '))}">
+    `<div class="wall-cell media-${esc(m.type||'film')}" data-type="${esc(m.type||'film')}" data-title="${esc(m.title)}" data-author="${esc((m.authors||[])[0]||m.author||'')}" data-year="${esc(m.year||'')}" data-section="${esc(m.section||'')}" data-source="${esc(m.source||'')}" data-index="${esc(m.wallIndex||0)}" data-genres="${esc((m.genres||[]).join(', '))}">
       <img src="${m.src}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"
-           onerror="const c=this.closest('.wall-cell');const t=c?.dataset?.type;if(t==='book'){this.onerror=null;this.src=fallbackBookCover(c.dataset.title,c.dataset.author||'')}else if(t==='film'){this.onerror=null;c?.remove()}else if(t==='signal'){this.onerror=null;this.src=fallbackSignalCard(c.dataset.title,c.dataset.section||'',c.dataset.source||'',Number(c.dataset.index||0))}else if(t==='music'&&c?.dataset?.altSrc&&this.src!==c.dataset.altSrc){this.src=c.dataset.altSrc}else{this.onerror=null;c?.remove()}">
+           onerror="this.onerror=null;const c=this.closest('.wall-cell');const t=c?.dataset?.type;if(t==='book'){this.src=fallbackBookCover(c.dataset.title,c.dataset.author||'')}else if(t==='film'){c?.remove()}else if(t==='signal'){this.src=fallbackSignalCard(c.dataset.title,c.dataset.section||'',c.dataset.source||'',Number(c.dataset.index||0))}else if(t==='music'){c?.remove()}else{c?.remove()}">
     </div>`
   ).join('');
 
   requestAnimationFrame(()=>setTimeout(startOracleDrift,500));
-}
-
-
-// ─── ARBITER Local API + Embed Recall Index ───
-
-function arbiterHeaders(){
-  const h={'Content-Type':'application/json'};
-  if(window.ARBITER_API_KEY)h.Authorization=`Bearer ${window.ARBITER_API_KEY}`;
-  return h;
-}
-
-async function postArbiter(primaryUrl,fallbackUrl,payload,label){
-  async function post(url){
-    return fetch(url,{method:'POST',headers:arbiterHeaders(),body:JSON.stringify(payload)});
-  }
-  let res;
-  try{res=await post(primaryUrl)}
-  catch(err){
-    if(!fallbackUrl||fallbackUrl===primaryUrl)throw err;
-    console.warn(`${label} primary failed; trying fallback`,err);
-    res=await post(fallbackUrl);
-  }
-  if(!res.ok && fallbackUrl && fallbackUrl!==primaryUrl && [401,403,404,405].includes(res.status)){
-    console.warn(`${label} ${res.status} at ${primaryUrl}; trying fallback ${fallbackUrl}`);
-    res=await post(fallbackUrl);
-  }
-  if(!res.ok)throw new Error(`${label} ${res.status}`);
-  return res.json();
-}
-
-function hashText(str){
-  // FNV-1a 32-bit; enough for local cache keys when combined with text length and base URL.
-  let h=0x811c9dc5;
-  const s=String(str||'');
-  for(let i=0;i<s.length;i++){
-    h^=s.charCodeAt(i);
-    h=Math.imul(h,0x01000193)>>>0;
-  }
-  return `${h.toString(16)}:${s.length}`;
-}
-
-function embedKey(text){
-  return `${ARBITER_BASE_URL}|freq:${EMBED_USE_FREQ?'1':'0'}|${hashText(text)}`;
-}
-
-function openEmbedDb(){
-  if(!('indexedDB' in window))return Promise.resolve(null);
-  if(embedDbPromise)return embedDbPromise;
-  embedDbPromise=new Promise(resolve=>{
-    const req=indexedDB.open(EMBED_DB_NAME,1);
-    req.onupgradeneeded=()=>{
-      const db=req.result;
-      if(!db.objectStoreNames.contains(EMBED_DB_STORE))db.createObjectStore(EMBED_DB_STORE,{keyPath:'key'});
-    };
-    req.onsuccess=()=>resolve(req.result);
-    req.onerror=()=>{console.warn('embed indexeddb unavailable',req.error);resolve(null)};
-  });
-  return embedDbPromise;
-}
-
-async function idbGetVector(key){
-  const db=await openEmbedDb();
-  if(!db)return null;
-  return new Promise(resolve=>{
-    const tx=db.transaction(EMBED_DB_STORE,'readonly');
-    const req=tx.objectStore(EMBED_DB_STORE).get(key);
-    req.onsuccess=()=>resolve(req.result?.vector||null);
-    req.onerror=()=>resolve(null);
-  });
-}
-
-async function idbPutVector(key,vector){
-  const db=await openEmbedDb();
-  if(!db)return;
-  return new Promise(resolve=>{
-    const tx=db.transaction(EMBED_DB_STORE,'readwrite');
-    tx.objectStore(EMBED_DB_STORE).put({key,vector,dim:Array.isArray(vector)?vector.length:0,ts:Date.now()});
-    tx.oncomplete=()=>resolve();
-    tx.onerror=()=>resolve();
-  });
-}
-
-async function embedTexts(texts){
-  const payload={texts,use_freq:EMBED_USE_FREQ};
-  const data=await postArbiter(ARBITER_EMBED_URL,ARBITER_EMBED_FALLBACK_URL,payload,'embed');
-  if(!Array.isArray(data?.vectors))throw new Error('embed returned no vectors');
-  return data.vectors;
-}
-
-async function getCachedEmbeddings(texts,{label='records'}={}){
-  const out=new Array(texts.length);
-  const misses=[];
-
-  for(let i=0;i<texts.length;i++){
-    const text=texts[i];
-    const key=embedKey(text);
-    const mem=embedMemory.get(key);
-    if(mem){out[i]=mem;continue}
-    const stored=await idbGetVector(key);
-    if(stored){embedMemory.set(key,stored);out[i]=stored;continue}
-    misses.push({i,key,text});
-  }
-
-  for(let start=0;start<misses.length;start+=EMBED_BATCH_SIZE){
-    const batch=misses.slice(start,start+EMBED_BATCH_SIZE);
-    setStatus(`embedding ${label} ${Math.min(start+batch.length,misses.length)}/${misses.length}`);
-    const vectors=await embedTexts(batch.map(x=>x.text));
-    await Promise.all(batch.map((x,j)=>{
-      const v=vectors[j];
-      if(!Array.isArray(v))return Promise.resolve();
-      out[x.i]=v;
-      embedMemory.set(x.key,v);
-      return idbPutVector(x.key,v);
-    }));
-  }
-
-  return out;
-}
-
-function dot(a,b){
-  let s=0;
-  const n=Math.min(a?.length||0,b?.length||0);
-  for(let i=0;i<n;i++)s+=Number(a[i]||0)*Number(b[i]||0);
-  return s;
-}
-
-function embedRecallTarget(corpus){
-  if(!EMBED_INDEX_ENABLED||!corpus?.candidates?.length)return 0;
-  const count=corpus.candidates.length;
-  const depth=corpus.depth||searchDepth;
-  const mode=corpus.mode||corpusMode;
-  const base=mode==='mixed'?EMBED_RECALL_TARGETS.mixed:(EMBED_RECALL_TARGETS[depth]||0);
-  if(!base||count<EMBED_RECALL_MIN_CANDIDATES||count<=base)return 0;
-  return Math.min(base,count);
-}
-
-async function preselectCandidatesWithEmbed(queryText,corpus){
-  const target=embedRecallTarget(corpus);
-  if(!target)return corpus.candidates;
-
-  try{
-    setStatus(`building vector recall index for ${corpus.candidates.length} candidates`);
-    const [queryVector]=await embedTexts([queryText]);
-    const candidateVectors=await getCachedEmbeddings(corpus.candidates,{label:'candidates'});
-    const scored=corpus.candidates
-      .map((text,i)=>({text,score:dot(queryVector,candidateVectors[i])}))
-      .filter(row=>Number.isFinite(row.score))
-      .sort((a,b)=>b.score-a.score)
-      .slice(0,target)
-      .map(row=>row.text);
-    if(scored.length>=RETURN_COUNT){
-      setStatus(`vector recall ${corpus.candidates.length} → ${scored.length}; final coherence ranking`);
-      return scored;
-    }
-  }catch(err){
-    console.warn('embed recall unavailable; falling back to full compare',err);
-    setStatus(`embed unavailable; ranking all ${corpus.candidates.length} candidates`);
-  }
-
-  return corpus.candidates;
-}
-
-async function compareWithArbiter(queryText,candidates){
-  return postArbiter(ARBITER_COMPARE_URL,ARBITER_COMPARE_FALLBACK_URL,{
-    query:queryText,
-    candidates,
-    use_freq:true,
-    top_k:RETURN_COUNT
-  },'arbiter');
 }
 
 // ─── Corpus Assembly ───
@@ -2895,15 +2700,6 @@ function parse(data,map){
   return rows.map(r=>{const m=map.get(r.text);return m?{...m,score:Number(r.score||0),candidate:r.text}:null}).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,RETURN_COUNT);
 }
 
-
-function arbiterQueryForMode(q,corpus){
-  const mode=corpus?.mode||corpusMode;
-  if(mode==='music'){
-    return `As a music supervisor, rank by listening fit, sonic atmosphere, genre, instrumentation, rhythm, mood, era, and cultural surface rather than literal title matching. Query: ${q}`;
-  }
-  return q;
-}
-
 async function search(text){
   const q=(text||'').trim();
   if(!q)return;
@@ -2919,13 +2715,16 @@ async function search(text){
     setTimeout(startOracleDrift,120);
     setStatus(`ranking ${corpus.candidates.length} candidates`);
 
-    const arbiterQuery=arbiterQueryForMode(q,corpus);
-    const compareCandidates=await preselectCandidatesWithEmbed(arbiterQuery,corpus);
-    const data=await compareWithArbiter(arbiterQuery,compareCandidates);
+    const res=await fetch(ARBITER_URL,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({query:q,candidates:corpus.candidates,use_freq:true,top_k:RETURN_COUNT})
+    });
+    if(!res.ok)throw new Error(`arbiter ${res.status}`);
+
+    const data=await res.json();
     results=parse(data,corpus.map);
     active=0;hasExecutedSearch=true;
-    const recallNote=compareCandidates.length<corpus.candidates.length?` after vector recall ${corpus.candidates.length} → ${compareCandidates.length}`:'';
-    setStatus(`ranked ${compareCandidates.length} candidates${recallNote}`);
+    setStatus(`ranked ${corpus.candidates.length} candidates`);
 
     if(!results.length){toast('no response');return}
 
@@ -2978,7 +2777,7 @@ function renderResult(){
   const sourceUrl =
     m.type==='game'?`https://rawg.io/games/${m.rawgSlug||encodeURIComponent(String(m.title||'').toLowerCase().replaceAll(' ','-'))}`:
     m.type==='signal'?(m.externalUrl||`https://www.google.com/search?q=${encodeURIComponent(m.title)}`):
-    m.type==='music'?(m.externalUrl||m.itunesUrl||`https://music.apple.com/search?term=${encodeURIComponent((m.title||'')+' '+(m.artist||''))}`):
+    m.type==='music'?(m.externalUrl||`https://music.apple.com/us/search?term=${encodeURIComponent(m.title+' '+(m.artist||''))}`):
     m.type==='book'?(m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title)}`):
     m.type==='tv'?(m.tvMazeUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`):
     (m.externalUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`);
@@ -3608,10 +3407,6 @@ function filmWallTarget(){
   return searchDepth==='archive'?520:searchDepth==='field'?320:160;
 }
 
-function musicWallTarget(){
-  return searchDepth==='archive'?420:searchDepth==='field'?260:140;
-}
-
 function stripHtml(value=''){
   return String(value||'')
     .replace(/<[^>]*>/g,' ')
@@ -4137,25 +3932,17 @@ function candidateText(m){
   }
 
   if(type==='music'){
-    const sonic=[...new Set([
-      ...asArray(m.sonicProfile),
-      ...asArray(m.genres),
-      ...asArray(m.discoveryLanes)
-    ])].slice(0,24);
     return compactCandidate([
       'Record type: music.',
-      'Scoring frame: judge listening fit by sonic profile, genre, rhythm, instrumentation, atmosphere, era, and cultural surface. Treat the title as catalog metadata, not the primary semantic surface.',
-      field('Sonic / listening profile',sonic),
-      field('Discovery context',asArray(m.discoveryLanes).slice(0,8)),
-      field('Genre / provider category',asArray(m.genres).slice(0,10)),
+      field('Title',title),
       field('Artist',m.artist),
+      field('Album / release',m.album),
       field('Release year',m.year),
-      field('Release type',m.kind),
-      field('Catalog title',title),
-      field('Album / release label',m.album),
+      field('Genres / sonic tags',asArray(m.genres).slice(0,10)),
       field('Provider source',m.source),
-      field('Music metadata summary',overview)
-    ],1600);
+      field('Track / album type',m.kind),
+      field('Music signal / semantic surface',overview)
+    ],1400);
   }
 
   if(type==='tv'){
