@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#ffffff">
 <title>SUMMON</title>
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
-<link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23050505'/%3E%3Cpath d='M14 43h36M14 32h36M14 21h36' stroke='%23f4f1eb' stroke-width='4'/%3E%3C/svg%3E">
 
 <meta name="description" content="Find anything by meaning.">
 <meta property="og:title" content="SUMMON">
@@ -1037,6 +1035,15 @@ body[data-mode="tv"]:not(.has-results) .wall-cell{
   aspect-ratio:2 / 3 !important;
 }
 
+/* Music uses native album-art geometry */
+body[data-mode="music"]:not(.has-results) .film-wall{
+  grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
+  gap:2px !important;
+}
+body[data-mode="music"]:not(.has-results) .wall-cell{
+  aspect-ratio:1 / 1 !important;
+}
+
 /* Games keep the screenshot geometry that worked */
 body[data-mode="games"]:not(.has-results) .film-wall{
   grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
@@ -1134,6 +1141,11 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell.media-tv{
   aspect-ratio:2 / 3 !important;
 }
 
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="music"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell.media-music{
+  aspect-ratio:1 / 1 !important;
+}
+
 /* Desktop drift still works for grid modes, not masonry mix */
 @media(min-width:981px){
   body[data-mode="mixed"]:not(.has-results) .film-wall{
@@ -1149,7 +1161,8 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell.media-tv{
     gap:1px !important;
   }
 
-  body[data-mode="games"]:not(.has-results) .film-wall{
+  body[data-mode="games"]:not(.has-results) .film-wall,
+  body[data-mode="music"]:not(.has-results) .film-wall{
     grid-template-columns:repeat(2,minmax(0,1fr)) !important;
   }
 
@@ -1166,6 +1179,11 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell.media-tv{
   body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="book"],
   body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="tv"]{
     aspect-ratio:2 / 3 !important;
+  }
+
+  body[data-mode="music"]:not(.has-results) .wall-cell,
+  body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="music"]{
+    aspect-ratio:1 / 1 !important;
   }
 
   body[data-mode="games"]:not(.has-results) .wall-cell,
@@ -1383,39 +1401,119 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="book"] img[src^=
 }
 
 
-/* music corpus: album art uses square native geometry */
-body[data-mode="music"]:not(.has-results) .wall-cell,
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="music"],
-body[data-mode="mixed"]:not(.has-results) .wall-cell.media-music{
-  aspect-ratio:1 / 1 !important;
+/* signal mode restored */
+body[data-mode="signal"]:not(.has-results) .wall-cell{
+  aspect-ratio:16 / 9 !important;
 }
-
-body[data-mode="music"]:not(.has-results) .film-wall{
+body[data-mode="signal"]:not(.has-results) .film-wall{
   grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
-  gap:2px !important;
 }
-
 @media(max-width:980px){
-  body[data-mode="music"]:not(.has-results) .film-wall{
+  body[data-mode="signal"]:not(.has-results) .film-wall{
     grid-template-columns:repeat(2,minmax(0,1fr)) !important;
   }
 }
 
 
-/* signal mode: live news cards, no stock wall */
-body[data-mode="signal"]:not(.has-results) .film-wall{grid-template-columns:repeat(4,minmax(150px,1fr)) !important;gap:2px !important;}
-body[data-mode="signal"]:not(.has-results) .wall-cell,
+/* signal mode actual restore */
+body[data-mode="signal"]:not(.has-results) .film-wall{
+  grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
+  gap:2px !important;
+}
+body[data-mode="signal"]:not(.has-results) .wall-cell{
+  aspect-ratio:16 / 9 !important;
+}
 body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"],
-body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{aspect-ratio:16 / 9 !important;background:#0a0a0a !important;box-shadow:0 0 0 1px rgba(244,241,235,.08) !important;}
+body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
+  aspect-ratio:16 / 9 !important;
+}
+@media(max-width:980px){
+  body[data-mode="signal"]:not(.has-results) .film-wall{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
+
+
+/* ─── Signal mode: no stock photography, no duplicate-looking image wall ─── */
+body[data-mode="signal"]:not(.has-results) .wall-cell,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]{
+  background:#0a0a0a !important;
+  box-shadow:0 0 0 1px rgba(244,241,235,.08) !important;
+}
 body[data-mode="signal"]:not(.has-results) .wall-cell img,
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"] img{filter:none !important;transform:none !important;object-fit:cover !important;}
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"] img{
+  filter:none !important;
+  transform:none !important;
+  object-fit:cover !important;
+}
 body[data-mode="signal"]:not(.has-results) .wall-cell::before,
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]::before{opacity:.28 !important;}
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]::before{
+  opacity:.28 !important;
+}
 body[data-mode="signal"]:not(.has-results) .wall-cell::after,
-body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]::after{opacity:.08 !important;}
-.wall-loading-cell{display:flex !important;align-items:flex-end !important;justify-content:flex-start !important;background:linear-gradient(135deg,rgba(246,241,232,.08),rgba(246,241,232,.02) 38%,rgba(0,0,0,.28)),#080808 !important;overflow:hidden !important;}
-.wall-loading-mark{position:relative;z-index:2;padding:12px;font-family:var(--mono);text-transform:uppercase;color:rgba(246,241,232,.62);display:flex;gap:10px;align-items:center;font-size:10px;letter-spacing:.08em;}
-@media(max-width:980px){body[data-mode="signal"]:not(.has-results) .film-wall{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}}
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]::after{
+  opacity:.08 !important;
+}
+
+
+/* final signal tile sizing: match games exactly */
+body[data-mode="signal"]:not(.has-results) .film-wall{
+  grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
+  gap:2px !important;
+}
+body[data-mode="signal"]:not(.has-results) .wall-cell{
+  aspect-ratio:16 / 9 !important;
+}
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell.media-signal{
+  aspect-ratio:16 / 9 !important;
+}
+@media(max-width:980px){
+  body[data-mode="signal"]:not(.has-results) .film-wall{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+  body[data-mode="signal"]:not(.has-results) .wall-cell{
+    aspect-ratio:16 / 9 !important;
+  }
+}
+
+
+/* ─── TMDb film image style correction ───
+   Film wall cells are poster geometry; provider backdrops stay reserved for hero imagery. */
+body[data-mode="film"]:not(.has-results) .wall-cell img,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"] img{
+  object-position:center top !important;
+  filter:contrast(1.08) saturate(1.02) brightness(.95) !important;
+}
+
+body[data-mode="film"]:not(.has-results) .wall-cell::before,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"]::before{
+  opacity:.62 !important;
+}
+
+body[data-mode="film"]:not(.has-results) .wall-cell::after,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"]::after{
+  opacity:.105 !important;
+}
+
+
+
+/* music tiles: force visible native album-art grid */
+body[data-mode="music"]:not(.has-results) .film-wall{
+  display:grid !important;
+  grid-template-columns:repeat(4,minmax(150px,1fr)) !important;
+  gap:2px !important;
+}
+body[data-mode="music"]:not(.has-results) .wall-cell,
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="music"],
+body[data-mode="mixed"]:not(.has-results) .wall-cell.media-music{
+  aspect-ratio:1 / 1 !important;
+}
+@media(max-width:980px){
+  body[data-mode="music"]:not(.has-results) .film-wall{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
 
 </style>
 </head>
@@ -1424,7 +1522,7 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]::after{
   <div class="search-pane">
     <div>
       <div class="brand" aria-label="SUMMON">SUMMON</div>
-      <div class="prompt-label">find a film</div>
+      <div class="prompt-label" id="eyebrow">find a film</div>
       <form id="searchForm" class="search-form">
         <input id="query" autocomplete="off" spellcheck="false" inputmode="search" enterkeyhint="search" placeholder="describe the scene, mood, memory, or idea">
         <button id="go" aria-label="Search">→</button>
@@ -1521,12 +1619,22 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="signal"]::after{
 </section>
 
 <script>
+// Local prototype TMDb integration. Move this behind FILM_API_PROXY_URL before committing/deploying publicly.
+window.TMDB_API_KEY = window.TMDB_API_KEY || '1616a31a4f3bbcb387e74cbe0ae3c7b6';
 const ALGOLIA_APP_ID='C3XKD4DFTX';
 const ALGOLIA_API_KEY='af8f49e765acc850e83ae75c64303cf3';
 const ALGOLIA_INDEX='algolia_movie_sample_dataset';
 const ALGOLIA_URL=`https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/${ALGOLIA_INDEX}/query`;
-const ARBITER_URL='https://api.arbiter.traut.ai/public/compare';
+// Local ARBITER instance. Override these in a small inline script if needed.
+window.ARBITER_BASE_URL = window.ARBITER_BASE_URL || 'http://0.0.0.0:8000';
+const ARBITER_BASE_URL=String(window.ARBITER_BASE_URL||'http://0.0.0.0:8000').replace(/\/+$/,'');
+const ARBITER_COMPARE_URL=window.ARBITER_COMPARE_URL || `${ARBITER_BASE_URL}/v1/compare`;
+const ARBITER_EMBED_URL=window.ARBITER_EMBED_URL || `${ARBITER_BASE_URL}/v1/embed`;
+const ARBITER_COMPARE_FALLBACK_URL=window.ARBITER_COMPARE_FALLBACK_URL || `${ARBITER_BASE_URL}/public/compare`;
+const ARBITER_EMBED_FALLBACK_URL=window.ARBITER_EMBED_FALLBACK_URL || `${ARBITER_BASE_URL}/public/embed`;
 const IMG='https://image.tmdb.org/t/p/';
+const TMDB_API_BASE='https://api.themoviedb.org/3';
+const TMDB_WEB='https://www.themoviedb.org/movie/';
 const HITS=250;
 const RETURN_COUNT=10;
 const RAWG_KEY='3765495b17254a2393b9be2c5cc0dd77';
@@ -1537,14 +1645,48 @@ const TVMAZE_URL='https://api.tvmaze.com/shows';
 const ITUNES_URL='https://itunes.apple.com/search';
 const RAWG_PAGE_SIZE=40;
 
+// Performance: ARBITER should receive one full candidate array per search.
+// Film provider detail expansion must not block that request.
+const CORPUS_MEMORY_CACHE_LIMIT=12;
+const TMDB_DISCOVERY_CONCURRENCY=8;
+const TMDB_DISCOVERY_OVERFETCH=1.45;
+const TMDB_DISCOVERY_MAX_REQUESTS=160;
+const TMDB_DISCOVERY_MIN_REQUESTS=24;
+const TMDB_FAST_FILM_LOAD=window.SUMMON_FAST_FILM_LOAD!==false;
+
+
+// Optional two-stage retrieval for very large corpuses.
+// /embed is used only as a reusable local recall/index layer; /compare remains the final ARBITER ranking pass.
+const EMBED_INDEX_ENABLED=window.SUMMON_EMBED_INDEX!==false;
+const EMBED_USE_FREQ=window.SUMMON_EMBED_USE_FREQ!==false;
+const EMBED_BATCH_SIZE=Math.max(8,Number(window.SUMMON_EMBED_BATCH_SIZE)||96);
+const EMBED_RECALL_MIN_CANDIDATES=Math.max(0,Number(window.SUMMON_EMBED_RECALL_MIN_CANDIDATES)||900);
+const EMBED_RECALL_TARGETS={
+  surface:0,
+  field:Math.max(0,Number(window.SUMMON_EMBED_FIELD_TARGET)||700),
+  archive:Math.max(0,Number(window.SUMMON_EMBED_ARCHIVE_TARGET)||1100),
+  mixed:Math.max(0,Number(window.SUMMON_EMBED_MIXED_TARGET)||900)
+};
+const EMBED_DB_NAME='summon-arbiter-embed-index-v1';
+const EMBED_DB_STORE='vectors';
+const embedMemory=new Map();
+let embedDbPromise=null;
+
+const CORPUS_MODES=['film','games','books','tv','music','signal','mixed'];
+const MIXED_CORPUS_MODES=CORPUS_MODES.filter(mode=>mode!=='mixed');
+const MODE_TYPE={film:'film',games:'game',books:'book',tv:'tv',music:'music',signal:'signal'};
+const MODE_LABEL={film:'films',games:'games',books:'books',tv:'tv shows',music:'music',signal:'signals',mixed:'mixed records'};
+
 const DEPTHS={
-  surface:{film:80,games:80,books:80,tv:80,music:600,signal:240,mixedFilm:30,mixedGames:30,mixedBooks:30,mixedTv:30,mixedMusic:120,mixedSignal:36,rawgPages:3},
-  field:{film:220,games:140,books:160,tv:160,music:1200,signal:900,mixedFilm:55,mixedGames:55,mixedBooks:55,mixedTv:55,mixedMusic:200,mixedSignal:80,rawgPages:5},
-  archive:{film:500,games:500,books:500,tv:500,music:2400,signal:1600,mixedFilm:100,mixedGames:100,mixedBooks:100,mixedTv:100,mixedMusic:320,mixedSignal:140,rawgPages:13}
+  surface:{film:240,games:80,books:80,tv:80,music:160,mixedFilm:50,mixedGames:30,mixedBooks:30,mixedTv:30,mixedMusic:40,rawgPages:3},
+  field:{film:900,games:140,books:160,tv:160,music:420,mixedFilm:115,mixedGames:55,mixedBooks:55,mixedTv:55,mixedMusic:80,rawgPages:5},
+  archive:{film:1600,games:500,books:500,tv:500,music:900,mixedFilm:200,mixedGames:100,mixedBooks:100,mixedTv:100,mixedMusic:140,rawgPages:13}
 };
 
 let corpusMode='film',searchDepth='field';
 let cache=null,results=[],active=0,currentQuery='',corpusPageOffset=0,shuffleSeed=0;
+let corpusRequestId=0;
+const corpusPoolCache=new Map();
 let hasExecutedSearch=false;
 
 const $=s=>document.querySelector(s);
@@ -1554,36 +1696,77 @@ const statusEl=$('#status');
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function norm(p){return p?(String(p).startsWith('/')?String(p):'/'+String(p)):null}
-function img(p,size='original'){return p?`${IMG}${size}${norm(p)}`:''}
-
-function still(m,size='w780'){
-  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal') return m.image||m.cover||m.src||'';
-  return img(m?.backdropPath||m?.posterPath,size);
+function isUrl(v){return /^https?:\/\//i.test(String(v||''))||String(v||'').startsWith('data:image')}
+function img(p,size='original'){
+  if(!p)return '';
+  const s=String(p).trim();
+  if(!s)return '';
+  if(isUrl(s))return s.replace(/^http:/i,'https:');
+  return `${IMG}${size}${norm(s)}`;
 }
-function poster(m,size='w342'){
-  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal') return m.image||m.cover||m.src||'';
-  return img(m?.posterPath,size);
-}
-function heroSrc(m){
-  if(!m) return '';
-  if(m.type==='game') return m.image||m.cover||'';
-  if(m.type==='book') return m.cover||m.image||'';
-  if(m.type==='tv') return m.cover||m.image||'';
-  if(m.type==='music'||m.type==='signal') return m.cover||m.image||'';
-  if(m.backdropPath) return img(m.backdropPath,'original')||img(m.backdropPath,'w1280');
-  if(m.posterPath) return img(m.posterPath,'original')||img(m.posterPath,'w780');
+function firstImage(values=[],size='w780'){
+  for(const v of values){
+    const out=img(v,size);
+    if(out)return out;
+  }
   return '';
 }
+
+function still(m,size='w780'){
+  if(!m)return '';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal')return m.image||m.cover||m.src||'';
+  return firstImage([m.backdropPath,m.backdrop_path,m.image,m.cover,m.posterPath,m.poster_path],size);
+}
+function poster(m,size='w342'){
+  if(!m)return '';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal')return m.cover||m.image||m.src||'';
+  return firstImage([m.posterPath,m.poster_path,m.image,m.cover,m.backdropPath,m.backdrop_path],size);
+}
+function heroSrc(m){
+  if(!m)return '';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal')return m.cover||m.image||m.src||'';
+  return firstImage([m.backdropPath,m.backdrop_path,m.image,m.cover,m.posterPath,m.poster_path],'original');
+}
 function thumbSrc(m){
-  if(!m) return '';
-  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal') return m.image||m.cover||m.src||'';
-  return img(m.backdropPath||m.posterPath,'w342')||img(m.posterPath,'w185');
+  if(!m)return '';
+  if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal')return m.image||m.cover||m.src||'';
+  return firstImage([m.backdropPath,m.backdrop_path,m.image,m.cover,m.posterPath,m.poster_path],'w342');
+}
+
+function wallSrc(m){
+  if(!m)return '';
+  if(m.type==='film'){
+    // Film tiles are poster-shaped. TMDb backdrops are landscape and look wrong when cropped into poster cells.
+    // Use provider posters for the wall, keep backdrops for hero/rank thumbnails.
+    return poster(m,'w780')||poster(m,'w500')||still(m,'w1280')||still(m,'w780');
+  }
+  if(m.type==='book')return poster(m,'w500')||still(m,'w780');
+  return still(m,'w780')||poster(m,'w500');
 }
 function candidate(m){
-  if(m.type==='signal')return `${m.title}. ${m.section||''}. ${m.source||''}. ${(m.subjects||[]).join(', ')}. ${String(m.overview||'').substring(0,520)}`;
-  return `${m.title}. ${(m.authors||[]).join(', ')}. ${(m.genres||[]).join(', ')}. ${(m.subjects||[]).slice(0,6).join(', ')}. ${(m.platforms||[]).join(', ')}. ${String(m.overview||'').substring(0,420)}`;
+  // Kept for older call paths. The live ARBITER payload uses candidateText().
+  return candidateText(m);
 }
 function setStatus(t){if(statusEl)statusEl.textContent=t}
+function corpusCacheKey(mode=corpusMode,depth=searchDepth,offset=corpusPageOffset){
+  return `${mode}:${depth}:${Number(offset)||0}`;
+}
+function rememberCorpus(key,value){
+  if(!key||!value)return;
+  corpusPoolCache.set(key,value);
+  while(corpusPoolCache.size>CORPUS_MEMORY_CACHE_LIMIT){
+    const first=corpusPoolCache.keys().next().value;
+    corpusPoolCache.delete(first);
+  }
+}
+function readCorpusMemory(key){
+  const hit=corpusPoolCache.get(key);
+  if(!hit)return null;
+  // Refresh LRU order.
+  corpusPoolCache.delete(key);
+  corpusPoolCache.set(key,hit);
+  return hit;
+}
 function toast(t){
   const el=document.createElement('div');el.className='toast';el.textContent=t;
   document.body.appendChild(el);
@@ -1594,33 +1777,446 @@ function getLimit(key){
   const d=DEPTHS[searchDepth]||DEPTHS.field;
   return d[key]||d.film;
 }
-function filmLimit(){return corpusMode==='mixed'?getLimit('mixedFilm'):getLimit('film')}
-function gameLimit(){return corpusMode==='mixed'?getLimit('mixedGames'):getLimit('games')}
-function bookLimit(){return corpusMode==='mixed'?getLimit('mixedBooks'):getLimit('books')}
-function tvLimit(){return corpusMode==='mixed'?getLimit('mixedTv'):getLimit('tv')}
-function musicLimit(){return corpusMode==='mixed'?getLimit('mixedMusic'):getLimit('music')}
-function signalLimit(){return corpusMode==='mixed'?getLimit('mixedSignal'):getLimit('signal')}
-function totalLimit(){
-  if(corpusMode==='signal')return signalLimit();
-  if(corpusMode==='music')return musicLimit();
-  if(corpusMode==='tv')return tvLimit();
-  if(corpusMode==='books')return bookLimit();
-  if(corpusMode==='games')return gameLimit();
-  if(corpusMode==='mixed')return filmLimit()+gameLimit()+bookLimit()+tvLimit()+musicLimit()+signalLimit();
-  return filmLimit();
+function filmLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedFilm'):getLimit('film')}
+function gameLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedGames'):getLimit('games')}
+function bookLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedBooks'):getLimit('books')}
+function tvLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedTv'):getLimit('tv')}
+function musicLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedMusic'):getLimit('music')}
+
+function totalLimit(mode=corpusMode){
+  if(mode==='signal')return signalLimit();
+  if(mode==='mixed'){
+    return searchDepth==='archive'?720:searchDepth==='field'?360:160;
+  }
+  if(mode==='books')return bookLimit(mode);
+  if(mode==='games')return gameLimit(mode);
+  if(mode==='tv')return tvLimit(mode);
+  if(mode==='music')return musicLimit(mode);
+  return filmLimit(mode);
 }
 
-// ─── API Fetchers ───
+function isolateCorpusItems(items,mode){
+  if(mode==='mixed')return items.filter(Boolean);
+  const expected=MODE_TYPE[mode]||mode;
+  return items.filter(item=>item&&item.type===expected);
+}
 
-async function fetchAlgoliaPage(n){
+
+async function fetchAlgoliaPage(page=0,queryText='',hits=HITS){
+  const params=new URLSearchParams({
+    query:String(queryText||''),
+    hitsPerPage:String(Math.max(1,Math.min(Number(hits)||HITS,1000))),
+    page:String(Math.max(0,page||0)),
+    attributesToRetrieve:['title','name','overview','description','plot','release_date','year','poster_path','backdrop_path','posterPath','backdropPath','image','poster','poster_url','image_url','genres','genre','actors','director','rating'].join(',')
+  });
+
   const res=await fetch(ALGOLIA_URL,{
     method:'POST',
-    headers:{'Content-Type':'application/json','X-Algolia-Application-Id':ALGOLIA_APP_ID,'X-Algolia-API-Key':ALGOLIA_API_KEY},
-    body:JSON.stringify({query:'',hitsPerPage:HITS,page:n,attributesToRetrieve:['title','overview','poster_path','backdrop_path','release_date','genres']})
+    headers:{
+      'Content-Type':'application/json',
+      'X-Algolia-Application-Id':ALGOLIA_APP_ID,
+      'X-Algolia-API-Key':ALGOLIA_API_KEY
+    },
+    body:JSON.stringify({params:params.toString()})
   });
+
   if(!res.ok)throw new Error(`algolia ${res.status}`);
   return res.json();
 }
+
+// Film corpus is provider-backed only. No hand-curated title lists, no query-specific lanes, no penalties.
+// A diverse result set comes from broad provider ingestion across popularity, rating, date, and vote-count surfaces.
+const FILM_PROVIDER_CACHE_MS=10*60*1000;
+const TMDB_DETAIL_CACHE_MS=7*24*60*60*1000;
+const TMDB_DISCOVER_SORTS=['popularity.desc','vote_count.desc','vote_average.desc','primary_release_date.desc'];
+let tmdbGenreMapPromise=null;
+const tmdbMoviePageMemoryCache=new Map();
+
+function tmdbBearerToken(){return String(window.TMDB_BEARER_TOKEN||window.TMDB_ACCESS_TOKEN||'').trim()}
+function tmdbApiKey(){return String(window.TMDB_API_KEY||'').trim()}
+function tmdbEnabled(){return !!(tmdbBearerToken()||tmdbApiKey())}
+function tmdbHeaders(){
+  const h={'Content-Type':'application/json'};
+  const bearer=tmdbBearerToken();
+  if(bearer)h.Authorization=`Bearer ${bearer}`;
+  return h;
+}
+async function fetchTmdbJson(path,params={}){
+  if(!tmdbEnabled())throw new Error('tmdb credentials missing');
+  const url=new URL(`${TMDB_API_BASE}${path}`);
+  Object.entries(params||{}).forEach(([k,v])=>{
+    if(v!==undefined&&v!==null&&String(v)!=='')url.searchParams.set(k,String(v));
+  });
+  if(!tmdbBearerToken())url.searchParams.set('api_key',tmdbApiKey());
+  const res=await fetch(url.toString(),{headers:tmdbHeaders()});
+  if(!res.ok)throw new Error(`tmdb ${res.status}`);
+  return res.json();
+}
+function tmdbImage(path,size='w780'){
+  if(!path)return '';
+  const s=String(path).trim();
+  if(!s)return '';
+  if(isUrl(s))return s.replace(/^http:/i,'https:');
+  return `${IMG}${size}${norm(s)}`;
+}
+async function tmdbGenreMap(){
+  if(!tmdbEnabled())return {};
+  if(!tmdbGenreMapPromise){
+    tmdbGenreMapPromise=fetchTmdbJson('/genre/movie/list',{language:'en-US'})
+      .then(data=>Object.fromEntries((data.genres||[]).map(g=>[String(g.id),g.name]).filter(x=>x[0]&&x[1])))
+      .catch(err=>{console.warn('tmdb genre map failed',err);return {}});
+  }
+  return tmdbGenreMapPromise;
+}
+function tmdbGenres(m={},genreMap={}){
+  const names=asArray(m.genres).map(g=>typeof g==='object'?g.name:g).filter(Boolean);
+  const ids=asArray(m.genre_ids).map(id=>genreMap[String(id)]).filter(Boolean);
+  return [...new Set([...names,...ids])].slice(0,8);
+}
+function filmKey(m){
+  const title=String(m?.title||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  const year=String(m?.year||'').trim();
+  return `${title}::${year}`;
+}
+function addFilmIfNew(out,seen,m){
+  if(!m||m.type!=='film'||!m.title)return false;
+  const key=filmKey(m);
+  if(!key||seen.has(key))return false;
+  seen.add(key);
+  out.push(m);
+  return true;
+}
+function tmdbMovieRecord(m={},source='TMDB',genreMap={}){
+  const title=String(m.title||m.name||m.original_title||'').trim();
+  if(!title)return null;
+  const year=String(m.release_date||m.first_air_date||'').slice(0,4);
+  const image=tmdbImage(m.backdrop_path||m.poster_path,'w780');
+  const cover=tmdbImage(m.poster_path||m.backdrop_path,'w500');
+  if(!image&&!cover)return null;
+  const overview=String(m.overview||'').trim()||`${title}. Provider-backed film record returned by ${source}.`;
+  return {
+    type:'film',
+    title,
+    year,
+    overview,
+    genres:tmdbGenres(m,genreMap),
+    actors:[],
+    director:'',
+    rating:m.vote_average?Number(m.vote_average).toFixed(1):null,
+    corpusTags:[...new Set(['provider-backed film',source].filter(Boolean))],
+    corpusSource:source,
+    posterPath:m.poster_path||'',
+    backdropPath:m.backdrop_path||'',
+    image,
+    cover,
+    tmdbId:m.id||null,
+    externalUrl:m.id?`${TMDB_WEB}${m.id}`:`https://www.imdb.com/find?q=${encodeURIComponent(title+' '+year)}`
+  };
+}
+function compactTmdbDetails(d={}){
+  const crew=asArray(d.credits?.crew)
+    .filter(p=>['Director','Writer','Screenplay','Story','Producer'].includes(p.job))
+    .slice(0,24)
+    .map(p=>({name:p.name||'',job:p.job||'',department:p.department||''}));
+  const cast=asArray(d.credits?.cast)
+    .slice(0,12)
+    .map(p=>({name:p.name||'',character:p.character||''}));
+  const keywords=asArray(d.keywords?.keywords||d.keywords?.results)
+    .map(k=>k.name||k)
+    .filter(Boolean)
+    .slice(0,24);
+  return {
+    id:d.id,
+    title:d.title||d.name||'',
+    overview:d.overview||'',
+    tagline:d.tagline||'',
+    runtime:d.runtime||'',
+    original_language:d.original_language||'',
+    popularity:d.popularity||'',
+    vote_count:d.vote_count||'',
+    production_countries:asArray(d.production_countries).map(c=>c.name||c.iso_3166_1).filter(Boolean).slice(0,8),
+    production_companies:asArray(d.production_companies).map(c=>c.name).filter(Boolean).slice(0,8),
+    credits:{crew,cast},
+    keywords:{keywords:keywords.map(name=>({name}))}
+  };
+}
+function tmdbDetailCacheKey(id){return `summon:tmdb:movie:${id}:v2`}
+function readTmdbDetailCache(id){
+  try{
+    const raw=localStorage.getItem(tmdbDetailCacheKey(id));
+    if(!raw)return null;
+    const payload=JSON.parse(raw);
+    if(!payload||Date.now()-payload.t>TMDB_DETAIL_CACHE_MS)return null;
+    return payload.v||null;
+  }catch(_){return null}
+}
+function writeTmdbDetailCache(id,value){
+  try{localStorage.setItem(tmdbDetailCacheKey(id),JSON.stringify({t:Date.now(),v:compactTmdbDetails(value)}))}
+  catch(_){/* localStorage can fill; enrichment should still continue */}
+}
+async function fetchTmdbMovieDetails(id){
+  if(!id||!tmdbEnabled())return null;
+  const cached=readTmdbDetailCache(id);
+  if(cached)return cached;
+  const data=await fetchTmdbJson(`/movie/${id}`,{language:'en-US',append_to_response:'credits,keywords'});
+  writeTmdbDetailCache(id,data);
+  return compactTmdbDetails(data);
+}
+function mergeTmdbDetailsIntoFilm(rec,details){
+  if(!rec||!details)return rec;
+  const crew=asArray(details.credits?.crew);
+  const directors=crew.filter(p=>p.job==='Director').map(p=>p.name).filter(Boolean);
+  const writers=crew.filter(p=>['Writer','Screenplay','Story'].includes(p.job)).map(p=>p.name).filter(Boolean);
+  const producers=crew.filter(p=>p.job==='Producer').map(p=>p.name).filter(Boolean);
+  const cast=asArray(details.credits?.cast).map(p=>p.name).filter(Boolean);
+  const characters=asArray(details.credits?.cast).map(p=>p.character).filter(Boolean).slice(0,8);
+  const keywords=asArray(details.keywords?.keywords||details.keywords?.results).map(k=>k.name||k).filter(Boolean);
+  const richerOverview=[details.tagline,details.overview||rec.overview].filter(Boolean).join(' ').trim();
+  return {
+    ...rec,
+    overview:richerOverview||rec.overview,
+    actors:cast.length?cast.slice(0,10):asArray(rec.actors),
+    characters,
+    director:directors.join(', ')||rec.director||'',
+    writers:writers.slice(0,6),
+    producers:producers.slice(0,6),
+    runtime:details.runtime||rec.runtime||'',
+    productionCountries:asArray(details.production_countries).slice(0,8),
+    productionCompanies:asArray(details.production_companies).slice(0,8),
+    originalLanguage:details.original_language||rec.originalLanguage||'',
+    tmdbPopularity:details.popularity||rec.tmdbPopularity||'',
+    tmdbVoteCount:details.vote_count||rec.tmdbVoteCount||'',
+    corpusTags:[...new Set([...asArray(rec.corpusTags),...keywords.slice(0,18)].filter(Boolean))]
+  };
+}
+function tmdbEnrichCap(requested){
+  const fallback=searchDepth==='archive'?900:searchDepth==='field'?620:260;
+  return Math.min(Number(requested)||fallback,fallback);
+}
+async function enrichTmdbFilms(rows=[],requested=filmLimit()){
+  if(!tmdbEnabled()||!rows.length)return rows;
+  const cap=tmdbEnrichCap(requested);
+  const out=[...rows];
+  const targets=out
+    .map((rec,i)=>({rec,i}))
+    .filter(x=>x.rec?.tmdbId)
+    .slice(0,cap);
+  const concurrency=5;
+  let cursor=0;
+  async function worker(){
+    while(cursor<targets.length){
+      const item=targets[cursor++];
+      try{
+        const details=await fetchTmdbMovieDetails(item.rec.tmdbId);
+        out[item.i]=mergeTmdbDetailsIntoFilm(item.rec,details);
+      }catch(err){
+        console.warn('tmdb detail enrichment failed',item.rec.title,err);
+      }
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(concurrency,targets.length)},()=>worker()));
+  return out;
+}
+function buildTmdbBroadSources(genreMap={}){
+  const sourceList=[
+    {path:'/movie/popular',params:{},name:'TMDB popular'},
+    {path:'/movie/top_rated',params:{},name:'TMDB top rated'},
+    {path:'/movie/now_playing',params:{},name:'TMDB now playing'},
+    {path:'/discover/movie',params:{sort_by:'popularity.desc','vote_count.gte':10},name:'TMDB broad popularity'},
+    {path:'/discover/movie',params:{sort_by:'revenue.desc','vote_count.gte':10},name:'TMDB broad box office'},
+    {path:'/discover/movie',params:{sort_by:'vote_count.desc','vote_count.gte':10},name:'TMDB broad vote count'},
+    {path:'/discover/movie',params:{sort_by:'vote_average.desc','vote_count.gte':40},name:'TMDB broad critical'},
+    {path:'/discover/movie',params:{sort_by:'primary_release_date.desc','vote_count.gte':5},name:'TMDB recent release'}
+  ];
+
+  Object.entries(genreMap||{}).forEach(([id,name])=>{
+    if(!id||!name)return;
+    sourceList.push({
+      path:'/discover/movie',
+      params:{with_genres:id,sort_by:'popularity.desc','vote_count.gte':5},
+      name:`TMDB genre taxonomy: ${name}`
+    });
+  });
+
+  const now=new Date().getFullYear();
+  for(let start=1950;start<=now;start+=10){
+    const end=Math.min(start+9,now);
+    sourceList.push({
+      path:'/discover/movie',
+      params:{
+        sort_by:'popularity.desc',
+        'vote_count.gte':8,
+        'primary_release_date.gte':`${start}-01-01`,
+        'primary_release_date.lte':`${end}-12-31`
+      },
+      name:`TMDB decade surface: ${start}s`
+    });
+  }
+
+  return sourceList;
+}
+function stableParamString(params={}){
+  return Object.keys(params||{}).sort().map(k=>`${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`).join('&');
+}
+async function fetchTmdbMoviePage(path,params={},page=1,source='TMDB',genreMap={}){
+  const key=`${path}?${stableParamString({language:'en-US',include_adult:'false',page,...params})}`;
+  if(tmdbMoviePageMemoryCache.has(key))return tmdbMoviePageMemoryCache.get(key).map(x=>({...x}));
+  const data=await fetchTmdbJson(path,{language:'en-US',include_adult:'false',page,...params});
+  const rows=(data.results||[]).map(m=>tmdbMovieRecord(m,source,genreMap)).filter(Boolean);
+  tmdbMoviePageMemoryCache.set(key,rows);
+  while(tmdbMoviePageMemoryCache.size>320){
+    const first=tmdbMoviePageMemoryCache.keys().next().value;
+    tmdbMoviePageMemoryCache.delete(first);
+  }
+  return rows.map(x=>({...x}));
+}
+async function runLimited(tasks=[],limit=TMDB_DISCOVERY_CONCURRENCY,fn){
+  const queue=[...(tasks||[])];
+  const workers=Array.from({length:Math.min(limit,queue.length)},async()=>{
+    while(queue.length){
+      const task=queue.shift();
+      await fn(task);
+    }
+  });
+  await Promise.all(workers);
+}
+async function loadTmdbBroadFilms(limit=filmLimit()){
+  if(!tmdbEnabled())return [];
+  const requested=Math.max(1,Number(limit)||filmLimit());
+  const genreMap=await tmdbGenreMap();
+  const sources=buildTmdbBroadSources(genreMap);
+  const seen=new Set();
+  const out=[];
+
+  // Build a bounded, interleaved provider-backed corpus.
+  // Old behavior walked every source across dozens of rounds and then fetched hundreds
+  // of movie details before ARBITER could run. This keeps broad coverage while
+  // making the corpus step a small parallel page fanout.
+  const pagesNeeded=Math.ceil(requested/20);
+  const targetRequests=Math.min(
+    TMDB_DISCOVERY_MAX_REQUESTS,
+    Math.max(TMDB_DISCOVERY_MIN_REQUESTS,Math.ceil(pagesNeeded*TMDB_DISCOVERY_OVERFETCH))
+  );
+  const pagesPerSource=Math.max(1,Math.ceil(targetRequests/Math.max(1,sources.length)));
+  const basePage=1+(((corpusPageOffset||0)*pagesPerSource)%440);
+  const tasks=[];
+
+  for(let pageRound=0;pageRound<pagesPerSource&&tasks.length<targetRequests;pageRound++){
+    for(const src of sources){
+      if(tasks.length>=targetRequests)break;
+      const page=((basePage+pageRound-1)%500)+1;
+      tasks.push({...src,page});
+    }
+  }
+
+  await runLimited(tasks,TMDB_DISCOVERY_CONCURRENCY,async task=>{
+    if(out.length>=requested)return;
+    try{
+      const rows=await fetchTmdbMoviePage(task.path,task.params,task.page,task.name,genreMap);
+      for(const row of rows){
+        addFilmIfNew(out,seen,row);
+        if(out.length>=requested)break;
+      }
+    }catch(err){
+      console.warn('tmdb broad film page failed',task.name,task.page,err);
+    }
+  });
+
+  const fastRows=out.slice(0,requested);
+
+  // Optional only. Detail expansion is expensive and should never block normal search.
+  if(!TMDB_FAST_FILM_LOAD&&fastRows.length){
+    return enrichTmdbFilms(fastRows,Math.min(fastRows.length,120));
+  }
+
+  return fastRows;
+}
+function normalizeProxyFilmRecord(row={},source='film proxy'){
+  const rec=filmRecord(row);
+  const image=firstImage([row.backdrop_url,row.backdrop,row.image,row.poster,row.poster_url,row.image_url,row.backdrop_path,row.poster_path,rec.image,rec.cover],'w780');
+  const cover=firstImage([row.poster_url,row.poster,row.image,row.image_url,row.poster_path,row.backdrop_path,rec.cover,rec.image],'w500');
+  if(!rec.title||(!image&&!cover))return null;
+  return {
+    ...rec,
+    image,
+    cover,
+    corpusSource:row.corpusSource||source,
+    corpusTags:[...new Set(['provider-backed film',...asArray(row.tags),...asArray(row.corpusTags)])],
+    externalUrl:row.externalUrl||row.url||rec.externalUrl
+  };
+}
+async function loadFilmDiscoveryProxy(limit){
+  const endpoint=String(window.FILM_API_PROXY_URL||'').trim();
+  if(!endpoint)return [];
+  try{
+    const url=new URL(endpoint,location.href);
+    url.searchParams.set('mode','film');
+    url.searchParams.set('limit',String(limit));
+    url.searchParams.set('depth',searchDepth);
+    url.searchParams.set('offset',String(corpusPageOffset||0));
+    const res=await fetch(url.toString(),{headers:{Accept:'application/json'}});
+    if(!res.ok)throw new Error(`film proxy ${res.status}`);
+    const data=await res.json();
+    const rows=Array.isArray(data)?data:(data.results||data.items||data.movies||[]);
+    return rows.map(row=>normalizeProxyFilmRecord(row,'film proxy')).filter(Boolean).slice(0,limit);
+  }catch(err){
+    console.warn('film proxy failed',err);
+    return [];
+  }
+}
+function mergeProviderFilms(groups=[],requested=filmLimit()){
+  const want=Math.max(1,Number(requested)||filmLimit());
+  const seen=new Set();
+  const out=[];
+  const lists=(groups||[]).map(g=>(g||[]).filter(Boolean));
+  let cursor=0;
+  while(out.length<want&&lists.some((list,i)=>cursor<list.length)){
+    for(const list of lists){
+      if(cursor<list.length)addFilmIfNew(out,seen,list[cursor]);
+      if(out.length>=want)break;
+    }
+    cursor++;
+  }
+  return out.slice(0,want);
+}
+
+function fallbackFilmStill(title='',year='',genres=[]){
+  const safeTitle=String(title||'FILM').slice(0,72);
+  const safeMeta=[year,(genres||[]).slice(0,2).join(' / ')].filter(Boolean).join(' · ');
+  const hue=[...safeTitle].reduce((a,c)=>a+c.charCodeAt(0),0)%360;
+  const svg=`
+  <svg xmlns="http://www.w3.org/2000/svg" width="900" height="1350" viewBox="0 0 900 1350">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="hsl(${hue},18%,14%)"/>
+        <stop offset="1" stop-color="hsl(${(hue+42)%360},20%,5%)"/>
+      </linearGradient>
+      <filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="4"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .20"/></feComponentTransfer></filter>
+    </defs>
+    <rect width="900" height="1350" fill="url(#g)"/>
+    <rect width="900" height="1350" filter="url(#n)" opacity=".38"/>
+    <rect x="54" y="54" width="792" height="1242" fill="none" stroke="rgba(246,241,232,.17)" stroke-width="2"/>
+    <text x="74" y="124" font-family="IBM Plex Mono, Menlo, monospace" font-size="26" fill="rgba(246,241,232,.52)" letter-spacing="5">SUMMON / FILM</text>
+    <foreignObject x="74" y="430" width="752" height="430">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Georgia,serif;font-size:76px;line-height:.92;font-weight:600;letter-spacing:-3px;color:rgb(246,241,232);word-wrap:break-word;">
+        ${esc(safeTitle)}
+      </div>
+    </foreignObject>
+    <foreignObject x="74" y="1070" width="752" height="120">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:IBM Plex Mono,Menlo,monospace;font-size:24px;line-height:1.35;color:rgba(246,241,232,.62);text-transform:uppercase;letter-spacing:3px;word-wrap:break-word;">
+        ${esc(safeMeta)}
+      </div>
+    </foreignObject>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function fallbackFilmCorpus(limit=filmLimit()){
+  // No local title fallback. Empty means the configured providers did not return usable film media.
+  return [];
+}
+
+
 
 async function fetchRawgPage(page=1){
   const p=new URLSearchParams({key:RAWG_KEY,page:String(page),page_size:String(RAWG_PAGE_SIZE),ordering:'-metacritic',dates:'1998-01-01,2026-12-31'});
@@ -1645,9 +2241,38 @@ async function fetchTVPage(page=0){
 // ─── Record Builders ───
 
 function filmRecord(h){
-  let genres=[];
-  if(Array.isArray(h.genres)) genres=h.genres.map(g=>typeof g==='object'?(g.name||''):g).filter(Boolean);
-  return {type:'film',title:h.title,overview:h.overview||'',year:h.release_date?String(h.release_date).slice(0,4):'',posterPath:norm(h.poster_path),backdropPath:norm(h.backdrop_path),genres};
+  const title=h.title||h.name||'';
+  const rawGenres=Array.isArray(h.genres)?h.genres:(Array.isArray(h.genre)?h.genre:[]);
+  const genres=rawGenres.map(g=>typeof g==='object'?(g.name||''):g).filter(Boolean);
+  const actors=(Array.isArray(h.actors)?h.actors:[]).map(a=>typeof a==='object'?(a.name||''):a).filter(Boolean).slice(0,5);
+  const year=h.release_date?String(h.release_date).slice(0,4):(h.year?String(h.year):'');
+  const posterPath=norm(h.poster_path||h.posterPath||'');
+  const backdropPath=norm(h.backdrop_path||h.backdropPath||'');
+  const directImage=firstImage([h.image,h.poster,h.poster_url,h.image_url], 'w500');
+  const overview=String(
+    h.overview||h.description||h.plot||[
+      title,
+      year?`Released ${year}`:'',
+      genres.length?genres.join(', '):'',
+      actors.length?`Actors: ${actors.join(', ')}`:''
+    ].filter(Boolean).join('. ')
+  ).trim();
+
+  return {
+    type:'film',
+    title,
+    overview:overview||`${title}. Film indexed by title, genre, cast, era, and visual signal.`,
+    year,
+    posterPath,
+    backdropPath,
+    image:directImage,
+    cover:directImage,
+    genres,
+    actors,
+    director:h.director||'',
+    rating:h.rating||null,
+    externalUrl:`https://www.imdb.com/find?q=${encodeURIComponent(title)}`
+  };
 }
 
 function gameRecord(g){
@@ -1690,166 +2315,68 @@ function tvRecord(s){
   };
 }
 
-
-async function fetchMusicAlbums(term,limit=100,offset=0){
-  const p=new URLSearchParams({
-    term,
-    media:'music',
-    entity:'album',
-    limit:String(Math.min(200,limit)),
-    country:'US'
-  });
-  const res=await fetch(`${ITUNES_URL}?${p}`);
-  if(!res.ok)throw new Error(`itunes ${res.status}`);
-  const data=await res.json();
-  return data.results||[];
-}
-
-function musicRecord(a){
-  const title=a.collectionName||'';
-  const artist=a.artistName||'Unknown artist';
-  const genre=a.primaryGenreName||'Music';
-  const year=a.releaseDate?String(a.releaseDate).slice(0,4):'';
-  const image=String(a.artworkUrl100||'')
-    .replace(/^http:/,'https:')
-    .replace('100x100bb','1200x1200bb');
-  if(!title||!image)return null;
-  return {
-    type:'music',
-    title,
-    artists:[artist],
-    authors:[artist],
-    year,
-    genres:[genre],
-    subjects:[genre,'album','music','recording','artist'],
-    overview:`${title}. By ${artist}. ${year?'Released '+year+'. ':''}Genre: ${genre}. A musical object indexed through artist, album, genre, release era, mood, rhythm, and cultural signal.`,
-    image,
-    cover:image,
-    itunesUrl:a.collectionViewUrl||`https://music.apple.com/search?term=${encodeURIComponent(title+' '+artist)}`
-  };
-}
-
-async function loadMusic(limit){
-  const lanes=[
-    'alternative rock',
-    'electronic ambient',
-    'hip hop',
-    'jazz',
-    'soul',
-    'punk',
-    'metal',
-    'classical',
-    'indie rock',
-    'experimental',
-    'soundtrack',
-    'new wave',
-    'post punk',
-    'darkwave',
-    'synthwave',
-    'dream pop',
-    'shoegaze',
-    'trip hop',
-    'industrial',
-    'goth',
-    'ambient techno',
-    'idm',
-    'house',
-    'techno',
-    'disco',
-    'funk',
-    'r&b',
-    'krautrock',
-    'minimal wave',
-    'coldwave',
-    'art pop',
-    'noise pop',
-    'slowcore',
-    'emo',
-    'hardcore punk',
-    'post rock',
-    'psych rock',
-    'garage rock',
-    'grunge',
-    'britpop',
-    'madchester',
-    'downtempo',
-    'drum and bass',
-    'jungle',
-    'dub',
-    'reggae',
-    'afrobeat',
-    'latin alternative',
-    'bossa nova',
-    'city pop',
-    'vaporwave',
-    'witch house',
-    'cloud rap',
-    'underground rap',
-    'trap',
-    'neo soul',
-    'sophisti-pop',
-    'yacht rock',
-    'folk rock',
-    'alt country',
-    'americana',
-    'blues',
-    'singer songwriter',
-    'baroque pop',
-    'chamber pop',
-    'electroclash',
-    'future garage',
-    'uk garage',
-    'lo-fi',
-    'bedroom pop',
-    'experimental pop',
-    'minimalism',
-    'modern classical',
-    'film score',
-    'video game soundtrack',
-    'anime soundtrack'
-  ];
-  const seen=new Set();
-  const out=[];
-  const per=Math.min(200,Math.max(50,Math.ceil(limit/3)));
-
-  for(let i=0;i<lanes.length && out.length<limit;i++){
-    const lane=lanes[(i+corpusPageOffset+shuffleSeed)%lanes.length];
-    try{
-      const rows=await fetchMusicAlbums(lane,per);
-      for(const row of rows){
-        const rec=musicRecord(row);
-        if(!rec)continue;
-        const key=`${rec.title}|${rec.artists[0]}`;
-        if(seen.has(key))continue;
-        seen.add(key);
-        out.push(rec);
-        if(out.length>=limit)break;
-      }
-    }catch(e){
-      console.warn('music api failed',e);
-      break;
-    }
-  }
-
-  return out;
-}
-
-
 // ─── Corpus Loaders ───
 
 async function loadFilms(limit){
-  const pages=await Promise.all(Array.from({length:Math.max(1,Math.ceil(limit/HITS))},(_,i)=>fetchAlgoliaPage((corpusPageOffset+i)%4).catch(()=>({hits:[]}))));
-  const seen=new Set(),out=[];
-  for(const page of pages){
-    for(const h of(page.hits||[])){
-      if(!h.title||!h.overview?.trim()||seen.has(h.title))continue;
-      seen.add(h.title);out.push(filmRecord(h));
-      if(out.length>=limit)break;
+  const requested=Math.max(1,Number(limit)||filmLimit());
+
+  const proxyRows=await loadFilmDiscoveryProxy(requested).catch(err=>{
+    console.warn('film proxy corpus failed',err);
+    return [];
+  });
+
+  const tmdbTarget=proxyRows.length>=requested?0:requested;
+  const tmdbRows=tmdbTarget?await loadTmdbBroadFilms(tmdbTarget).catch(err=>{
+    console.warn('tmdb broad corpus failed',err);
+    return [];
+  }):[];
+
+  const algoliaTarget=Math.max(0,requested-(proxyRows.length+tmdbRows.length));
+  const algoliaRows=[];
+
+  if(algoliaTarget>0){
+    const pageCount=Math.max(1,Math.ceil(algoliaTarget/HITS));
+    const meta=await fetchAlgoliaPage(0,'',HITS).catch(err=>{
+      console.warn('Algolia film metadata failed',err);
+      return null;
+    });
+
+    const nbPages=Math.max(0,Number(meta?.nbPages||0));
+    const rawBase=Math.max(0,(corpusPageOffset||0)*pageCount);
+    const base=nbPages?rawBase%nbPages:rawBase;
+    const pageNums=Array.from({length:pageCount},(_,i)=>nbPages?(base+i)%nbPages:base+i);
+    const algoliaSeen=new Set();
+
+    for(const pageNum of pageNums){
+      let page=null;
+      if(pageNum===0&&meta)page=meta;
+      else{
+        try{
+          page=await fetchAlgoliaPage(pageNum,'',HITS);
+          if(pageCount>4)await new Promise(r=>setTimeout(r,45));
+        }catch(err){
+          console.warn('Algolia film page failed',pageNum,err);
+          page={hits:[]};
+        }
+      }
+      for(const h of(page?.hits||[])){
+        const rec=filmRecord(h||{});
+        if(!rec.title)continue;
+        if(!heroSrc(rec)&&!thumbSrc(rec))continue;
+        rec.corpusSource=rec.corpusSource||'Algolia movie sample dataset';
+        rec.corpusTags=[...new Set(['provider-backed film',...asArray(rec.corpusTags)])];
+        addFilmIfNew(algoliaRows,algoliaSeen,rec);
+        if(algoliaRows.length>=algoliaTarget)break;
+      }
+      if(algoliaRows.length>=algoliaTarget)break;
     }
-    if(out.length>=limit)break;
   }
-  return out;
+
+  const merged=mergeProviderFilms([proxyRows,tmdbRows,algoliaRows],requested);
+  if(!merged.length)setStatus('film providers returned no usable media');
+  return merged;
 }
+
 
 async function loadGames(limit){
   const base=1+((corpusPageOffset||0)%4);
@@ -1870,55 +2397,6 @@ async function loadGames(limit){
 }
 
 
-async function loadBooks(limit=bookLimit()){
-  const base='';
-  const fields='title,author_name,first_publish_year,subject,cover_i,edition_count';
-  const queries=[
-    'subject:fiction OR subject:literature OR subject:science_fiction OR subject:fantasy',
-    'subject:classic_literature OR subject:science_fiction OR subject:fantasy',
-    'subject:dystopia OR subject:robots OR subject:philosophy'
-  ];
-
-  const docs=[];
-  for(const q of queries){
-    if(docs.length>=limit)break;
-    const url=`${base}?q=${encodeURIComponent(q)}&limit=${Math.min(100,limit)}&fields=${encodeURIComponent(fields)}`;
-    try{
-      const data=await (url);
-      docs.push(...(data.docs||[]));
-    }catch(e){
-      console.warn('Open Library blocked, using fallback books', e);
-      break;
-    }
-  }
-
-  const seen=new Set();
-  const books=[];
-  for(const d of docs){
-    const title=d.title||'';
-    if(!title||seen.has(title))continue;
-    seen.add(title);
-    const author=(d.author_name||[])[0]||'Unknown author';
-    const subjects=(d.subject||[]).slice(0,8).filter(Boolean);
-    const cover=d.cover_i?`https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg`:'';
-    books.push({
-      type:'book',
-      title,
-      author,
-      year:d.first_publish_year?String(d.first_publish_year):'',
-      subjects,
-      genres:subjects.slice(0,2),
-      overview:`${title}. By ${author}. Subjects: ${subjects.join(', ') || 'Literature'}. A literary object indexed through authorship, subject, era, and thematic signal.`,
-      src:cover || `https://covers.openlibrary.org/b/title/${encodeURIComponent(title)}-L.jpg`,
-      externalUrl:`https://openlibrary.org/search?q=${encodeURIComponent(title+' '+author)}`
-    });
-    if(books.length>=limit)break;
-  }
-
-  return books.length ? books : fallbackBookCorpus(limit);
-}
-
-
 async function loadTV(limit){
   const np=Math.max(1,Math.ceil(limit/250));
   const pages=await Promise.all(Array.from({length:np},(_,i)=>fetchTVPage(i).catch(()=>[])));
@@ -1936,24 +2414,371 @@ async function loadTV(limit){
   return out;
 }
 
+
+// ─── Music Corpus: working iTunes album fetch + neutral sonic payload normalization ───
+// Direct iTunes Search API fetch. No Apple RSS, no JSONP, no proxy requirement, no hardcoded tracks.
+
+async function fetchMusicAlbums(term,limit=100,offset=0){
+  const p=new URLSearchParams({
+    term,
+    media:'music',
+    entity:'album',
+    limit:String(Math.min(200,limit)),
+    country:'US'
+  });
+  const res=await fetch(`${ITUNES_URL}?${p}`);
+  if(!res.ok)throw new Error(`itunes ${res.status}`);
+  const data=await res.json();
+  return Array.isArray(data?.results)?data.results:[];
+}
+
+
+function musicFacetTerms(value){
+  return asArray(value)
+    .flatMap(v=>String(v).toLowerCase().split(/[^a-z0-9]+/))
+    .map(v=>v.trim())
+    .filter(v=>v.length>2);
+}
+
+function musicSonicProfile(recordOrGenre,lanes=[]){
+  const text=[recordOrGenre,lanes].flat().join(' ').toLowerCase();
+  const tags=new Set();
+  const add=(items)=>items.forEach(x=>tags.add(x));
+
+  // Generic genre/lane normalization only. No artist/title lists, no query-specific boosts.
+  if(/classical|orchestral|symphony|opera|choral|piano|cello|violin/.test(text))add(['orchestral','instrumental','formal','expansive','ceremonial','harmonic']);
+  if(/soundtrack|score|cinematic|film/.test(text))add(['cinematic','scene-setting','wide-screen','emotional arc','atmospheric']);
+  if(/ambient|new age|meditation|reiki|healing|sleep|relax/.test(text))add(['ambient','slow','spacious','meditative','luminous','low-friction']);
+  if(/electronic|techno|house|dance|edm|trance|synth/.test(text))add(['electronic','synthetic','pulse-driven','textural','rhythmic']);
+  if(/jazz|bebop|fusion/.test(text))add(['jazz','improvisational','harmonic','warm','ensemble']);
+  if(/soul|r and b|r&b|funk|gospel/.test(text))add(['vocal','groove','warm','devotional','body rhythm']);
+  if(/hip hop|rap|trap/.test(text))add(['rhythmic','percussive','spoken cadence','street-level','beat-forward']);
+  if(/folk|country|americana|singer songwriter/.test(text))add(['acoustic','earthbound','narrative','intimate','human voice']);
+  if(/rock|alternative|indie|punk|post punk|metal|new wave/.test(text))add(['band-driven','electric','guitar texture','youth culture','kinetic']);
+  if(/dream pop|shoegaze|trip hop|downtempo/.test(text))add(['hazy','textural','melancholic','drifting','night air']);
+  if(/reggae|dub|afrobeats|afrobeat|latin|world/.test(text))add(['global rhythm','syncopated','sunlit','percussive','danceable']);
+  if(/blues/.test(text))add(['blues','raw','minor-key','guitar voice','lament']);
+
+  return [...tags];
+}
+
+function musicRecord(a,lane=''){
+  const title=String(a.collectionName||a.trackName||'').trim();
+  const artist=String(a.artistName||'Unknown artist').trim();
+  const genre=String(a.primaryGenreName||'Music').trim();
+  const year=a.releaseDate?String(a.releaseDate).slice(0,4):'';
+  const rawArtwork=String(a.artworkUrl100||'').replace(/^http:/,'https:');
+  const image=rawArtwork
+    .replace('100x100bb','1200x1200bb')
+    .replace('100x100-999','1200x1200-999');
+  const fallbackImage=rawArtwork;
+  if(!title||!image)return null;
+  const url=a.collectionViewUrl||a.trackViewUrl||`https://music.apple.com/search?term=${encodeURIComponent(title+' '+artist)}`;
+  const discoveryLanes=asArray(lane);
+  const sonicProfile=musicSonicProfile([genre,...discoveryLanes].join(' '),discoveryLanes);
+  return {
+    type:'music',
+    title,
+    artist,
+    artists:[artist],
+    authors:[artist],
+    album:title,
+    year,
+    genres:[genre].filter(Boolean),
+    subjects:[genre,'album','music','recording','artist',...discoveryLanes].filter(Boolean),
+    discoveryLanes,
+    sonicProfile,
+    source:'iTunes Search API',
+    corpusSource:'iTunes Search API',
+    kind:a.collectionType||a.wrapperType||'album',
+    overview:`${title}. By ${artist}. ${year?'Released '+year+'. ':''}Genre: ${genre}. Discovery context: ${discoveryLanes.join(', ')||genre}. Sonic profile: ${sonicProfile.join(', ')||genre}.`,
+    image,
+    cover:image,
+    fallbackImage,
+    externalUrl:url,
+    itunesUrl:url
+  };
+}
+
+async function loadMusic(limit=musicLimit()){
+  const cacheKey=`summon:music:itunes-working:v4:${searchDepth}:${Number(corpusPageOffset)||0}:${Math.max(1,Number(limit)||0)}`;
+  try{
+    const raw=localStorage.getItem(cacheKey);
+    if(raw){
+      const parsed=JSON.parse(raw);
+      if(parsed?.t && Array.isArray(parsed.items) && Date.now()-parsed.t<30*60*1000){
+        const cached=parsed.items.filter(x=>x&&x.type==='music'&&x.image).slice(0,limit);
+        if(cached.length){
+          setStatus(`${cached.length} cached music records`);
+          return cached;
+        }
+      }
+    }
+  }catch(_){/* ignore cache */}
+
+  const lanes=[
+    'alternative rock',
+    'electronic ambient',
+    'hip hop',
+    'jazz',
+    'soul',
+    'punk',
+    'metal',
+    'classical',
+    'indie rock',
+    'experimental',
+    'soundtrack',
+    'folk',
+    'r and b',
+    'funk',
+    'new wave',
+    'post punk',
+    'trip hop',
+    'dream pop',
+    'reggae',
+    'afrobeats',
+    'new age',
+    'orchestral',
+    'cinematic score',
+    'meditation',
+    'world music',
+    'downtempo',
+    'piano',
+    'choral'
+  ];
+  const seen=new Set();
+  const out=[];
+  const per=Math.min(120,Math.max(40,Math.ceil(limit/2)));
+  const offset=(Number(corpusPageOffset)||0)+(Number(shuffleSeed)||0);
+
+  setStatus('loading music');
+  for(let i=0;i<lanes.length && out.length<limit;i++){
+    const lane=lanes[(i+offset)%lanes.length];
+    try{
+      const rows=await fetchMusicAlbums(lane,per);
+      for(const row of rows){
+        const rec=musicRecord(row,lane);
+        if(!rec)continue;
+        const key=`${rec.title}|${rec.artist}`.toLowerCase().replace(/\s+/g,' ').trim();
+        if(seen.has(key)){
+          const existing=out.find(x=>`${x.title}|${x.artist}`.toLowerCase().replace(/\s+/g,' ').trim()===key);
+          if(existing){
+            existing.discoveryLanes=[...new Set([...(existing.discoveryLanes||[]),...(rec.discoveryLanes||[])])];
+            existing.subjects=[...new Set([...(existing.subjects||[]),...(rec.subjects||[])])];
+            existing.sonicProfile=[...new Set([...(existing.sonicProfile||[]),...(rec.sonicProfile||[])])];
+          }
+          continue;
+        }
+        seen.add(key);
+        out.push(rec);
+        if(out.length>=limit)break;
+      }
+      setStatus(`${out.length} music records loading`);
+      if(out.length>=limit)break;
+    }catch(e){
+      console.warn('music api failed',e);
+      break;
+    }
+  }
+
+  try{localStorage.setItem(cacheKey,JSON.stringify({t:Date.now(),items:out.slice(0,Math.max(limit,900))}))}catch(_){/* ignore */}
+  return out.slice(0,limit);
+}
+
 // ─── Wall Rendering ───
 
-function renderWall(movies){
-  const target=corpusMode==='signal'?signalWallTarget?.()||48:48;
-  const sample=[...movies]
-    .map(m=>({...m,src:still(m,'w780')||poster(m,'w500')}))
+function renderWall(movies,mode=corpusMode){
+  const visibleItems=isolateCorpusItems(Array.isArray(movies)?movies:[],mode);
+  const wallTarget=mode==='signal'
+    ?signalWallTarget()
+    :(mode==='film'
+      ?filmWallTarget()
+      :(mode==='music'
+        ?musicWallTarget()
+        :(mode==='mixed'?(searchDepth==='archive'?360:searchDepth==='field'?250:160):48)));
+  const sample=[...visibleItems]
+    .map((m,i)=>({...m,wallIndex:i,src:wallSrc(m)}))
     .filter(m=>m.src&&m.src.length>15)
     .sort(()=>Math.random()-.5)
-    .slice(0,target);
+    .slice(0,wallTarget);
 
-  $('#wall').innerHTML=sample.map((m,i)=>
-    `<div class="wall-cell media-${esc(m.type||'film')}" data-type="${esc(m.type||'film')}" data-title="${esc(m.title)}" data-section="${esc(m.section||'')}" data-source="${esc(m.source||'')}" data-author="${esc((m.authors||[])[0]||m.artist||m.author||'')}" data-index="${i}">
+  $('#wall').innerHTML=sample.map(m=>
+    `<div class="wall-cell media-${esc(m.type||'film')}" data-type="${esc(m.type||'film')}" data-title="${esc(m.title)}" data-author="${esc((m.authors||[])[0]||m.author||'')}" data-year="${esc(m.year||'')}" data-section="${esc(m.section||'')}" data-source="${esc(m.source||'')}" data-index="${esc(m.wallIndex||0)}" data-alt-src="${esc(m.fallbackImage||m.cover||m.image||'')}" data-genres="${esc((m.genres||[]).join(', '))}">
       <img src="${m.src}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"
-           onerror="this.onerror=null;const c=this.closest('.wall-cell');const t=c?.dataset?.type;if(t==='book'){this.src=fallbackBookCover(c.dataset.title,c.dataset.author||'')}else if(t==='signal'){this.src=signalFallbackCard(c.dataset.title,c.dataset.section||'',c.dataset.source||'',Number(c.dataset.index||0))}else{c?.remove()}">
+           onerror="const c=this.closest('.wall-cell');const t=c?.dataset?.type;if(t==='book'){this.onerror=null;this.src=fallbackBookCover(c.dataset.title,c.dataset.author||'')}else if(t==='film'){this.onerror=null;c?.remove()}else if(t==='signal'){this.onerror=null;this.src=fallbackSignalCard(c.dataset.title,c.dataset.section||'',c.dataset.source||'',Number(c.dataset.index||0))}else if(t==='music'&&c?.dataset?.altSrc&&this.src!==c.dataset.altSrc){this.src=c.dataset.altSrc}else{this.onerror=null;c?.remove()}">
     </div>`
   ).join('');
 
   requestAnimationFrame(()=>setTimeout(startOracleDrift,500));
+}
+
+
+// ─── ARBITER Local API + Embed Recall Index ───
+
+function arbiterHeaders(){
+  const h={'Content-Type':'application/json'};
+  if(window.ARBITER_API_KEY)h.Authorization=`Bearer ${window.ARBITER_API_KEY}`;
+  return h;
+}
+
+async function postArbiter(primaryUrl,fallbackUrl,payload,label){
+  async function post(url){
+    return fetch(url,{method:'POST',headers:arbiterHeaders(),body:JSON.stringify(payload)});
+  }
+  let res;
+  try{res=await post(primaryUrl)}
+  catch(err){
+    if(!fallbackUrl||fallbackUrl===primaryUrl)throw err;
+    console.warn(`${label} primary failed; trying fallback`,err);
+    res=await post(fallbackUrl);
+  }
+  if(!res.ok && fallbackUrl && fallbackUrl!==primaryUrl && [401,403,404,405].includes(res.status)){
+    console.warn(`${label} ${res.status} at ${primaryUrl}; trying fallback ${fallbackUrl}`);
+    res=await post(fallbackUrl);
+  }
+  if(!res.ok)throw new Error(`${label} ${res.status}`);
+  return res.json();
+}
+
+function hashText(str){
+  // FNV-1a 32-bit; enough for local cache keys when combined with text length and base URL.
+  let h=0x811c9dc5;
+  const s=String(str||'');
+  for(let i=0;i<s.length;i++){
+    h^=s.charCodeAt(i);
+    h=Math.imul(h,0x01000193)>>>0;
+  }
+  return `${h.toString(16)}:${s.length}`;
+}
+
+function embedKey(text){
+  return `${ARBITER_BASE_URL}|freq:${EMBED_USE_FREQ?'1':'0'}|${hashText(text)}`;
+}
+
+function openEmbedDb(){
+  if(!('indexedDB' in window))return Promise.resolve(null);
+  if(embedDbPromise)return embedDbPromise;
+  embedDbPromise=new Promise(resolve=>{
+    const req=indexedDB.open(EMBED_DB_NAME,1);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(EMBED_DB_STORE))db.createObjectStore(EMBED_DB_STORE,{keyPath:'key'});
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>{console.warn('embed indexeddb unavailable',req.error);resolve(null)};
+  });
+  return embedDbPromise;
+}
+
+async function idbGetVector(key){
+  const db=await openEmbedDb();
+  if(!db)return null;
+  return new Promise(resolve=>{
+    const tx=db.transaction(EMBED_DB_STORE,'readonly');
+    const req=tx.objectStore(EMBED_DB_STORE).get(key);
+    req.onsuccess=()=>resolve(req.result?.vector||null);
+    req.onerror=()=>resolve(null);
+  });
+}
+
+async function idbPutVector(key,vector){
+  const db=await openEmbedDb();
+  if(!db)return;
+  return new Promise(resolve=>{
+    const tx=db.transaction(EMBED_DB_STORE,'readwrite');
+    tx.objectStore(EMBED_DB_STORE).put({key,vector,dim:Array.isArray(vector)?vector.length:0,ts:Date.now()});
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>resolve();
+  });
+}
+
+async function embedTexts(texts){
+  const payload={texts,use_freq:EMBED_USE_FREQ};
+  const data=await postArbiter(ARBITER_EMBED_URL,ARBITER_EMBED_FALLBACK_URL,payload,'embed');
+  if(!Array.isArray(data?.vectors))throw new Error('embed returned no vectors');
+  return data.vectors;
+}
+
+async function getCachedEmbeddings(texts,{label='records'}={}){
+  const out=new Array(texts.length);
+  const misses=[];
+
+  for(let i=0;i<texts.length;i++){
+    const text=texts[i];
+    const key=embedKey(text);
+    const mem=embedMemory.get(key);
+    if(mem){out[i]=mem;continue}
+    const stored=await idbGetVector(key);
+    if(stored){embedMemory.set(key,stored);out[i]=stored;continue}
+    misses.push({i,key,text});
+  }
+
+  for(let start=0;start<misses.length;start+=EMBED_BATCH_SIZE){
+    const batch=misses.slice(start,start+EMBED_BATCH_SIZE);
+    setStatus(`embedding ${label} ${Math.min(start+batch.length,misses.length)}/${misses.length}`);
+    const vectors=await embedTexts(batch.map(x=>x.text));
+    await Promise.all(batch.map((x,j)=>{
+      const v=vectors[j];
+      if(!Array.isArray(v))return Promise.resolve();
+      out[x.i]=v;
+      embedMemory.set(x.key,v);
+      return idbPutVector(x.key,v);
+    }));
+  }
+
+  return out;
+}
+
+function dot(a,b){
+  let s=0;
+  const n=Math.min(a?.length||0,b?.length||0);
+  for(let i=0;i<n;i++)s+=Number(a[i]||0)*Number(b[i]||0);
+  return s;
+}
+
+function embedRecallTarget(corpus){
+  if(!EMBED_INDEX_ENABLED||!corpus?.candidates?.length)return 0;
+  const count=corpus.candidates.length;
+  const depth=corpus.depth||searchDepth;
+  const mode=corpus.mode||corpusMode;
+  const base=mode==='mixed'?EMBED_RECALL_TARGETS.mixed:(EMBED_RECALL_TARGETS[depth]||0);
+  if(!base||count<EMBED_RECALL_MIN_CANDIDATES||count<=base)return 0;
+  return Math.min(base,count);
+}
+
+async function preselectCandidatesWithEmbed(queryText,corpus){
+  const target=embedRecallTarget(corpus);
+  if(!target)return corpus.candidates;
+
+  try{
+    setStatus(`building vector recall index for ${corpus.candidates.length} candidates`);
+    const [queryVector]=await embedTexts([queryText]);
+    const candidateVectors=await getCachedEmbeddings(corpus.candidates,{label:'candidates'});
+    const scored=corpus.candidates
+      .map((text,i)=>({text,score:dot(queryVector,candidateVectors[i])}))
+      .filter(row=>Number.isFinite(row.score))
+      .sort((a,b)=>b.score-a.score)
+      .slice(0,target)
+      .map(row=>row.text);
+    if(scored.length>=RETURN_COUNT){
+      setStatus(`vector recall ${corpus.candidates.length} → ${scored.length}; final coherence ranking`);
+      return scored;
+    }
+  }catch(err){
+    console.warn('embed recall unavailable; falling back to full compare',err);
+    setStatus(`embed unavailable; ranking all ${corpus.candidates.length} candidates`);
+  }
+
+  return corpus.candidates;
+}
+
+async function compareWithArbiter(queryText,candidates){
+  return postArbiter(ARBITER_COMPARE_URL,ARBITER_COMPARE_FALLBACK_URL,{
+    query:queryText,
+    candidates,
+    use_freq:true,
+    top_k:RETURN_COUNT
+  },'arbiter');
 }
 
 // ─── Corpus Assembly ───
@@ -1964,56 +2789,119 @@ function finalizeCorpus(movies){
   const map=new Map();
   candidates.forEach((c,i)=>map.set(c,movies[i]));
   cache={movies,candidates,map};
-  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'albums':corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':'films';
+  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'music':corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':'films';
   setStatus(`${movies.length} ${label} loaded`);
   renderWall(movies);
   return cache;
 }
 
+
 async function loadCorpus(){
-  if(cache)return cache;
-  if(corpusMode==='games') return finalizeCorpus(await loadGames(gameLimit()));
-  if(corpusMode==='books') return finalizeCorpus(await loadBooks(bookLimit()));
-  if(corpusMode==='tv') return finalizeCorpus(await loadTV(tvLimit()));
-  if(corpusMode==='music') return finalizeCorpus(await loadMusic(musicLimit()));
-  if(corpusMode==='signal') return finalizeCorpus(await loadSignals(signalLimit()));
-  if(corpusMode==='mixed'){
-    const [f,g,b,t,m,s]=await Promise.all([
-      loadFilms(filmLimit()),
-      loadGames(gameLimit()),
-      loadBooks(bookLimit()),
-      loadTV(tvLimit()),
-      loadMusic(musicLimit()),
-      loadSignals(signalLimit())
-    ]);
-    const mixed=[];
-    const mx=Math.max(f.length,g.length,b.length,t.length,m.length,s.length);
-    for(let i=0;i<mx;i++){
-      if(f[i])mixed.push(f[i]);
-      if(g[i])mixed.push(g[i]);
-      if(b[i])mixed.push(b[i]);
-      if(t[i])mixed.push(t[i]);
-      if(m[i])mixed.push(m[i]);
-      if(s[i])mixed.push(s[i]);
-    }
-    return finalizeCorpus(mixed);
+  const activeKey=corpusCacheKey();
+  if(cache && cache.key===activeKey && cache.mode===corpusMode && cache.depth===searchDepth)return cache;
+
+  const memoryHit=readCorpusMemory(activeKey);
+  if(memoryHit){
+    cache=memoryHit;
+    const label=MODE_LABEL[cache.mode]||'films';
+    setStatus(`${cache.items.length} ${label} ready`);
+    renderWall(cache.items,cache.mode);
+    return cache;
   }
-  return finalizeCorpus(await loadFilms(filmLimit()));
+
+  const requestId=++corpusRequestId;
+  const requestedMode=corpusMode;
+  const requestedDepth=searchDepth;
+  const requestedOffset=corpusPageOffset;
+  const requestedKey=corpusCacheKey(requestedMode,requestedDepth,requestedOffset);
+  const requestedTotal=totalLimit(requestedMode);
+
+  let items=[];
+  if(requestedMode==='signal'){
+    items=await loadSignals(requestedTotal);
+  }else if(requestedMode==='books'){
+    items=await loadBooks(requestedTotal);
+  }else if(requestedMode==='games'){
+    items=await loadGames(requestedTotal);
+  }else if(requestedMode==='tv'){
+    items=await loadTV(requestedTotal);
+  }else if(requestedMode==='music'){
+    items=await loadMusic(requestedTotal);
+  }else if(requestedMode==='mixed'){
+    const target=requestedTotal;
+    const per=Math.max(24,Math.ceil(target/MIXED_CORPUS_MODES.length));
+    const loaders={
+      film:()=>loadFilms(per),
+      games:()=>loadGames(per),
+      books:()=>loadBooks(per),
+      tv:()=>loadTV(per),
+      music:()=>loadMusic(per),
+      signal:()=>loadSignals(per)
+    };
+    const pools=await Promise.all(
+      MIXED_CORPUS_MODES.map(mode=>loaders[mode]().then(rows=>isolateCorpusItems(rows,mode)).catch(err=>{
+        console.warn(`mixed ${mode} load failed`,err);
+        return [];
+      }))
+    );
+    items=pools.flat().slice(0,target);
+  }else{
+    items=await loadFilms(requestedTotal);
+  }
+
+  // Hard isolation: only mix may contain multiple record types.
+  items=isolateCorpusItems(items,requestedMode).slice(0,requestedTotal);
+
+  if(requestId!==corpusRequestId||requestedMode!==corpusMode||requestedDepth!==searchDepth||requestedOffset!==corpusPageOffset){
+    throw new Error('stale corpus load ignored');
+  }
+
+  const map=new Map();
+  const candidates=[];
+  items=items
+    .map(m=>m?{...m,genres:asArray(m.genres),subjects:asArray(m.subjects),authors:asArray(m.authors),platforms:asArray(m.platforms),actors:asArray(m.actors)}:null)
+    .filter(Boolean);
+
+  items.forEach((m,i)=>{
+    const baseText=candidateText(m);
+    if(!baseText)return;
+    const text=`${baseText}\nRecord id: ${requestedMode}:${m.type||'record'}:${i}.`;
+    map.set(text,m);
+    candidates.push(text);
+  });
+
+  if(!items.length||!candidates.length)throw new Error(`empty ${requestedMode} corpus`);
+  cache={key:requestedKey,mode:requestedMode,depth:requestedDepth,offset:requestedOffset,items,map,candidates};
+  rememberCorpus(requestedKey,cache);
+  const label=MODE_LABEL[requestedMode]||'films';
+  setStatus(`${items.length} ${label} loaded`);
+  renderWall(items,requestedMode);
+  return cache;
 }
 
-async function loadCorpusWithRetry(attempts=2){
-  let lastErr;
-  for(let i=0;i<attempts;i++){
-    try{return await loadCorpus()}catch(e){lastErr=e;await new Promise(r=>setTimeout(r,450+i*850))}
+async function loadCorpusWithRetry(tries=2){
+  let last;
+  for(let i=0;i<tries;i++){
+    try{return await loadCorpus()}
+    catch(e){last=e; await new Promise(r=>setTimeout(r,250))}
   }
-  throw lastErr;
+  throw last;
 }
 
 // ─── Search ───
 
 function parse(data,map){
   const rows=Array.isArray(data?.all)?data.all:(Array.isArray(data?.top)?data.top:[]);
-  return rows.map(r=>{const m=map.get(r.text);return m?{...m,score:Number(r.score||0),candidate:r.text}:null}).filter(Boolean).slice(0,RETURN_COUNT);
+  return rows.map(r=>{const m=map.get(r.text);return m?{...m,score:Number(r.score||0),candidate:r.text}:null}).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,RETURN_COUNT);
+}
+
+
+function arbiterQueryForMode(q,corpus){
+  const mode=corpus?.mode||corpusMode;
+  if(mode==='music'){
+    return `As a music supervisor, rank by listening fit, sonic atmosphere, genre, instrumentation, rhythm, mood, era, and cultural surface rather than literal title matching. Query: ${q}`;
+  }
+  return q;
 }
 
 async function search(text){
@@ -2029,16 +2917,15 @@ async function search(text){
   try{
     const corpus=await loadCorpusWithRetry(2);
     setTimeout(startOracleDrift,120);
+    setStatus(`ranking ${corpus.candidates.length} candidates`);
 
-    const res=await fetch(ARBITER_URL,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({query:q,candidates:corpus.candidates.slice(0,totalLimit()),use_freq:true,top_k:RETURN_COUNT})
-    });
-    if(!res.ok)throw new Error(`arbiter ${res.status}`);
-
-    const data=await res.json();
+    const arbiterQuery=arbiterQueryForMode(q,corpus);
+    const compareCandidates=await preselectCandidatesWithEmbed(arbiterQuery,corpus);
+    const data=await compareWithArbiter(arbiterQuery,compareCandidates);
     results=parse(data,corpus.map);
     active=0;hasExecutedSearch=true;
+    const recallNote=compareCandidates.length<corpus.candidates.length?` after vector recall ${corpus.candidates.length} → ${compareCandidates.length}`:'';
+    setStatus(`ranked ${compareCandidates.length} candidates${recallNote}`);
 
     if(!results.length){toast('no response');return}
 
@@ -2050,7 +2937,7 @@ async function search(text){
       $('#results')?.scrollIntoView({behavior:'auto',block:'start'});
       document.body.classList.remove('cutting');
     });
-    history.replaceState(null,'',`#${encodeURIComponent(q)}`);
+    safeSetHash(q);
   }catch(e){
     console.error(e);toast('connection failed');
   }finally{
@@ -2082,26 +2969,24 @@ function renderResult(){
   const ov=(m.overview||'No overview available.').trim();
   $('#overview').textContent=ov.length>260?ov.slice(0,257).trimEnd()+'…':ov;
 
-  $('#meta').innerHTML=[
-    m.year?`<span>${esc(m.year)}</span>`:'',
-    ...(m.authors||[]).slice(0,1).map(a=>`<span>${esc(a)}</span>`),
-    ...(m.genres||[]).slice(0,2).map(g=>`<span>${esc(g)}</span>`)
-  ].join('');
+  $('#meta').innerHTML=metaBitsFor(m,4).map(bit=>`<span>${esc(bit)}</span>`).join('');
 
   const rc=$('#rankCount');if(rc)rc.textContent=`${results.length} returned`;
   applyModeLabels();
   syncResultQuery();
 
-  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':
-    m.type==='music'?'view on apple music ↗':'view on imdb ↗';
-  $('#imdb').onclick=()=>window.open(
-    m.type==='game'?`https://rawg.io/games/${m.rawgSlug||encodeURIComponent(m.title.toLowerCase().replaceAll(' ','-'))}`:
+  const sourceUrl =
+    m.type==='game'?`https://rawg.io/games/${m.rawgSlug||encodeURIComponent(String(m.title||'').toLowerCase().replaceAll(' ','-'))}`:
+    m.type==='signal'?(m.externalUrl||`https://www.google.com/search?q=${encodeURIComponent(m.title)}`):
+    m.type==='music'?(m.externalUrl||m.itunesUrl||`https://music.apple.com/search?term=${encodeURIComponent((m.title||'')+' '+(m.artist||''))}`):
     m.type==='book'?(m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title)}`):
     m.type==='tv'?(m.tvMazeUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`):
-    `https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`,'_blank'
-  );
+    (m.externalUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`);
+  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='signal'?'open source ↗':m.type==='music'?'open music ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':'view on imdb ↗';
+  $('#imdb').onclick=()=>window.open(sourceUrl,'_blank','noopener,noreferrer');
   $('#copyLink').onclick=()=>{
-    const url=`${location.href.split('#')[0]}#${encodeURIComponent(currentQuery)}`;
+    const base=location.protocol==='file:'?'':location.href.split('#')[0];
+    const url=base?`${base}#${encodeURIComponent(currentQuery)}`:`#${encodeURIComponent(currentQuery)}`;
     navigator.clipboard?.writeText(url).then(()=>toast('link copied'));
   };
   renderRankList();
@@ -2114,7 +2999,7 @@ function renderResult(){
 function renderRankList(){
   $('#rankList').innerHTML=results.map((m,i)=>{
     const t=thumbSrc(m);
-    const bits=[m.year||'',...(m.authors||[]).slice(0,1),...(m.genres||[]).slice(0,2)].filter(Boolean);
+    const bits=metaBitsFor(m,3);
     return `<button class="rank-row ${i===active?'active':''}" data-i="${i}">
       <span class="rank-num">${String(i+1).padStart(2,'0')}</span>
       ${t?`<img class="rank-thumb" src="${t}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`:'<span style="width:72px;height:48px;background:var(--wall);display:block"></span>'}
@@ -2131,9 +3016,9 @@ function renderRankList(){
 // ─── Actions ───
 
 async function shuffleFilms(){
-  corpusPageOffset=(corpusPageOffset+1+Math.floor(Math.random()*3))%4;
-  shuffleSeed++;cache=null;
-  const label=corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='music'?'music':corpusMode==='mixed'?'mix':'films';
+  corpusPageOffset=(corpusPageOffset+1+Math.floor(Math.random()*7))%48;
+  shuffleSeed++;cache=null;corpusRequestId++;
+  const label=corpusMode==='signal'?'signals':corpusMode==='music'?'music':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='mixed'?'mix':'films';
   setStatus(`shuffling ${label}`);
   setCorpusLoading(true,corpusLoadLabel('loading'));
   try{
@@ -2146,7 +3031,7 @@ function newSearch(){
   hasExecutedSearch=false;
   stopOracleDrift();
   document.body.classList.remove('has-results','searching','cutting');
-  history.replaceState(null,'',location.pathname+location.search);
+  safeClearHash();
   window.scrollTo({top:0,behavior:'auto'});
   query.focus({preventScroll:true});
   finishResolveState();resetQueryTraces();
@@ -2175,10 +3060,8 @@ function syncResultQuery(){
 // ─── Mode / Depth / Theme ───
 
 async function setCorpusMode(mode){
-  if(!['film','games','books','tv','music','signal','mixed'].includes(mode)||corpusMode===mode)return;
-  corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;
-  document.body.dataset.mode=mode;
-  if(typeof clearWallForMode==='function')clearWallForMode(mode);
+  if(!CORPUS_MODES.includes(mode)||corpusMode===mode)return;
+  corpusMode=mode;cache=null;results=[];hasExecutedSearch=false;active=0;corpusRequestId++;
   applyModeLabels();
   setCorpusLoading(true,corpusLoadLabel('loading'));
   try{
@@ -2186,14 +3069,14 @@ async function setCorpusMode(mode){
   }catch(e){console.error(e);setCorpusLoading(false,'load failed');return}
   if(document.body.classList.contains('has-results')){
     document.body.classList.remove('has-results','searching','cutting');
-    history.replaceState(null,'',location.pathname+location.search);
+    safeClearHash();
     window.scrollTo({top:0,behavior:'auto'});
   }
 }
 
 async function setSearchDepth(depth){
   if(!DEPTHS[depth]||searchDepth===depth)return;
-  searchDepth=depth;cache=null;applyModeLabels();
+  searchDepth=depth;cache=null;corpusRequestId++;applyModeLabels();
   setCorpusLoading(true,corpusLoadLabel('loading'));
   try{
     await loadCorpusWithRetry(2);setCorpusLoading(false);
@@ -2212,34 +3095,61 @@ function applyModeLabels(){
   document.body.dataset.mode=corpusMode;
   document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===corpusMode));
   document.querySelectorAll('[data-depth]').forEach(b=>b.classList.toggle('active',b.dataset.depth===searchDepth));
+
   const n=totalLimit();
-  const hint=$('#modeHint');
-  if(hint){
-    const modeLabel =
-      corpusMode==='signal' ? 'signals' :
-      corpusMode==='games' ? 'games' :
-      corpusMode==='books' ? 'books' :
-      corpusMode==='tv' ? 'tv shows' :
-      corpusMode==='music' ? 'albums' :
-      corpusMode==='mixed' ? 'films + games + books + tv + music + signals' :
-      'films';
-    hint.textContent = `search ${n} ${modeLabel} by meaning`;
-  }
-  const pl=$('.prompt-label');
-  if(pl)pl.textContent=corpusMode==='signal'?'find a signal':corpusMode==='games'?'find a game':corpusMode==='books'?'find a book':corpusMode==='tv'?'find a show':corpusMode==='music'?'find music':corpusMode==='mixed'?'find anything':'find a film';
-  const qi=$('#query');
-  if(qi)qi.placeholder=corpusMode==='signal'?'describe a geopolitical pattern, risk, actor, region, or system pressure':corpusMode==='games'?'describe the world, loop, mechanic, feeling, or system':corpusMode==='books'?'describe the voice, mood, idea, world, or wound':corpusMode==='tv'?'describe the world, episode, mood, institution, or obsession':corpusMode==='music'?'describe the mood, era, rhythm, artist, or memory':corpusMode==='mixed'?'describe the signal, world, scene, mood, or system':'describe the scene, mood, memory, or idea';
-  const rm=$('#resultMode');
-  if(rm)rm.textContent=`${n}-${corpusMode==='signal'?'signal':corpusMode==='mixed'?'mixed':corpusMode} corpus · ${searchDepth}`;
-  const sl=corpusMode==='signal'?'signals':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv':corpusMode==='music'?'music':corpusMode==='mixed'?'mix':'films';
-  const hb=$('#shuffleFilms');if(hb)hb.textContent=`shuffle ${sl}`;
-  const rb=$('#shuffleFilmsResult');if(rb)rb.textContent=`shuffle ${sl}`;
+  const corpusLabel =
+    corpusMode==='signal'?'signal corpus':
+    corpusMode==='mixed'?'all-section mix':
+    corpusMode==='games'?'games':
+    corpusMode==='books'?'books':
+    corpusMode==='tv'?'tv shows':
+    corpusMode==='music'?'music':
+    'films';
+
+  const actionLabel =
+    corpusMode==='signal'?'find a signal':
+    corpusMode==='mixed'?'find anything':
+    corpusMode==='games'?'find a game':
+    corpusMode==='books'?'find a book':
+    corpusMode==='tv'?'find a show':
+    corpusMode==='music'?'find music':
+    'find a film';
+
+  const hint = document.querySelector('#modeHint');
+  if(hint) hint.textContent = `search ${n} ${corpusLabel} by meaning`;
+
+  const eyebrow = document.querySelector('#eyebrow') || document.querySelector('.prompt-label');
+  if(eyebrow) eyebrow.textContent = actionLabel;
+
+  const placeholders = {
+    signal: 'describe a geopolitical pattern, risk, actor, region, or system pressure',
+    mixed: 'describe a film, game, book, show, track, signal, system, mood, memory, or idea',
+    games: 'describe the world, mechanic, feeling, or system',
+    books: 'describe the theme, voice, era, symbol, or idea',
+    tv: 'describe the premise, tone, character dynamic, or world',
+    music: 'describe the sound, scene, mood, era, artist signal, or feeling',
+    film: 'describe the scene, mood, memory, or idea'
+  };
+  if(query) query.placeholder = placeholders[corpusMode] || placeholders.film;
+  if(resultQuery) resultQuery.placeholder = corpusMode==='signal' ? 'edit the signal search' : 'edit the search';
+
+  const resultMode = document.querySelector('#resultMode');
+  if(resultMode) resultMode.textContent = `${corpusMode==='signal'?'signal':corpusMode} corpus · ${searchDepth}`;
+
+  const ready = document.querySelector('#readyLine');
+  if(ready) ready.textContent = `ready ${n} ${corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':corpusLabel} · ${searchDepth}`;
+
+  const shuffleLabel = corpusMode==='signal'?'signals':corpusMode==='music'?'music':corpusMode==='mixed'?'mix':corpusMode==='tv'?'tv':corpusMode;
+  document.querySelectorAll('[data-action="shuffle-corpus"]').forEach(b=>b.textContent=`shuffle ${shuffleLabel}`);
+
+  const resultMeta = document.querySelector('#resultMeta');
+  if(resultMeta && currentQuery) resultMeta.textContent = `${n}-${corpusMode==='signal'?'signal':corpusMode} corpus · ${searchDepth}`;
 }
 
 function corpusLoadLabel(prefix='loading'){
   const n=totalLimit();
   const d=searchDepth;
-  const m=corpusMode==='signal'?'signals':corpusMode==='mixed'?'mixed records':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':corpusMode==='music'?'albums':'films';
+  const m=corpusMode==='signal'?'signals':corpusMode==='music'?'music':corpusMode==='mixed'?'mixed records':corpusMode==='games'?'games':corpusMode==='books'?'books':corpusMode==='tv'?'tv shows':'films';
   return `${prefix} ${n} ${m} · ${d}`;
 }
 
@@ -2310,7 +3220,8 @@ const TRACES={
     'a person made of equations',
     'myth translated into media',
     'one signal across every medium'
-  ]
+  ],
+  signal:['what the tech giants are hiding','coherence gradient in the news cycle','platform capture under policy language','capital moving through infrastructure','the story behind the headline']
 };
 
 let traceTimer=null,traceIdx=0,tracePaused=false;
@@ -2399,8 +3310,8 @@ resultQuery.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.pr
  $('#shuffleFilms').addEventListener('click',shuffleFilms);
  $('#shuffleFilmsResult').addEventListener('click',shuffleFilms);
  $('#newSearch').addEventListener('click',newSearch);
-document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setCorpusMode(b.dataset.mode)));
-document.querySelectorAll('[data-depth]').forEach(b=>b.addEventListener('click',()=>setSearchDepth(b.dataset.depth)));
+document.querySelectorAll('button[data-mode]').forEach(b=>b.addEventListener('click',()=>setCorpusMode(b.dataset.mode)));
+document.querySelectorAll('button[data-depth]').forEach(b=>b.addEventListener('click',()=>setSearchDepth(b.dataset.depth)));
 document.querySelectorAll('[data-theme-switch]').forEach(b=>b.addEventListener('click',toggleTheme));
 document.addEventListener('keydown',e=>{
   if(!results.length)return;
@@ -2595,9 +3506,59 @@ async function loadBooks(limit){
 }
 
 
-/* Live signal corpus — GDELT-first geopolitical/news signal layer.
-   No static article corpus. GDELT is keyless; Guardian/NewsData/Currents/proxy remain optional fallbacks. */
-const GDELT_DOC_API='https://api.gdeltproject.org/api/v2/doc/doc';
+
+function fallbackSignalCard(title='',section='',source='',i=0){
+  const palette=[
+    ['#0b0b0b','#f4f1eb','#b24b36'],
+    ['#11100d','#ece7dc','#7f8a78'],
+    ['#090b0e','#f2eee6','#6f8fa8'],
+    ['#0d0b0a','#f1eadf','#b07a52'],
+    ['#0a0d0c','#efe9de','#8b6f9f'],
+    ['#0c0c10','#f5efe6','#c0a35a'],
+    ['#100b0b','#f2ece3','#a94f45'],
+    ['#090d10','#f1ede5','#5f8c8d']
+  ];
+  const [bg,fg,accent]=palette[Math.abs(i)%palette.length];
+  const safeTitle=esc(title||'Signal');
+  const safeSection=esc(section||'Signal');
+  const safeSource=esc(source||'SUMMON');
+  const words=String(title||'Signal').split(/\s+/).filter(Boolean);
+  const lines=[];
+  let line='';
+  for(const word of words){
+    const test=line?`${line} ${word}`:word;
+    if(test.length>25&&line){lines.push(line);line=word}else line=test;
+    if(lines.length===3)break;
+  }
+  if(line&&lines.length<4)lines.push(line);
+  const text=lines.slice(0,4).map((line,idx)=>`<text x="34" y="${116+idx*42}" font-family="Arial, Helvetica, sans-serif" font-size="31" font-weight="700" letter-spacing="-.9" fill="${fg}">${esc(line)}</text>`).join('');
+  const density=Array.from({length:12},(_,n)=>`<rect x="${34+n*28}" y="${318+(n%3)*10}" width="${12+(n%5)*9}" height="2" fill="${n%4===0?accent:fg}" opacity="${n%4===0?.9:.22}"/>`).join('');
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560">
+    <rect width="900" height="560" fill="${bg}"/>
+    <rect x="16" y="16" width="868" height="528" fill="none" stroke="${fg}" stroke-opacity=".14"/>
+    <rect x="34" y="34" width="132" height="22" fill="${accent}"/>
+    <text x="34" y="82" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" letter-spacing="3" fill="${fg}" opacity=".64">${safeSection.toUpperCase()}</text>
+    ${text}
+    ${density}
+    <text x="34" y="492" font-family="Courier New, monospace" font-size="16" letter-spacing="2.4" fill="${fg}" opacity=".48">${safeSource.toUpperCase()} / SIGNAL-${String(i+1).padStart(3,'0')}</text>
+    <circle cx="830" cy="72" r="36" fill="none" stroke="${accent}" stroke-width="3" opacity=".86"/>
+    <path d="M805 72h50M830 47v50" stroke="${fg}" stroke-opacity=".28" stroke-width="2"/>
+  </svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+/* Live signal corpus — geopolitical/news-first, image-aware.
+   Primary preview provider: The Guardian Open Platform.
+   Why: free signup, real journalism corpus, CORS-friendly JSON, thumbnails via
+   show-fields=thumbnail/trailText, and good geopolitical/world/business coverage.
+
+   Production path:
+   - window.NEWS_API_PROXY_URL: preferred. Hide keys server-side and aggregate
+     Guardian, NewsData, Currents, RSS, or paid providers behind one endpoint.
+   - window.GUARDIAN_API_KEY: direct Guardian key. Defaults to "test" for preview.
+   - window.NEWSDATA_API_KEY: optional broader global provider with image_url.
+   - window.CURRENTS_API_KEY: optional broad provider with free daily quota.
+*/
 const NEWS_API_PROXY_URL=window.NEWS_API_PROXY_URL||'';
 const GUARDIAN_API_KEY=window.GUARDIAN_API_KEY||'test';
 const GUARDIAN_API_URL='https://content.guardianapis.com/search';
@@ -2606,165 +3567,617 @@ const NEWSDATA_API_URL='https://newsdata.io/api/1/latest';
 const CURRENTS_API_KEY=window.CURRENTS_API_KEY||'';
 const CURRENTS_API_URL='https://api.currentsapi.services/v1/search';
 const SIGNAL_CACHE_TTL_MS=20*60*1000;
-const SIGNAL_PROVIDER_DELAY_MS=90;
+const SIGNAL_PROVIDER_DELAY_MS=120;
 const SIGNAL_MAX_CACHE_ROWS=2200;
+function signalDirectLaneCount(){
+  return searchDepth==='archive'?18:searchDepth==='field'?14:8;
+}
 
 const GEOPOLITICAL_SIGNAL_LANES=[
-  {label:'Geopolitics', q:'geopolitics diplomacy sanctions election intelligence statecraft'},
-  {label:'War + Defense', q:'war military defense drone missile NATO Pentagon weapons'},
-  {label:'China + Taiwan', q:'China Taiwan South China Sea semiconductor controls Beijing Philippines'},
-  {label:'Russia + Europe', q:'Russia Ukraine NATO Europe security sanctions Kremlin Kyiv'},
-  {label:'Middle East', q:'Iran Israel Gaza Red Sea Houthis Saudi oil security Yemen'},
-  {label:'India + Indo-Pacific', q:'India Pakistan Strait of Hormuz Indo-Pacific maritime security Indian Ocean'},
-  {label:'Africa + Critical Minerals', q:'Africa Sahel Sudan Congo critical minerals Wagner mining security'},
-  {label:'Latin America', q:'Latin America Mexico Venezuela Brazil cartels migration lithium'},
-  {label:'Arctic + Maritime', q:'Arctic shipping lane maritime security port undersea cable chokepoint'},
-  {label:'Energy + Infrastructure', q:'energy security grid oil gas nuclear infrastructure LNG OPEC'},
-  {label:'Cyber + Platforms', q:'cybersecurity cyberwar surveillance platform regulation data center spyware'},
-  {label:'Markets + Supply Chain', q:'supply chain semiconductors shipping rare earths markets tariffs'},
-  {label:'AI + Compute', q:'artificial intelligence AI safety data centers chips compute export controls'},
-  {label:'Space + Defense Tech', q:'space technology satellite hypersonic missile defense military space'},
-  {label:'Trade + Industrial Policy', q:'trade war tariffs industrial policy reshoring export controls'},
-  {label:'Food + Water Security', q:'food security water security drought grain agriculture migration'},
-  {label:'Climate Risk', q:'climate risk water security disaster food security migration extreme heat'},
-  {label:'Institutions + Law', q:'international court United Nations election interference regulation antitrust'}
+  {label:'Geopolitics', q:'geopolitics OR diplomacy OR sanctions OR election OR intelligence OR statecraft', section:'world'},
+  {label:'War + Defense', q:'war OR military OR defence OR drone OR missile OR NATO OR Pentagon OR weapons', section:'world'},
+  {label:'China + Taiwan', q:'China OR Taiwan OR South China Sea OR semiconductor controls OR Beijing OR Philippines', section:'world'},
+  {label:'Russia + Europe', q:'Russia OR Ukraine OR NATO OR Europe security OR sanctions OR Kremlin OR Kyiv', section:'world'},
+  {label:'Middle East', q:'Iran OR Israel OR Gaza OR Red Sea OR Houthis OR Saudi OR oil security OR Yemen', section:'world'},
+  {label:'India + Indo-Pacific', q:'India OR Pakistan OR Strait of Hormuz OR Indo-Pacific OR maritime security OR Indian Ocean', section:'world'},
+  {label:'Africa + Critical Minerals', q:'Africa OR Sahel OR Sudan OR Congo OR critical minerals OR Wagner OR mining security', section:'world'},
+  {label:'Latin America', q:'Latin America OR Mexico OR Venezuela OR Brazil OR cartels OR migration OR lithium', section:'world'},
+  {label:'Arctic + Maritime', q:'Arctic OR shipping lane OR maritime security OR port OR undersea cable OR chokepoint', section:'world'},
+  {label:'Energy + Infrastructure', q:'energy security OR grid OR oil OR gas OR nuclear OR infrastructure OR LNG OR OPEC', section:'business'},
+  {label:'Cyber + Platforms', q:'cybersecurity OR cyberwar OR surveillance OR platform regulation OR data center OR spyware', section:'technology'},
+  {label:'Markets + Supply Chain', q:'supply chain OR semiconductors OR shipping OR rare earths OR markets OR tariffs', section:'business'},
+  {label:'AI + Compute', q:'artificial intelligence OR AI safety OR data centers OR chips OR compute OR export controls', section:'technology'},
+  {label:'Space + Defense Tech', q:'space technology OR satellite OR hypersonic OR missile defense OR military space', section:'technology'},
+  {label:'Trade + Industrial Policy', q:'trade war OR tariffs OR industrial policy OR reshoring OR export controls', section:'business'},
+  {label:'Food + Water Security', q:'food security OR water security OR drought OR grain OR agriculture OR migration', section:'environment'},
+  {label:'Climate Risk', q:'climate risk OR water security OR disaster OR food security OR migration OR extreme heat', section:'environment'},
+  {label:'Institutions + Law', q:'international court OR United Nations OR election interference OR regulation OR antitrust', section:'world'}
 ];
+
 const GUARDIAN_SWEEP_SECTIONS=['world','business','technology','environment','global-development','us-news'];
-function signalDirectLaneCount(){return searchDepth==='archive'?18:searchDepth==='field'?14:8}
-function signalWallTarget(){return searchDepth==='archive'?520:searchDepth==='field'?320:160}
+
+function signalLimit(){
+  return searchDepth==='archive'?1600:searchDepth==='field'?900:240;
+}
+
+function signalWallTarget(){
+  return searchDepth==='archive'?520:searchDepth==='field'?320:160;
+}
+
+function filmWallTarget(){
+  return searchDepth==='archive'?520:searchDepth==='field'?320:160;
+}
+
+function musicWallTarget(){
+  return searchDepth==='archive'?420:searchDepth==='field'?260:140;
+}
 
 function stripHtml(value=''){
-  const div=document.createElement('div');
-  div.innerHTML=String(value||'');
-  return (div.textContent||div.innerText||'').replace(/\s+/g,' ').trim();
+  return String(value||'')
+    .replace(/<[^>]*>/g,' ')
+    .replace(/&amp;/g,'&')
+    .replace(/&quot;/g,'"')
+    .replace(/&#39;/g,"'")
+    .replace(/&apos;/g,"'")
+    .replace(/&lt;/g,'<')
+    .replace(/&gt;/g,'>')
+    .replace(/\s+/g,' ')
+    .trim();
 }
+
 function normalizeNewsImage(url=''){
-  const s=String(url||'').trim();
-  if(!s)return '';
-  if(s.startsWith('//'))return `https:${s}`;
-  return s.replace(/^http:/,'https:');
+  const clean=String(url||'').trim();
+  if(!clean)return '';
+  if(!/^https?:\/\//i.test(clean))return '';
+  return clean.replace(/^http:/i,'https:');
 }
-function signalFallbackCard(title='',section='',source='',i=0){
-  const safeTitle=stripHtml(title||'SIGNAL').slice(0,90);
-  const safeSection=stripHtml(section||'WORLD').slice(0,24);
-  const safeSource=stripHtml(source||'SIGNAL').slice(0,24);
-  const hue=[...safeTitle].reduce((a,c)=>a+c.charCodeAt(0),0)%360;
-  const bg=`hsl(${hue},18%,8%)`, fg='rgba(246,241,232,.92)', accent=`hsl(${(hue+32)%360},42%,52%)`;
-  const words=safeTitle.split(/\s+/).slice(0,12);
-  const lines=[];
-  for(let j=0;j<words.length;j+=3)lines.push(words.slice(j,j+3).join(' '));
-  const text=lines.slice(0,4).map((l,n)=>`<text x="34" y="${160+n*58}" font-family="Georgia,serif" font-size="44" font-weight="600" letter-spacing="-1.8" fill="${fg}">${esc(l)}</text>`).join('');
-  const density=Array.from({length:18},(_,n)=>`<rect x="${34+n*45}" y="430" width="22" height="${8+((n+i)%7)*5}" fill="${accent}" opacity="${.18+((n%5)*.055)}"/>`).join('');
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520"><rect width="900" height="520" fill="${bg}"/><rect width="900" height="520" fill="url(#g)" opacity=".34"/><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${accent}"/><stop offset="1" stop-color="#030303"/></linearGradient></defs><rect x="22" y="22" width="856" height="476" fill="none" stroke="rgba(246,241,232,.18)" stroke-width="2"/><text x="34" y="82" font-family="Arial,Helvetica,sans-serif" font-size="18" font-weight="700" letter-spacing="3" fill="${fg}" opacity=".64">${esc(safeSection.toUpperCase())}</text>${text}${density}<text x="34" y="492" font-family="Courier New,monospace" font-size="16" letter-spacing="2.4" fill="${fg}" opacity=".48">${esc(safeSource.toUpperCase())} / SIGNAL-${String(i+1).padStart(3,'0')}</text><circle cx="830" cy="72" r="36" fill="none" stroke="${accent}" stroke-width="3" opacity=".86"/><path d="M805 72h50M830 47v50" stroke="${fg}" stroke-opacity=".28" stroke-width="2"/></svg>`;
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+
+function domainFromUrl(url=''){
+  try{
+    const host=new URL(url).hostname.replace(/^www\./,'');
+    return host||'';
+  }catch(e){return ''}
 }
-function signalCacheKey(provider='gdelt'){return `summon:${provider}:geo-signals:${searchDepth}:v20-gdelt`}
-function readSignalCache(provider='gdelt'){
-  try{const raw=localStorage.getItem(signalCacheKey(provider));if(!raw)return null;const parsed=JSON.parse(raw);if(Date.now()-parsed.time>SIGNAL_CACHE_TTL_MS)return null;return parsed.rows||null}catch(e){return null}
+
+function sectionFromSignal(title='',url='',fallback='Signal'){
+  const t=String(title||'').toLowerCase();
+  const d=String(domainFromUrl(url)||'').toLowerCase();
+  const hay=`${t} ${d}`;
+  if(/\b(ukraine|russia|nato|moscow|kremlin|kyiv|europe security)\b/.test(hay))return 'Russia / Europe';
+  if(/\b(china|taiwan|beijing|south china sea|indo-pacific|philippines)\b/.test(hay))return 'China / Pacific';
+  if(/\b(iran|israel|gaza|hamas|red sea|houthi|saudi|yemen|iraq|syria|lebanon)\b/.test(hay))return 'Middle East';
+  if(/\b(india|pakistan|modi|delhi|hormuz|indian ocean)\b/.test(hay))return 'India / Ocean';
+  if(/\b(war|military|defense|defence|drone|missile|navy|army|pentagon|weapons)\b/.test(hay))return 'Defense';
+  if(/\b(cyber|security|breach|surveillance|ransomware|vulnerability|spyware|platform)\b/.test(hay))return 'Cyber';
+  if(/\b(energy|grid|nuclear|oil|gas|battery|power|electricity|lng|opec)\b/.test(hay))return 'Energy';
+  if(/\b(chip|semiconductor|nvidia|tsmc|asml|rare earth|supply chain|shipping)\b/.test(hay))return 'Supply Chain';
+  if(/\b(market|bank|trade|tariff|bond|currency|dollar|sanction|finance)\b/.test(hay))return 'Markets';
+  if(/\b(climate|water|migration|food|heat|flood|fire|storm|disaster)\b/.test(hay))return 'Climate Risk';
+  if(/\b(ai|artificial intelligence|llm|openai|anthropic|model|agent|data center)\b/.test(hay))return 'AI / Compute';
+  return fallback||'Signal';
 }
-function writeSignalCache(rows,provider='gdelt'){
-  try{localStorage.setItem(signalCacheKey(provider),JSON.stringify({time:Date.now(),rows:rows.slice(0,SIGNAL_MAX_CACHE_ROWS)}))}catch(e){}
+
+function formatDateYear(value=''){
+  if(!value)return '';
+  const d=new Date(value);
+  if(!Number.isNaN(d.getTime()))return String(d.getUTCFullYear());
+  return String(value).slice(0,4);
 }
-function signalRecord(row={},i=0){
-  const title=stripHtml(row.title||row.webTitle||row.name||'Untitled signal');
-  const url=row.url||row.webUrl||row.link||row.externalUrl||'';
-  const section=stripHtml(row.section||row.sectionName||row.category||row.sourceCountry||row._laneLabel||'signal');
-  const source=stripHtml(row.source||row.source_name||row.domain||row.sourceDomain||row.sourceCollectionIdentifier||'GDELT');
-  const publishedAt=row.publishedAt||row.seendate||row.seenDate||row.webPublicationDate||row.pubDate||row.date||'';
-  const year=publishedAt?String(publishedAt).slice(0,4):'';
-  const desc=stripHtml(row.description||row.trailText||row.summary||row.content||row.fields?.trailText||'');
-  const image=normalizeNewsImage(row.image||row.socialimage||row.image_url||row.fields?.thumbnail||row.fields?.main)||signalFallbackCard(title,section,source,i);
-  return {type:'signal',title,section,source,year,publishedAt,genres:[section].filter(Boolean),subjects:[section,source,row.country,row.language].filter(Boolean),overview:`${title}. ${source?`Source: ${source}. `:''}${section?`Section: ${section}. `:''}${publishedAt?`Seen ${String(publishedAt).slice(0,10)}. `:''}${desc||'A live geopolitical/news signal indexed through source, section, date, actor, institution, and systemic pressure.'}`,image,cover:image,src:image,externalUrl:url};
+
+function normalizeDate(value=''){
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return '';
+  return d.toISOString();
 }
-function newsApiUnavailableRecord(e){
-  return {type:'signal',title:'Signal provider unavailable',section:'system',source:'SUMMON',year:'',genres:['system'],subjects:['provider unavailable'],overview:`Signal provider unavailable. ${e?.message||''}. Configure NEWS_API_PROXY_URL, GDELT access, Guardian, NewsData, or Currents for live signal loading.`,image:signalFallbackCard('Signal provider unavailable','system','SUMMON',0),cover:signalFallbackCard('Signal provider unavailable','system','SUMMON',0),externalUrl:''};
+
+function signalCacheKey(provider='guardian'){
+  return `summon:${provider}:geo-signals:${searchDepth}:v16-more`;
 }
-async function fetchGdeltSignals(limit){
+
+function readSignalCache(provider='guardian'){
+  try{
+    const raw=localStorage.getItem(signalCacheKey(provider));
+    if(!raw)return null;
+    const parsed=JSON.parse(raw);
+    if(!parsed?.time||!Array.isArray(parsed?.rows))return null;
+    if(Date.now()-parsed.time>SIGNAL_CACHE_TTL_MS)return null;
+    return parsed.rows;
+  }catch(e){return null}
+}
+
+function writeSignalCache(rows,provider='guardian'){
+  try{
+    localStorage.setItem(signalCacheKey(provider),JSON.stringify({time:Date.now(),rows:rows.slice(0,SIGNAL_MAX_CACHE_ROWS)}));
+  }catch(e){}
+}
+
+function safeReplaceHistory(url){
+  try{
+    if(location.protocol==='file:')return;
+    history.replaceState(null,'',url);
+  }catch(e){}
+}
+
+function safeSetHash(value){
+  if(location.protocol==='file:')return;
+  safeReplaceHistory(`#${encodeURIComponent(value)}`);
+}
+
+function safeClearHash(){
+  if(location.protocol==='file:')return;
+  safeReplaceHistory(location.pathname+location.search);
+}
+
+function signalFallbackCard(title,section,source,i){
+  return fallbackSignalCard(title,section,source,i);
+}
+
+function newsApiUnavailableRecord(error){
+  const message=String(error?.message||error||'news api unavailable').slice(0,180);
+  const title='Signal provider unavailable';
+  const section='API';
+  const source='Live News Provider';
+  const card=signalFallbackCard(title,section,source,0);
+  return {
+    type:'signal',
+    title,
+    section,
+    year:new Date().getFullYear().toString(),
+    source,
+    genres:['API','Unavailable'],
+    overview:`${title}. ${message}. Signal mode is configured for live geopolitical/news sources and will not substitute fake headlines, stock images, or duplicated filler. Configure NEWS_API_PROXY_URL, GUARDIAN_API_KEY, NEWSDATA_API_KEY, or CURRENTS_API_KEY.`,
+    image:card,
+    cover:card,
+    src:card,
+    externalUrl:'https://open-platform.theguardian.com/documentation/'
+  };
+}
+
+function proxySignalRecord(article,i=0){
+  const title=stripHtml(article.title||article.webTitle||article.headline||article.name||'Untitled signal');
+  const url=article.url||article.webUrl||article.shortUrl||article.link||article.href||'';
+  const rawSection=article.section||article.sectionName||article.category||article.country||article.region||'';
+  const section=stripHtml(rawSection||sectionFromSignal(title,url,'News'));
+  const source=stripHtml(article.source||article.source_name||article.publication||article.publisher||article.domain||domainFromUrl(url)||'News');
+  const date=article.publishedAt||article.pubDate||article.webPublicationDate||article.date||article.published||'';
+  const year=formatDateYear(date);
+  const summary=stripHtml(article.summary||article.description||article.trailText||article.content||article.bodyText||'');
+  const tags=Array.isArray(article.tags)?article.tags.map(t=>typeof t==='string'?t:(t.webTitle||t.name||t.label||'')).filter(Boolean).slice(0,7):[];
+  const realImage=normalizeNewsImage(article.image||article.urlToImage||article.thumbnail||article.image_url||article.socialimage||article.imageUrl||article.media);
+  const image=realImage||signalFallbackCard(title,section,source,i);
+  return {
+    type:'signal',title,section,year,source,
+    publishedAt:normalizeDate(date),
+    genres:tags.length?tags:[section,source].filter(Boolean).slice(0,4),
+    overview:`${title}. Source: ${source}. ${year?'Published: '+year+'. ':''}Section: ${section}. ${summary}`.trim(),
+    image,cover:image,src:image,
+    externalUrl:url
+  };
+}
+
+function guardianSignalRecord(item,i=0,laneLabel='World'){
+  const fields=item.fields||{};
+  const title=stripHtml(item.webTitle||item.title||'Untitled signal');
+  const url=item.webUrl||fields.shortUrl||'';
+  const rawSection=item.sectionName||laneLabel||'World';
+  const section=sectionFromSignal(title,url,rawSection);
+  const source='The Guardian';
+  const date=item.webPublicationDate||fields.lastModified||'';
+  const year=formatDateYear(date);
+  const tagNames=Array.isArray(item.tags)?item.tags.map(t=>stripHtml(t.webTitle||t.id||'')).filter(Boolean):[];
+  const trail=stripHtml(fields.trailText||fields.bodyText||fields.standfirst||'');
+  const image=normalizeNewsImage(fields.thumbnail||fields.main||fields.bylineImageUrl)||signalFallbackCard(title,section,source,i);
+  return {
+    type:'signal',
+    title,
+    section,
+    year,
+    source,
+    publishedAt:normalizeDate(date),
+    genres:[section,...tagNames].filter(Boolean).slice(0,7),
+    overview:`${title}. Source: ${source}. ${year?'Published: '+year+'. ':''}Section: ${section}. ${trail}`.trim(),
+    image,
+    cover:image,
+    src:image,
+    externalUrl:url
+  };
+}
+
+function newsDataSignalRecord(article,i=0){
+  return proxySignalRecord({
+    title:article.title,
+    url:article.link,
+    image_url:article.image_url,
+    description:article.description||article.content,
+    pubDate:article.pubDate,
+    source_name:article.source_name,
+    category:Array.isArray(article.category)?article.category[0]:article.category,
+    country:Array.isArray(article.country)?article.country.join(', '):article.country,
+    tags:article.keywords||article.category||[]
+  },i);
+}
+
+async function fetchProxySignals(limit){
   const target=Math.max(1,Number(limit)||signalLimit());
-  const cached=readSignalCache('gdelt');
-  if(cached?.length){setStatus(`${Math.min(cached.length,target)} cached gdelt signals`);return cached.slice(0,target).map(signalRecord)}
-  const laneCount=Math.min(signalDirectLaneCount(),GEOPOLITICAL_SIGNAL_LANES.length);
-  const lanes=Array.from({length:laneCount},(_,i)=>GEOPOLITICAL_SIGNAL_LANES[(i+Math.abs(corpusPageOffset+shuffleSeed))%GEOPOLITICAL_SIGNAL_LANES.length]);
-  const perLane=Math.max(searchDepth==='archive'?120:searchDepth==='field'?80:35,Math.ceil(target/Math.max(1,lanes.length)));
-  const rows=[], seen=new Set();
-  for(let i=0;i<lanes.length&&rows.length<target;i++){
-    const lane=lanes[i];
-    const p=new URLSearchParams({query:lane.q,mode:'ArtList',format:'json',maxrecords:String(Math.min(250,perLane)),sort:'hybridrel'});
-    setStatus(`loading gdelt ${lane.label.toLowerCase()} signals ${i+1}/${lanes.length} · ${rows.length}/${target}`);
-    try{
-      const res=await fetch(`${GDELT_DOC_API}?${p.toString()}`,{cache:'force-cache'});
-      if(!res.ok)throw new Error(`gdelt ${res.status}`);
-      const data=await res.json();
-      const batch=Array.isArray(data?.articles)?data.articles:[];
-      for(const item of batch){
-        const key=String(item.url||item.title||'').toLowerCase();
-        if(!key||seen.has(key))continue;
-        seen.add(key); rows.push({...item,_laneLabel:lane.label});
-        if(rows.length>=target)break;
-      }
-    }catch(err){console.warn('gdelt lane skipped',lane.label,err)}
-    await new Promise(r=>setTimeout(r,SIGNAL_PROVIDER_DELAY_MS));
+  const pageSize=100;
+  const pages=Math.ceil(target/pageSize);
+  const basePage=1+Math.abs((corpusPageOffset||0)+(shuffleSeed||0));
+  const rows=[];
+
+  for(let page=0;page<pages;page++){
+    const p=new URLSearchParams({
+      limit:String(Math.min(pageSize,target-rows.length)),
+      pageSize:String(pageSize),
+      depth:searchDepth,
+      page:String(basePage+page),
+      vertical:'geopolitics',
+      includeImages:'true'
+    });
+    const res=await fetch(`${NEWS_API_PROXY_URL}${NEWS_API_PROXY_URL.includes('?')?'&':'?'}${p.toString()}`);
+    if(!res.ok)throw new Error(`news proxy ${res.status}`);
+    const data=await res.json();
+    const batch=Array.isArray(data)?data:(data.articles||data.results||data.news||data.items||[]);
+    for(const row of batch){
+      rows.push(row);
+      if(rows.length>=target)break;
+    }
+    if(rows.length>=target||!batch.length)break;
   }
-  if(!rows.length)throw new Error('gdelt returned zero articles');
-  writeSignalCache(rows,'gdelt');
-  return rows.slice(0,target).map(signalRecord);
+
+  return rows.map(proxySignalRecord);
 }
+
 async function fetchGuardianSignals(limit){
   const target=Math.max(1,Number(limit)||signalLimit());
-  const rows=[], seen=new Set();
-  const lanes=GEOPOLITICAL_SIGNAL_LANES.slice(0,Math.min(signalDirectLaneCount(),GEOPOLITICAL_SIGNAL_LANES.length));
+  const cached=readSignalCache('guardian');
+  if(cached?.length){
+    setStatus(`${Math.min(cached.length,target)} cached geopolitical signals`);
+    return cached.slice(0,target).map((row,i)=>guardianSignalRecord(row,i,row._laneLabel));
+  }
+
+  const laneCount=Math.min(signalDirectLaneCount(),GEOPOLITICAL_SIGNAL_LANES.length);
+  const lanes=Array.from({length:laneCount},(_,i)=>GEOPOLITICAL_SIGNAL_LANES[(i+Math.abs(corpusPageOffset+shuffleSeed))%GEOPOLITICAL_SIGNAL_LANES.length]);
+  const perLane=Math.max(searchDepth==='archive'?90:searchDepth==='field'?70:30,Math.ceil(target/Math.max(1,lanes.length)));
+  const pageSize=50;
+  const rows=[];
+  const seen=new Set();
+
+  async function pullGuardianPage(params,laneLabel,statusLabel){
+    const res=await fetch(`${GUARDIAN_API_URL}?${params.toString()}`);
+    if(!res.ok)throw new Error(`guardian ${res.status}`);
+    const data=await res.json();
+    const results=Array.isArray(data?.response?.results)?data.response.results:[];
+    for(const item of results){
+      const key=String(item.webUrl||item.webTitle||'').toLowerCase();
+      if(!key||seen.has(key))continue;
+      seen.add(key);
+      rows.push({...item,_laneLabel:laneLabel||statusLabel});
+      if(rows.length>=target)break;
+    }
+    return results.length;
+  }
+
   for(let i=0;i<lanes.length&&rows.length<target;i++){
     const lane=lanes[i];
-    const p=new URLSearchParams({'api-key':GUARDIAN_API_KEY,q:lane.q,'order-by':'newest','page-size':'50',page:'1','show-fields':'thumbnail,trailText,shortUrl,lastModified,bodyText','use-date':'published'});
-    setStatus(`loading guardian ${lane.label.toLowerCase()} signals ${i+1}/${lanes.length}`);
-    try{
-      const res=await fetch(`${GUARDIAN_API_URL}?${p.toString()}`);
-      if(!res.ok)throw new Error(`guardian ${res.status}`);
-      const data=await res.json();
-      for(const item of(data?.response?.results||[])){
-        const key=String(item.webUrl||item.webTitle||'').toLowerCase();
-        if(!key||seen.has(key))continue;
-        seen.add(key);
-        rows.push(signalRecord({title:item.webTitle,url:item.webUrl,section:item.sectionName,source:'The Guardian',publishedAt:item.webPublicationDate,description:item.fields?.trailText,image:item.fields?.thumbnail,_laneLabel:lane.label},rows.length));
-        if(rows.length>=target)break;
+    const pages=Math.max(1,Math.ceil(perLane/pageSize));
+    for(let page=1;page<=pages&&rows.length<target;page++){
+      const p=new URLSearchParams({
+        'api-key':GUARDIAN_API_KEY,
+        'q':lane.q,
+        'section':lane.section,
+        'order-by':'newest',
+        'page-size':String(pageSize),
+        'page':String(page),
+        'show-fields':'thumbnail,trailText,shortUrl,lastModified,bodyText',
+        'show-tags':'keyword',
+        'use-date':'published'
+      });
+      setStatus(`loading ${lane.label.toLowerCase()} signals ${i+1}/${lanes.length} · ${rows.length}/${target}`);
+      try{
+        const found=await pullGuardianPage(p,lane.label,lane.label);
+        if(!found)break;
+      }catch(err){
+        console.warn('guardian lane skipped',lane.label,err);
+        break;
       }
-    }catch(err){console.warn('guardian lane skipped',lane.label,err)}
-    await new Promise(r=>setTimeout(r,SIGNAL_PROVIDER_DELAY_MS));
+      await new Promise(r=>setTimeout(r,SIGNAL_PROVIDER_DELAY_MS));
+    }
   }
+
+  /* Second pass: if the targeted lanes under-fill, sweep broad Guardian sections.
+     This keeps signal mode dense without duplicating padding or inventing articles. */
+  if(rows.length<target){
+    const sweepQuery='geopolitics OR war OR defense OR sanctions OR China OR Taiwan OR Russia OR Ukraine OR Iran OR India OR energy OR cyber OR semiconductors OR climate OR trade';
+    const maxSweepPages=searchDepth==='archive'?5:searchDepth==='field'?3:2;
+    for(const section of GUARDIAN_SWEEP_SECTIONS){
+      for(let page=1;page<=maxSweepPages&&rows.length<target;page++){
+        const p=new URLSearchParams({
+          'api-key':GUARDIAN_API_KEY,
+          'q':sweepQuery,
+          'section':section,
+          'order-by':'newest',
+          'page-size':'50',
+          'page':String(page),
+          'show-fields':'thumbnail,trailText,shortUrl,lastModified,bodyText',
+          'show-tags':'keyword',
+          'use-date':'published'
+        });
+        setStatus(`sweeping ${section} signals · ${rows.length}/${target}`);
+        try{
+          const found=await pullGuardianPage(p,section,section);
+          if(!found)break;
+        }catch(err){
+          console.warn('guardian sweep skipped',section,err);
+          break;
+        }
+        await new Promise(r=>setTimeout(r,SIGNAL_PROVIDER_DELAY_MS));
+      }
+      if(rows.length>=target)break;
+    }
+  }
+
   if(!rows.length)throw new Error('guardian returned zero articles');
-  return rows.slice(0,target);
+  writeSignalCache(rows,'guardian');
+  return rows.slice(0,target).map((row,i)=>guardianSignalRecord(row,i,row._laneLabel));
 }
+
+async function fetchNewsDataSignals(limit){
+  if(!NEWSDATA_API_KEY)throw new Error('newsdata api key missing');
+  const target=Math.max(1,Number(limit)||signalLimit());
+  const cached=readSignalCache('newsdata');
+  if(cached?.length){
+    setStatus(`${Math.min(cached.length,target)} cached newsdata signals`);
+    return cached.slice(0,target).map(newsDataSignalRecord);
+  }
+
+  const rows=[];
+  let pageToken='';
+  const query='geopolitics OR defense OR sanctions OR China OR Taiwan OR Russia OR Ukraine OR Iran OR India OR energy security OR semiconductors OR cyber';
+  for(let i=0;i<8&&rows.length<target;i++){
+    const p=new URLSearchParams({
+      apikey:NEWSDATA_API_KEY,
+      q:query,
+      language:'en',
+      category:'politics,business,technology,world',
+      image:'1'
+    });
+    if(pageToken)p.set('page',pageToken);
+    setStatus(`loading newsdata signals ${i+1}`);
+    const res=await fetch(`${NEWSDATA_API_URL}?${p.toString()}`);
+    if(!res.ok)throw new Error(`newsdata ${res.status}`);
+    const data=await res.json();
+    const batch=Array.isArray(data?.results)?data.results:[];
+    rows.push(...batch);
+    pageToken=data?.nextPage||'';
+    if(!pageToken||!batch.length)break;
+  }
+  if(!rows.length)throw new Error('newsdata returned zero articles');
+  writeSignalCache(rows,'newsdata');
+  return rows.slice(0,target).map(newsDataSignalRecord);
+}
+
+async function fetchCurrentsSignals(limit){
+  if(!CURRENTS_API_KEY)throw new Error('currents api key missing');
+  const target=Math.max(1,Number(limit)||signalLimit());
+  const cached=readSignalCache('currents');
+  if(cached?.length){
+    setStatus(`${Math.min(cached.length,target)} cached currents signals`);
+    return cached.slice(0,target).map(proxySignalRecord);
+  }
+
+  const keyword='geopolitics OR defense OR sanctions OR China OR Taiwan OR Russia OR Ukraine OR Iran OR India OR energy security OR semiconductors OR cyber';
+  const pageSize=100;
+  const pages=Math.ceil(target/pageSize);
+  const rows=[];
+
+  for(let page=1;page<=pages;page++){
+    const p=new URLSearchParams({
+      keywords:keyword,
+      language:'en',
+      page_size:String(Math.min(pageSize,target-rows.length)),
+      page_number:String(page)
+    });
+    setStatus(`loading currents signals ${page}/${pages}`);
+    const res=await fetch(`${CURRENTS_API_URL}?${p.toString()}`,{
+      headers:{Authorization:CURRENTS_API_KEY}
+    });
+    if(!res.ok)throw new Error(`currents ${res.status}`);
+    const data=await res.json();
+    const news=Array.isArray(data?.news)?data.news:[];
+    rows.push(...news);
+    if(rows.length>=target||!news.length)break;
+  }
+
+  if(!rows.length)throw new Error('currents returned zero articles');
+  writeSignalCache(rows,'currents');
+  return rows.slice(0,target).map(proxySignalRecord);
+}
+
+function rankSignalRichness(row){
+  let score=0;
+  if(row.image&&!String(row.image).startsWith('data:image/svg'))score+=6;
+  if(row.overview&&row.overview.length>140)score+=2;
+  if(row.publishedAt)score+=1;
+  if(/world|defense|china|russia|middle east|energy|markets|cyber|supply/i.test(`${row.section} ${(row.genres||[]).join(' ')}`))score+=2;
+  return score;
+}
+
 async function loadSignals(limit){
   const target=Math.max(1,Number(limit)||signalLimit());
   try{
-    setStatus(`loading ${target} live signals`);
+    setStatus(`loading ${target} geopolitical signals`);
     let rows=[];
+
     if(NEWS_API_PROXY_URL){
-      const p=new URLSearchParams({limit:String(target),depth:searchDepth,offset:String(corpusPageOffset||0),vertical:'geopolitics',includeImages:'true'});
-      const res=await fetch(`${NEWS_API_PROXY_URL}${NEWS_API_PROXY_URL.includes('?')?'&':'?'}${p.toString()}`);
-      if(!res.ok)throw new Error(`news proxy ${res.status}`);
-      const data=await res.json();
-      const batch=Array.isArray(data)?data:(data.articles||data.results||data.news||data.items||[]);
-      rows=batch.map(signalRecord);
+      rows=await fetchProxySignals(target);
+    }else if(NEWSDATA_API_KEY){
+      rows=await fetchNewsDataSignals(target);
+    }else if(CURRENTS_API_KEY){
+      rows=await fetchCurrentsSignals(target);
     }else{
-      try{rows=await fetchGdeltSignals(target)}catch(gdeltErr){console.warn('GDELT unavailable, falling back to Guardian',gdeltErr);rows=await fetchGuardianSignals(target)}
+      rows=await fetchGuardianSignals(target);
     }
-    const seen=new Set(), out=[];
-    for(const row of rows){const key=String(row.externalUrl||row.title||'').toLowerCase().trim();if(!row.title||seen.has(key))continue;seen.add(key);out.push(row)}
+
+    const seen=new Set(),out=[];
+    for(const row of rows){
+      const key=String(row.externalUrl||row.title||'').toLowerCase().trim();
+      if(!row.title||seen.has(key))continue;
+      seen.add(key);
+      out.push(row);
+    }
+
+    out.sort((a,b)=>{
+      const rich=rankSignalRichness(b)-rankSignalRichness(a);
+      if(rich)return rich;
+      return new Date(b.publishedAt||0)-new Date(a.publishedAt||0);
+    });
+
     if(!out.length)throw new Error('signal provider returned zero articles');
     return out.slice(0,target);
-  }catch(e){console.error(e);setStatus('signal provider unavailable');return [newsApiUnavailableRecord(e)]}
+  }catch(e){
+    console.error(e);
+    setStatus('signal provider unavailable');
+    return [newsApiUnavailableRecord(e)];
+  }
 }
 
-
-function clearWallForMode(mode=corpusMode){
-  const wall=document.querySelector('#wall');
-  if(!wall)return;
-  const label=mode==='signal'?'signals':mode==='mixed'?'mix':mode==='music'?'music':mode==='games'?'games':mode==='books'?'books':mode==='tv'?'tv':'films';
-  document.body.classList.add('corpus-loading');
-  wall.innerHTML=Array.from({length:18},(_,i)=>`<div class="wall-cell wall-loading-cell" data-type="${esc(mode)}"><div class="wall-loading-mark"><span>${String(i+1).padStart(2,'0')}</span><b>${esc(label)}</b></div></div>`).join('');
+function asArray(value){
+  if(Array.isArray(value))return value.map(v=>String(v||'').trim()).filter(Boolean);
+  if(value==null||value==='')return [];
+  return String(value).split(/[,;|]/).map(v=>v.trim()).filter(Boolean);
 }
-function finishWallForMode(){document.body.classList.remove('corpus-loading')}
+
+function compactCandidate(parts,max=1400){
+  return parts
+    .filter(Boolean)
+    .map(part=>String(part).replace(/\s+/g,' ').trim())
+    .filter(Boolean)
+    .join('\n')
+    .slice(0,max);
+}
+
+function field(name,value){
+  const text=Array.isArray(value)?value.filter(Boolean).join(', '):String(value||'').trim();
+  return text?`${name}: ${text}.`:'';
+}
+
+function metaBitsFor(m,limit=4){
+  if(!m)return [];
+  if(m.type==='signal')return [m.source,m.section,m.year].filter(Boolean).slice(0,limit);
+  if(m.type==='game')return [m.year,...asArray(m.genres).slice(0,2),...asArray(m.platforms).slice(0,1)].filter(Boolean).slice(0,limit);
+  if(m.type==='book')return [m.year,...asArray(m.authors).slice(0,1),...asArray(m.subjects||m.genres).slice(0,2)].filter(Boolean).slice(0,limit);
+  if(m.type==='tv')return [m.year,m.network,...asArray(m.genres).slice(0,2)].filter(Boolean).slice(0,limit);
+  if(m.type==='music')return [m.artist,m.album,m.year,...asArray(m.genres).slice(0,1)].filter(Boolean).slice(0,limit);
+  return [m.year,...asArray(m.genres).slice(0,2)].filter(Boolean).slice(0,limit);
+}
+
+function candidateText(m){
+  if(!m)return '';
+  const type=String(m.type||'record').toLowerCase();
+  const title=String(m.title||'Untitled').trim();
+  const overview=String(m.overview||'').replace(/\s+/g,' ').trim();
+
+  if(type==='signal'){
+    return compactCandidate([
+      'Record type: geopolitical news signal.',
+      field('Title',title),
+      field('Source',m.source),
+      field('Section / lane',m.section),
+      field('Published year',m.year),
+      field('Published timestamp',m.publishedAt),
+      field('Tags / topics',asArray(m.genres).slice(0,8)),
+      field('Source domain',domainFromUrl(m.externalUrl)),
+      field('Signal summary',overview)
+    ],1600);
+  }
+
+  if(type==='film'){
+    return compactCandidate([
+      'Record type: film.',
+      field('Title',title),
+      field('Release year',m.year),
+      field('Genres / moods',asArray(m.genres).slice(0,10)),
+      field('Provider tags / keywords',asArray(m.corpusTags).slice(0,18)),
+      field('Corpus source',m.corpusSource),
+      field('Cast',asArray(m.actors).slice(0,10)),
+      field('Characters',asArray(m.characters).slice(0,8)),
+      field('Director',m.director),
+      field('Writers',asArray(m.writers).slice(0,6)),
+      field('Production countries',asArray(m.productionCountries).slice(0,6)),
+      field('Production companies',asArray(m.productionCompanies).slice(0,6)),
+      field('Original language',m.originalLanguage),
+      field('Runtime minutes',m.runtime),
+      field('Rating',m.rating),
+      field('TMDb popularity / votes',[m.tmdbPopularity?`popularity ${m.tmdbPopularity}`:'',m.tmdbVoteCount?`${m.tmdbVoteCount} votes`:''].filter(Boolean)),
+      field('Film synopsis / semantic surface',overview)
+    ],1400);
+  }
+
+  if(type==='game'){
+    return compactCandidate([
+      'Record type: game.',
+      field('Title',title),
+      field('Release year',m.year),
+      field('Genres',asArray(m.genres).slice(0,8)),
+      field('Platforms',asArray(m.platforms).slice(0,8)),
+      field('Critical rating',m.rating?`Metacritic ${m.rating}`:''),
+      field('Game world / mechanics / play signal',overview)
+    ],1400);
+  }
+
+  if(type==='book'){
+    return compactCandidate([
+      'Record type: book.',
+      field('Title',title),
+      field('Author',asArray(m.authors).slice(0,4)),
+      field('Publication / era',m.year),
+      field('Subjects / shelves',asArray(m.subjects||m.genres).slice(0,10)),
+      field('Literary / thematic signal',overview)
+    ],1400);
+  }
+
+  if(type==='music'){
+    const sonic=[...new Set([
+      ...asArray(m.sonicProfile),
+      ...asArray(m.genres),
+      ...asArray(m.discoveryLanes)
+    ])].slice(0,24);
+    return compactCandidate([
+      'Record type: music.',
+      'Scoring frame: judge listening fit by sonic profile, genre, rhythm, instrumentation, atmosphere, era, and cultural surface. Treat the title as catalog metadata, not the primary semantic surface.',
+      field('Sonic / listening profile',sonic),
+      field('Discovery context',asArray(m.discoveryLanes).slice(0,8)),
+      field('Genre / provider category',asArray(m.genres).slice(0,10)),
+      field('Artist',m.artist),
+      field('Release year',m.year),
+      field('Release type',m.kind),
+      field('Catalog title',title),
+      field('Album / release label',m.album),
+      field('Provider source',m.source),
+      field('Music metadata summary',overview)
+    ],1600);
+  }
+
+  if(type==='tv'){
+    return compactCandidate([
+      'Record type: television series.',
+      field('Title',title),
+      field('Premiere year',m.year),
+      field('Network / platform',m.network),
+      field('Genres',asArray(m.genres).slice(0,8)),
+      field('Premise / episodic signal',overview)
+    ],1400);
+  }
+
+  return compactCandidate([
+    `Record type: ${type}.`,
+    field('Title',title),
+    field('Year',m.year),
+    field('Genres / topics',asArray(m.genres).slice(0,8)),
+    field('Summary',overview)
+  ],1400);
+}
+
 </script>
 </body>
 </html>
