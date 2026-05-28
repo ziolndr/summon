@@ -1600,6 +1600,36 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"]::after{
 </section>
 
 <script>
+
+/* ─── guaranteed music globals ─── */
+window.ITUNES_SEARCH_URL = window.ITUNES_SEARCH_URL || 'https://itunes.apple.com/search';
+window.MUSIC_DISCOVERY_TERMS = window.MUSIC_DISCOVERY_TERMS || [
+  'the cure','cocteau twins','depeche mode','new order','joy division','massive attack','portishead','nine inch nails','radiohead','slowdive',
+  'my bloody valentine','the smiths','siouxsie and the banshees','bauhaus','boards of canada','aphex twin','burial','kraftwerk','talk talk','kate bush',
+  'david bowie','prince','bjork','fiona apple','elliott smith','nick cave','the national','interpol','lcd soundsystem','tame impala',
+  'a day to remember','fall out boy','paramore','my chemical romance','pierce the veil','deftones','tool','alice in chains','soundgarden','nirvana',
+  'billie eilish','lana del rey','the weeknd','frank ocean','kendrick lamar','tyler the creator','sza','travis scott','drake','charli xcx',
+  'movie soundtrack','horror soundtrack','ambient music','darkwave','shoegaze','post punk','industrial','new wave','emo','metalcore',
+  'synth pop','dream pop','trip hop','goth rock','alternative rock','electronic albums','indie rock','experimental music','jazz noir','minimal techno'
+];
+var ITUNES_SEARCH_URL = window.ITUNES_SEARCH_URL;
+var MUSIC_DISCOVERY_TERMS = window.MUSIC_DISCOVERY_TERMS;
+
+
+
+/* ─── iTunes Music Corpus ─── */
+var ITUNES_SEARCH_URL='https://itunes.apple.com/search';
+var MUSIC_DISCOVERY_TERMS=[
+  'the cure','cocteau twins','depeche mode','new order','joy division','massive attack','portishead','nine inch nails','radiohead','slowdive',
+  'my bloody valentine','the smiths','siouxsie and the banshees','bauhaus','boards of canada','aphex twin','burial','kraftwerk','talk talk','kate bush',
+  'david bowie','prince','bjork','fiona apple','elliott smith','nick cave','the national','interpol','lcd soundsystem','tame impala',
+  'a day to remember','fall out boy','paramore','my chemical romance','pierce the veil','deftones','tool','alice in chains','soundgarden','nirvana',
+  'billie eilish','lana del rey','the weeknd','frank ocean','kendrick lamar','tyler the creator','sza','travis scott','drake','charli xcx',
+  'movie soundtrack','horror soundtrack','ambient music','darkwave','shoegaze','post punk','industrial','new wave','emo','metalcore',
+  'synth pop','dream pop','trip hop','goth rock','alternative rock','electronic albums','indie rock','experimental music','jazz noir','minimal techno'
+];
+
+
 // Local prototype TMDb integration. Move this behind FILM_API_PROXY_URL before committing/deploying publicly.
 window.TMDB_API_KEY = window.TMDB_API_KEY || '1616a31a4f3bbcb387e74cbe0ae3c7b6';
 const ALGOLIA_APP_ID='C3XKD4DFTX';
@@ -1687,6 +1717,57 @@ function thumbSrc(m){
   if(!m)return '';
   if(m.type==='game'||m.type==='book'||m.type==='tv'||m.type==='music'||m.type==='signal')return m.image||m.cover||m.src||'';
   return firstImage([m.backdropPath,m.backdrop_path,m.image,m.cover,m.posterPath,m.poster_path],'w342');
+}
+
+
+function musicFallbackCover(title='',artist='',year=''){
+  const safeTitle=String(title||'Album');
+  const safeArtist=String(artist||'Artist');
+  const safeYear=String(year||'');
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+    <rect width="800" height="800" fill="#0b0b0b"/>
+    <rect x="44" y="44" width="712" height="712" fill="none" stroke="rgba(246,241,232,.18)" stroke-width="2"/>
+    <text x="64" y="92" font-family="Arial, sans-serif" font-size="22" fill="rgba(246,241,232,.62)">SUMMON MUSIC</text>
+    <foreignObject x="64" y="330" width="672" height="180">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Arial,sans-serif;font-size:58px;line-height:.92;font-weight:700;color:#f6f1e8;letter-spacing:-2px;word-wrap:break-word;">${esc(safeTitle)}</div>
+    </foreignObject>
+    <text x="64" y="670" font-family="Arial, sans-serif" font-size="28" fill="rgba(246,241,232,.72)">${esc(safeArtist)}</text>
+    <text x="64" y="716" font-family="Arial, sans-serif" font-size="20" fill="rgba(246,241,232,.42)">${esc(safeYear)}</text>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+function musicImage(url,size=600){
+  if(!url)return '';
+  return String(url)
+    .replace(/100x100bb\.(jpg|png|webp)/i,`${size}x${size}bb.$1`)
+    .replace(/60x60bb\.(jpg|png|webp)/i,`${size}x${size}bb.$1`);
+}
+function normalizeMusicRecord(row,term=''){
+  const title=row.collectionName||row.trackName||row.artistName||'';
+  const artist=row.artistName||'Unknown artist';
+  if(!title||!artist)return null;
+  const year=row.releaseDate?String(row.releaseDate).slice(0,4):'';
+  const genre=row.primaryGenreName||'Music';
+  const kind=row.collectionType||row.wrapperType||row.kind||'album';
+  const image=musicImage(row.artworkUrl100||row.artworkUrl60||'',600)||musicFallbackCover(title,artist,year);
+  const url=row.collectionViewUrl||row.trackViewUrl||row.artistViewUrl||`https://music.apple.com/us/search?term=${encodeURIComponent(artist+' '+title)}`;
+  return {
+    type:'music',
+    title,
+    name:title,
+    artist,
+    authors:[artist],
+    year,
+    genres:[genre],
+    genre,
+    kind,
+    image,
+    cover:image,
+    src:image,
+    externalUrl:url,
+    subjects:[genre,kind,term,'music','album','record','artist','scene','mood','rhythm','production','subculture'].filter(Boolean),
+    overview:`${title}. By ${artist}. Released ${year||'unknown year'}. Genre: ${genre}. Music object indexed through artist, album, genre, scene, subculture, release era, mood, rhythm, production context, instrumentality, and cultural signal.`
+  };
 }
 
 function wallSrc(m){
@@ -2373,7 +2454,7 @@ async function loadTV(limit){
 
 // ─── Music Corpus: direct iTunes Search API JSON fetch; no proxy required ───
 
-const ITUNES_SEARCH_URL='https://itunes.apple.com/search';
+var ITUNES_SEARCH_URL='https://itunes.apple.com/search';
 const MUSIC_SEARCH_TERMS=[
   'music','new music','album','song','artist','soundtrack','independent music',
   'electronic','alternative','indie','hip hop','r and b','soul','jazz','rock','ambient','dance','folk',
@@ -2520,39 +2601,96 @@ function buildItunesTasks(target){
 }
 
 async function loadMusic(limit=musicLimit()){
-  const target=Math.max(40,limit);
-  const key=musicCacheKey(target);
-  const cached=readMusicStorage(key);
-  if(cached?.length){
-    setStatus(`${cached.length} cached music records`);
-    return dedupeMusic(cached,target).slice(0,limit);
-  }
+  const fallbackTerms=[
+    'the cure','cocteau twins','depeche mode','radiohead','massive attack','portishead','slowdive',
+    'a day to remember','fall out boy','paramore','deftones','billie eilish','lana del rey',
+    'shoegaze','post punk','darkwave','trip hop','ambient music','movie soundtrack','alternative rock'
+  ];
+  const discoveryTerms=(Array.isArray(window.MUSIC_DISCOVERY_TERMS)&&window.MUSIC_DISCOVERY_TERMS.length)
+    ? window.MUSIC_DISCOVERY_TERMS
+    : fallbackTerms;
+  const searchUrl=window.ITUNES_SEARCH_URL || 'https://itunes.apple.com/search';
 
-  setStatus('loading music from itunes');
-  const rows=[];
-  for(const task of buildItunesTasks(target)){
-    if(dedupeMusic(rows,target).length>=target)break;
+  const target=Math.max(24,Number(limit)||musicLimit());
+  const offset=Math.abs((corpusPageOffset||0)+(shuffleSeed||0))%discoveryTerms.length;
+  const terms=discoveryTerms.slice(offset).concat(discoveryTerms.slice(0,offset));
+  const seen=new Set();
+  const out=[];
+  const perTerm=Math.min(40,Math.max(12,Math.ceil(target/Math.min(terms.length,24))));
+
+  setCorpusLoading(true,`loading music`);
+
+  for(const term of terms){
+    if(out.length>=target)break;
+    const params=new URLSearchParams({
+      term,
+      media:'music',
+      entity:'album',
+      attribute:'albumTerm',
+      limit:String(perTerm),
+      country:'US',
+      explicit:'Yes'
+    });
+
     try{
-      const batch=await task();
-      rows.push(...batch);
-      const count=dedupeMusic(rows,target).length;
-      setStatus(`${count} music records loading`);
-      await sleep(MUSIC_REQUEST_DELAY_MS);
-    }catch(err){
-      console.warn('music provider failed',err);
-      // Keep going. A single iTunes request failing should not empty the mode.
-      await sleep(MUSIC_REQUEST_DELAY_MS*2);
+      const res=await fetch(`${searchUrl}?${params.toString()}`);
+      if(!res.ok)throw new Error(`itunes ${res.status}`);
+      const data=await res.json();
+      for(const row of(data.results||[])){
+        const rec=normalizeMusicRecord(row,term);
+        if(!rec)continue;
+        const key=`${String(rec.artist).toLowerCase()}::${String(rec.title).toLowerCase()}::${rec.year||''}`;
+        if(seen.has(key))continue;
+        seen.add(key);
+        out.push(rec);
+        if(out.length>=target)break;
+      }
+    }catch(e){
+      console.warn('itunes term failed',term,e);
     }
   }
 
-  const clean=dedupeMusic(rows,target);
-  if(clean.length){
-    writeMusicStorage(key,clean);
-    return clean.slice(0,limit);
+  if(out.length<Math.min(target,80)){
+    for(const term of ['alternative','rock','electronic','soundtrack','pop','hip hop','metal','ambient','indie','post punk']){
+      if(out.length>=target)break;
+      const params=new URLSearchParams({term,media:'music',entity:'album',limit:'50',country:'US',explicit:'Yes'});
+      try{
+        const res=await fetch(`${searchUrl}?${params.toString()}`);
+        if(!res.ok)continue;
+        const data=await res.json();
+        for(const row of(data.results||[])){
+          const rec=normalizeMusicRecord(row,term);
+          if(!rec)continue;
+          const key=`${String(rec.artist).toLowerCase()}::${String(rec.title).toLowerCase()}::${rec.year||''}`;
+          if(seen.has(key))continue;
+          seen.add(key);
+          out.push(rec);
+          if(out.length>=target)break;
+        }
+      }catch(e){}
+    }
   }
 
-  setStatus('music load failed');
-  throw new Error('empty music corpus');
+  if(!out.length){
+    return [
+      ['Heaven or Las Vegas','Cocteau Twins','1990','Alternative'],
+      ['Disintegration','The Cure','1989','Alternative'],
+      ['Mezzanine','Massive Attack','1998','Electronic'],
+      ['Dummy','Portishead','1994','Electronic'],
+      ['Kid A','Radiohead','2000','Alternative'],
+      ['Violator','Depeche Mode','1990','Electronic'],
+      ['Unknown Pleasures','Joy Division','1979','Rock'],
+      ['Selected Ambient Works 85-92','Aphex Twin','1992','Electronic']
+    ].map(([title,artist,year,genre])=>({
+      type:'music',title,name:title,artist,authors:[artist],year,genres:[genre],genre,
+      image:musicFallbackCover(title,artist,year),cover:musicFallbackCover(title,artist,year),src:musicFallbackCover(title,artist,year),
+      externalUrl:`https://music.apple.com/us/search?term=${encodeURIComponent(artist+' '+title)}`,
+      subjects:[genre,'music','album','record','mood','scene','subculture'],
+      overview:`${title}. By ${artist}. Released ${year}. Genre: ${genre}. Music object indexed through artist, album, genre, scene, subculture, release era, mood, rhythm, production context, instrumentality, and cultural signal.`
+    }));
+  }
+
+  return out.slice(0,target);
 }
 
 function musicWallTarget(){
@@ -3868,101 +4006,36 @@ function metaBitsFor(m,limit=4){
 
 function candidateText(m){
   if(!m)return '';
-  const type=String(m.type||'record').toLowerCase();
-  const title=String(m.title||'Untitled').trim();
-  const overview=String(m.overview||'').replace(/\s+/g,' ').trim();
-
-  if(type==='signal'){
-    return compactCandidate([
-      'Record type: geopolitical news signal.',
-      field('Title',title),
-      field('Source',m.source),
-      field('Section / lane',m.section),
-      field('Published year',m.year),
-      field('Published timestamp',m.publishedAt),
-      field('Tags / topics',asArray(m.genres).slice(0,8)),
-      field('Source domain',domainFromUrl(m.externalUrl)),
-      field('Signal summary',overview)
-    ],1600);
+  if(m.type==='music'){
+    return [
+      `MUSIC: ${m.title||m.name||''}`,
+      `ARTIST: ${m.artist||(m.authors||[]).join(', ')||''}`,
+      `YEAR: ${m.year||''}`,
+      `GENRE: ${(m.genres||[m.genre]).filter(Boolean).join(', ')}`,
+      `SUBJECTS: ${(m.subjects||[]).slice(0,18).join(', ')}`,
+      `OVERVIEW: ${m.overview||''}`,
+      `SEARCH SURFACE: album, record, artist, genre, scene, subculture, release era, mood, rhythm, production texture, instrumentality, cultural signal`
+    ].filter(Boolean).join('. ');
   }
-
-  if(type==='film'){
-    return compactCandidate([
-      'Record type: film.',
-      field('Title',title),
-      field('Release year',m.year),
-      field('Genres / moods',asArray(m.genres).slice(0,10)),
-      field('Provider tags / keywords',asArray(m.corpusTags).slice(0,18)),
-      field('Corpus source',m.corpusSource),
-      field('Cast',asArray(m.actors).slice(0,10)),
-      field('Characters',asArray(m.characters).slice(0,8)),
-      field('Director',m.director),
-      field('Writers',asArray(m.writers).slice(0,6)),
-      field('Production countries',asArray(m.productionCountries).slice(0,6)),
-      field('Production companies',asArray(m.productionCompanies).slice(0,6)),
-      field('Original language',m.originalLanguage),
-      field('Runtime minutes',m.runtime),
-      field('Rating',m.rating),
-      field('TMDb popularity / votes',[m.tmdbPopularity?`popularity ${m.tmdbPopularity}`:'',m.tmdbVoteCount?`${m.tmdbVoteCount} votes`:''].filter(Boolean)),
-      field('Film synopsis / semantic surface',overview)
-    ],1400);
+  if(m.type==='game'){
+    return `${m.title||m.name}. ${(m.genres||[]).join(', ')}. ${m.overview||m.description||''}`;
   }
-
-  if(type==='game'){
-    return compactCandidate([
-      'Record type: game.',
-      field('Title',title),
-      field('Release year',m.year),
-      field('Genres',asArray(m.genres).slice(0,8)),
-      field('Platforms',asArray(m.platforms).slice(0,8)),
-      field('Critical rating',m.rating?`Metacritic ${m.rating}`:''),
-      field('Game world / mechanics / play signal',overview)
-    ],1400);
+  if(m.type==='book'){
+    return `${m.title||m.name}. By ${(m.authors||[]).join(', ')}. ${(m.subjects||[]).slice(0,12).join(', ')}. ${m.overview||''}`;
   }
-
-  if(type==='book'){
-    return compactCandidate([
-      'Record type: book.',
-      field('Title',title),
-      field('Author',asArray(m.authors).slice(0,4)),
-      field('Publication / era',m.year),
-      field('Subjects / shelves',asArray(m.subjects||m.genres).slice(0,10)),
-      field('Literary / thematic signal',overview)
-    ],1400);
+  if(m.type==='tv'){
+    return `${m.title||m.name}. ${(m.genres||[]).join(', ')}. ${m.overview||''}`;
   }
-
-  if(type==='music'){
-    return compactCandidate([
-      'Record type: music.',
-      field('Title',title),
-      field('Artist',m.artist),
-      field('Album / release',m.album),
-      field('Release year',m.year),
-      field('Genres / sonic tags',asArray(m.genres).slice(0,10)),
-      field('Provider source',m.source),
-      field('Track / album type',m.kind),
-      field('Music signal / semantic surface',overview)
-    ],1400);
+  if(m.type==='signal'){
+    return `${m.title||m.name}. Source: ${m.source||''}. ${m.section||''}. ${m.overview||''}`;
   }
-
-  if(type==='tv'){
-    return compactCandidate([
-      'Record type: television series.',
-      field('Title',title),
-      field('Premiere year',m.year),
-      field('Network / platform',m.network),
-      field('Genres',asArray(m.genres).slice(0,8)),
-      field('Premise / episodic signal',overview)
-    ],1400);
-  }
-
-  return compactCandidate([
-    `Record type: ${type}.`,
-    field('Title',title),
-    field('Year',m.year),
-    field('Genres / topics',asArray(m.genres).slice(0,8)),
-    field('Summary',overview)
-  ],1400);
+  return [
+    `${m.title||m.name||''}`,
+    `${m.year||''}`,
+    `${(m.genres||[]).join(', ')}`,
+    `${(m.subjects||[]).slice(0,12).join(', ')}`,
+    `${m.overview||''}`
+  ].filter(Boolean).join('. ');
 }
 
 </script>
