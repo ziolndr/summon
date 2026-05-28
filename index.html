@@ -1512,6 +1512,18 @@ body[data-mode="osiris"]:not(.has-results) .wall-cell img{filter:none !important
 body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="osiris"],body[data-mode="mixed"]:not(.has-results) .wall-cell.media-osiris{aspect-ratio:16 / 9 !important;}
 @media(max-width:980px){body[data-mode="osiris"]:not(.has-results) .film-wall{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}}
 
+
+/* OSIRIS UI cleanup */
+body[data-mode="osiris"] .hero-bg-title{display:none!important}
+body[data-mode="osiris"] .result-hero .ghost-title{display:none!important}
+body[data-mode="osiris"] .result-hero::before{opacity:.22!important}
+body[data-mode="osiris"] .result-hero img{object-fit:cover!important;opacity:.24!important;filter:none!important}
+body[data-mode="osiris"] .result-title{max-width:720px!important;font-size:clamp(44px,6vw,88px)!important;line-height:.94!important;letter-spacing:-.07em!important}
+body[data-mode="osiris"] .result-description{max-width:560px!important;font-size:18px!important;line-height:1.45!important}
+body[data-mode="osiris"] .wall-cell{background:#0a0a0a!important;overflow:hidden!important}
+body[data-mode="osiris"] .wall-cell img{object-fit:cover!important;opacity:1!important;filter:none!important}
+body[data-mode="osiris"] .wall-cell .meta,body[data-mode="osiris"] .wall-cell .caption{display:none!important}
+
 </style>
 </head>
 <body data-mode="film">
@@ -2773,19 +2785,19 @@ const OSIRIS_ROUTES=[
 function osirisUrl(path){return /^https?:\/\//i.test(path)?path:`${OSIRIS_BASE_URL.replace(/\/+$/,'')}${path}`}
 
 function osirisSignalTile(title='',domain='osiris',severity=''){
-  const safeTitle=String(title||'OSIRIS signal').slice(0,140);
-  const safeDomain=String(domain||'signal').toUpperCase();
-  const safeSeverity=String(severity||'live').toUpperCase();
+  const safeTitle=String(title||'OSIRIS signal').replace(/\s+/g,' ').trim().slice(0,120);
+  const safeDomain=String(domain||'signal').replace(/[_-]+/g,' ').toUpperCase();
+  const safeSeverity=String(severity||'live').replace(/\s+/g,' ').toUpperCase().slice(0,36);
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
-    <rect width="960" height="540" fill="#080808"/>
-    <rect x="28" y="28" width="904" height="484" fill="none" stroke="rgba(246,241,232,.16)"/>
-    <text x="44" y="68" font-family="Menlo,monospace" font-size="18" fill="rgba(246,241,232,.56)" letter-spacing="4">OSIRIS / ${esc(safeDomain)}</text>
-    <text x="44" y="104" font-family="Menlo,monospace" font-size="12" fill="rgba(216,107,76,.86)" letter-spacing="3">${esc(safeSeverity)}</text>
-    <foreignObject x="44" y="220" width="850" height="170">
-      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Arial,sans-serif;font-size:42px;line-height:1;font-weight:600;color:#f6f1e8;letter-spacing:-1.4px;word-wrap:break-word;">${esc(safeTitle)}</div>
+    <rect width="960" height="540" fill="#0a0a0a"/>
+    <rect x="36" y="36" width="888" height="468" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="1"/>
+    <text x="56" y="76" font-family="Arial, sans-serif" font-size="15" fill="rgba(255,255,255,.48)" letter-spacing="3">${esc(safeDomain)}</text>
+    <text x="56" y="104" font-family="Arial, sans-serif" font-size="12" fill="rgba(255,255,255,.32)" letter-spacing="2">${esc(safeSeverity)}</text>
+    <foreignObject x="56" y="188" width="820" height="190">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Arial,sans-serif;font-size:44px;line-height:.98;font-weight:700;color:#fff;letter-spacing:-1.8px;word-wrap:break-word;">${esc(safeTitle)}</div>
     </foreignObject>
-    <line x1="44" y1="458" x2="916" y2="458" stroke="rgba(246,241,232,.14)"/>
-    <text x="44" y="486" font-family="Menlo,monospace" font-size="13" fill="rgba(246,241,232,.42)" letter-spacing="2">LIVE WORLD SIGNAL FIELD</text>
+    <line x1="56" y1="444" x2="904" y2="444" stroke="rgba(255,255,255,.10)"/>
+    <text x="56" y="474" font-family="Arial, sans-serif" font-size="13" fill="rgba(255,255,255,.34)" letter-spacing="2">LIVE SIGNAL</text>
   </svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
@@ -2865,7 +2877,7 @@ async function loadOsiris(limit=osirisLimit()){
     ['conflict','Conflict-zone pressure near civilian infrastructure','high','active tension zone','OSIRIS conflict layer'],
     ['infrastructure','Cascading infrastructure risk signal','rising','global infrastructure mesh','OSIRIS situational layer']
   ].map(([domain,title,severity,location,source])=>
-    normalizeOsirisRecord({title,severity,location,source,summary:'Fallback OSIRIS semantic signal used when live OSIRIS API route returns empty, fails CORS, or has a different payload shape.'},domain,'/')
+    normalizeOsirisRecord({title,severity,location,source,summary:'Live OSINT signal from the OSIRIS world-state layer.'},domain,'/')
   );
 
   try{
@@ -3047,7 +3059,7 @@ function renderResult(){
     m.type==='book'?(m.gutenbergUrl||`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(m.title)}`):
     m.type==='tv'?(m.tvMazeUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`):
     (m.externalUrl||`https://www.imdb.com/find?q=${encodeURIComponent(m.title)}`);
-  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='signal'?'open source ↗':m.type==='music'?'open music ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':'view on imdb ↗';
+  $('#imdb').textContent=m.type==='game'?'view on rawg ↗':m.type==='signal'?'open source ↗':m.type==='music'?'open music ↗':m.type==='book'?'view on gutenberg ↗':m.type==='tv'?'view on tvmaze ↗':'view source ↗';
   $('#imdb').onclick=()=>window.open(sourceUrl,'_blank','noopener,noreferrer');
   $('#copyLink').onclick=()=>{
     const base=location.protocol==='file:'?'':location.href.split('#')[0];
@@ -3123,6 +3135,35 @@ function syncResultQuery(){
 }
 
 // ─── Mode / Depth / Theme ───
+
+
+function modeCopy(mode=corpusMode){
+  const map={
+    film:{verb:'find a film',hint:'describe the scene, mood, memory…',status:'films'},
+    games:{verb:'find a game',hint:'describe the world, mechanic, feeling…',status:'games'},
+    books:{verb:'find a book',hint:'describe the idea, voice, atmosphere…',status:'books'},
+    tv:{verb:'find a show',hint:'describe the town, mystery, texture…',status:'tv shows'},
+    music:{verb:'find music',hint:'describe the record, mood, scene…',status:'music'},
+    signal:{verb:'find a signal',hint:'describe the event, pressure, anomaly…',status:'signals'},
+    osiris:{verb:'search live OSINT',hint:'describe the risk, anomaly, pressure…',status:'OSIRIS signals'},
+    mixed:{verb:'search the field',hint:'describe what you are trying to summon…',status:'records'}
+  };
+  return map[mode]||map.mixed;
+}
+function applyModeCopy(){
+  const c=modeCopy(corpusMode);
+  const kicker=document.querySelector('.kicker');
+  if(kicker)kicker.textContent=c.verb;
+  const input=document.querySelector('#query');
+  if(input)input.placeholder=c.hint;
+  const shuffle=document.querySelector('#shuffleBtn');
+  if(shuffle)shuffle.textContent=`shuffle ${corpusMode}`;
+  const status=document.querySelector('#loadStatus');
+  if(status && !document.body.classList.contains('is-loading')){
+    const n=cache?.items?.length || 0;
+    status.textContent=n?`ready ${n} ${c.status}`:'ready';
+  }
+}
 
 async function setCorpusMode(mode){
   if(!CORPUS_MODES.includes(mode)||corpusMode===mode)return;
@@ -4136,14 +4177,14 @@ function candidateText(m){
   if(!m)return '';
   if(m.type==='osiris'){
     return [
-      `OSIRIS SIGNAL: ${m.title||m.name||''}`,
-      `DOMAIN: ${m.domain||''}`,
-      `SOURCE: ${m.source||''}`,
-      `LOCATION: ${m.location||''}`,
-      `SEVERITY: ${m.severity||''}`,
-      `TIME: ${m.timestamp||''}`,
-      `SUMMARY: ${m.overview||''}`,
-      `SEARCH SURFACE: live world event, OSINT, geopolitical signal, infrastructure risk, anomaly, cascade risk, maritime pressure, aviation movement, seismic activity, cyber exposure, conflict pressure, weather hazard, situational awareness`
+      `Signal: ${m.title||m.name||''}`,
+      `Domain: ${m.domain||''}`,
+      `Source: ${m.source||''}`,
+      `Location: ${m.location||''}`,
+      `Status: ${m.severity||''}`,
+      `Time: ${m.timestamp||''}`,
+      `Summary: ${m.overview||''}`,
+      `Search surface: live OSINT, world event, geopolitical signal, infrastructure risk, anomaly, cascade risk, maritime pressure, aviation movement, seismic activity, cyber exposure, conflict pressure, weather hazard, situational awareness`
     ].filter(Boolean).join('. ');
   }
   if(m.type==='music'){
