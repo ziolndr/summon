@@ -1496,6 +1496,14 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"]::after{
   opacity:.105 !important;
 }
 
+
+/* OSIRIS mode */
+body[data-mode="osiris"]:not(.has-results) .film-wall{grid-template-columns:repeat(4,minmax(150px,1fr)) !important;gap:2px !important;}
+body[data-mode="osiris"]:not(.has-results) .wall-cell{aspect-ratio:16 / 9 !important;background:#080808 !important;box-shadow:0 0 0 1px rgba(244,241,235,.08) !important;}
+body[data-mode="osiris"]:not(.has-results) .wall-cell img{filter:none !important;transform:none !important;}
+body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="osiris"],body[data-mode="mixed"]:not(.has-results) .wall-cell.media-osiris{aspect-ratio:16 / 9 !important;}
+@media(max-width:980px){body[data-mode="osiris"]:not(.has-results) .film-wall{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}}
+
 </style>
 </head>
 <body data-mode="film">
@@ -1519,6 +1527,7 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"]::after{
           <button type="button" class="toggle-btn" data-mode="tv">tv</button>
           <button type="button" class="toggle-btn" data-mode="music">music</button>
           <button type="button" class="toggle-btn" data-mode="signal">signal</button>
+          <button type="button" class="toggle-btn" data-mode="osiris">osiris</button>
           <button type="button" class="toggle-btn" data-mode="mixed">mix</button>
         </div>
         <div class="toggle-group" role="group" aria-label="Search depth">
@@ -1658,15 +1667,15 @@ const TMDB_DISCOVERY_MAX_REQUESTS=160;
 const TMDB_DISCOVERY_MIN_REQUESTS=24;
 const TMDB_FAST_FILM_LOAD=window.SUMMON_FAST_FILM_LOAD!==false;
 
-const CORPUS_MODES=['film','games','books','tv','music','signal','mixed'];
+const CORPUS_MODES=['film','games','books','tv','music','signal','osiris','mixed'];
 const MIXED_CORPUS_MODES=CORPUS_MODES.filter(mode=>mode!=='mixed');
-const MODE_TYPE={film:'film',games:'game',books:'book',tv:'tv',music:'music',signal:'signal'};
-const MODE_LABEL={film:'films',games:'games',books:'books',tv:'tv shows',music:'music',signal:'signals',mixed:'mixed records'};
+const MODE_TYPE={film:'film',games:'game',books:'book',tv:'tv',music:'music',signal:'signal',osiris:'osiris'};
+const MODE_LABEL={film:'films',games:'games',books:'books',tv:'tv shows',music:'music',signal:'signals',osiris:'osiris signals',mixed:'mixed records'};
 
 const DEPTHS={
-  surface:{film:240,games:80,books:80,tv:80,music:160,mixedFilm:50,mixedGames:30,mixedBooks:30,mixedTv:30,mixedMusic:40,rawgPages:3},
-  field:{film:900,games:140,books:160,tv:160,music:420,mixedFilm:115,mixedGames:55,mixedBooks:55,mixedTv:55,mixedMusic:80,rawgPages:5},
-  archive:{film:1600,games:500,books:500,tv:500,music:900,mixedFilm:200,mixedGames:100,mixedBooks:100,mixedTv:100,mixedMusic:140,rawgPages:13}
+  surface:{film:240,games:80,books:80,tv:80,music:160,osiris:160,mixedFilm:50,mixedGames:30,mixedBooks:30,mixedTv:30,mixedMusic:40,mixedOsiris:40,rawgPages:3},
+  field:{film:900,games:140,books:160,tv:160,music:420,osiris:420,mixedFilm:115,mixedGames:55,mixedBooks:55,mixedTv:55,mixedMusic:80,mixedOsiris:80,rawgPages:5},
+  archive:{film:1600,games:500,books:500,tv:500,music:900,osiris:900,mixedFilm:200,mixedGames:100,mixedBooks:100,mixedTv:100,mixedMusic:140,mixedOsiris:120,rawgPages:13}
 };
 
 let corpusMode='film',searchDepth='field';
@@ -1820,6 +1829,7 @@ function bookLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedBooks')
 function tvLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedTv'):getLimit('tv')}
 function musicLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedMusic'):getLimit('music')}
 
+function osirisLimit(mode=corpusMode){return mode==='mixed'?getLimit('mixedOsiris'):getLimit('osiris')}
 function totalLimit(mode=corpusMode){
   if(mode==='signal')return signalLimit();
   if(mode==='mixed'){
@@ -2736,6 +2746,108 @@ function finalizeCorpus(movies){
   setStatus(`${movies.length} ${label} loaded`);
   renderWall(movies);
   return cache;
+}
+
+
+
+const OSIRIS_BASE_URL = window.OSIRIS_BASE_URL || 'http://osiris.actualgeneralintelligence.com';
+const OSIRIS_ROUTES=[
+  {domain:'earthquake', path:'/api/earthquakes'},
+  {domain:'fire', path:'/api/fires'},
+  {domain:'weather', path:'/api/weather'},
+  {domain:'gdelt', path:'/api/gdelt'},
+  {domain:'flight', path:'/api/flights'},
+  {domain:'maritime', path:'/api/maritime'},
+  {domain:'satellite', path:'/api/satellites'},
+  {domain:'cyber', path:'/api/osint/cves'}
+];
+
+function osirisUrl(path){return /^https?:\/\//i.test(path)?path:`${OSIRIS_BASE_URL.replace(/\/+$/,'')}${path}`}
+
+function osirisSignalTile(title='',domain='osiris',severity=''){
+  const safeTitle=String(title||'OSIRIS signal').slice(0,140);
+  const safeDomain=String(domain||'signal').toUpperCase();
+  const safeSeverity=String(severity||'live').toUpperCase();
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+    <rect width="960" height="540" fill="#080808"/>
+    <rect x="28" y="28" width="904" height="484" fill="none" stroke="rgba(246,241,232,.16)"/>
+    <text x="44" y="68" font-family="Menlo,monospace" font-size="18" fill="rgba(246,241,232,.56)" letter-spacing="4">OSIRIS / ${esc(safeDomain)}</text>
+    <text x="44" y="104" font-family="Menlo,monospace" font-size="12" fill="rgba(216,107,76,.86)" letter-spacing="3">${esc(safeSeverity)}</text>
+    <foreignObject x="44" y="220" width="850" height="170">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Arial,sans-serif;font-size:42px;line-height:1;font-weight:600;color:#f6f1e8;letter-spacing:-1.4px;word-wrap:break-word;">${esc(safeTitle)}</div>
+    </foreignObject>
+    <line x1="44" y1="458" x2="916" y2="458" stroke="rgba(246,241,232,.14)"/>
+    <text x="44" y="486" font-family="Menlo,monospace" font-size="13" fill="rgba(246,241,232,.42)" letter-spacing="2">LIVE WORLD SIGNAL FIELD</text>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function flattenOsirisPayload(payload){
+  if(Array.isArray(payload))return payload;
+  if(Array.isArray(payload?.data))return payload.data;
+  if(Array.isArray(payload?.items))return payload.items;
+  if(Array.isArray(payload?.features))return payload.features.map(f=>({...f.properties, geometry:f.geometry}));
+  if(Array.isArray(payload?.events))return payload.events;
+  if(Array.isArray(payload?.results))return payload.results;
+  if(Array.isArray(payload?.records))return payload.records;
+  if(payload && typeof payload==='object'){
+    for(const key of ['earthquakes','fires','weather','flights','maritime','satellites','cves','news','articles']){
+      if(Array.isArray(payload[key]))return payload[key];
+    }
+  }
+  return [];
+}
+
+function normalizeOsirisRecord(raw={},domain='osiris',routePath=''){
+  const props=raw.properties||raw;
+  const coords=raw.geometry?.coordinates||props.coordinates||[];
+  const lat=props.lat||props.latitude||(Array.isArray(coords)?coords[1]:'');
+  const lon=props.lon||props.lng||props.longitude||(Array.isArray(coords)?coords[0]:'');
+  const title=props.title||props.name||props.event||props.headline||props.callsign||props.flight||props.vessel||props.id||`${domain} signal`;
+  const severity=props.severity||props.alert||props.mag||props.magnitude||props.priority||props.status||'live';
+  const timestamp=props.time||props.timestamp||props.date||props.pubDate||props.updated||'';
+  const location=props.place||props.location||props.region||props.country||props.city||([lat,lon].filter(Boolean).join(', '));
+  const source=props.source||props.provider||props.feed||'OSIRIS';
+  const url=props.url||props.link||props.webUrl||props.sourceUrl||'';
+  const summary=props.summary||props.description||props.desc||props.text||props.details||props.type||'Live OSINT signal from OSIRIS data layer.';
+  const cleanTitle=String(title||`${domain} signal`).replace(/\s+/g,' ').trim();
+  const image=osirisSignalTile(cleanTitle,domain,severity);
+  return {type:'osiris',title:cleanTitle,name:cleanTitle,domain,source,severity:String(severity),timestamp:String(timestamp),location:String(location),lat,lon,
+    overview:`${cleanTitle}. Domain: ${domain}. Source: ${source}. Location: ${location||'global/unknown'}. Severity/status: ${severity}. ${summary}`,
+    image,cover:image,src:image,externalUrl:url||osirisUrl(routePath),
+    subjects:[domain,source,severity,location,'osiris','osint','live world signal','situational awareness','anomaly','risk','infrastructure','geopolitical'].filter(Boolean)};
+}
+
+async function fetchOsirisRoute(route,limit=100){
+  try{
+    const res=await fetch(osirisUrl(route.path),{headers:{'Accept':'application/json'}});
+    if(!res.ok)throw new Error(`osiris ${route.domain} ${res.status}`);
+    const payload=await res.json();
+    return flattenOsirisPayload(payload).slice(0,limit).map(row=>normalizeOsirisRecord(row,route.domain,route.path));
+  }catch(e){console.warn('OSIRIS route unavailable',route.path,e);return []}
+}
+
+async function loadOsiris(limit=osirisLimit()){
+  const target=Math.max(24,Number(limit)||osirisLimit());
+  setCorpusLoading(true,'loading osiris');
+  const perRoute=Math.ceil(target/OSIRIS_ROUTES.length)+12;
+  const batches=await Promise.all(OSIRIS_ROUTES.map(route=>fetchOsirisRoute(route,perRoute)));
+  let rows=batches.flat();
+  const seen=new Set();
+  rows=rows.filter(r=>{const key=`${r.domain}::${r.title}::${r.location}::${r.timestamp}`; if(seen.has(key))return false; seen.add(key); return true;});
+  if(!rows.length){
+    rows=[
+      ['earthquake','Seismic activity near a maritime chokepoint','moderate','regional fault zone','USGS-style seismic feed'],
+      ['fire','Active hotspot near logistics corridor','elevated','regional infrastructure zone','NASA FIRMS-style fire signal'],
+      ['weather','Severe weather event threatening port operations','watch','coastal trade route','EONET/GDACS-style weather signal'],
+      ['cyber','New CVE affecting exposed infrastructure','high','internet infrastructure','NVD-style vulnerability signal'],
+      ['maritime','Chokepoint pressure around vessel corridor','elevated','global port network','OSIRIS maritime layer'],
+      ['flight','Unusual aviation density near conflict boundary','live','regional airspace','OpenSky-style aviation signal'],
+      ['satellite','Satellite pass over strategic geography','live','orbital track','space situational awareness layer'],
+      ['gdelt','News velocity spike around political instability','rising','global media field','GDELT-style news signal']
+    ].map(([domain,title,severity,location,source])=>normalizeOsirisRecord({title,severity,location,source,summary:'Synthetic fallback OSIRIS signal used when the live OSIRIS API is unavailable.'},domain,'/'));
+  }
+  return rows.slice(0,target);
 }
 
 
@@ -4006,36 +4118,26 @@ function metaBitsFor(m,limit=4){
 
 function candidateText(m){
   if(!m)return '';
-  if(m.type==='music'){
+  if(m.type==='osiris'){
     return [
-      `MUSIC: ${m.title||m.name||''}`,
-      `ARTIST: ${m.artist||(m.authors||[]).join(', ')||''}`,
-      `YEAR: ${m.year||''}`,
-      `GENRE: ${(m.genres||[m.genre]).filter(Boolean).join(', ')}`,
-      `SUBJECTS: ${(m.subjects||[]).slice(0,18).join(', ')}`,
-      `OVERVIEW: ${m.overview||''}`,
-      `SEARCH SURFACE: album, record, artist, genre, scene, subculture, release era, mood, rhythm, production texture, instrumentality, cultural signal`
+      `OSIRIS SIGNAL: ${m.title||m.name||''}`,
+      `DOMAIN: ${m.domain||''}`,
+      `SOURCE: ${m.source||''}`,
+      `LOCATION: ${m.location||''}`,
+      `SEVERITY: ${m.severity||''}`,
+      `TIME: ${m.timestamp||''}`,
+      `SUMMARY: ${m.overview||''}`,
+      `SEARCH SURFACE: live world event, OSINT, geopolitical signal, infrastructure risk, anomaly, cascade risk, maritime pressure, aviation movement, seismic activity, cyber exposure, conflict pressure, weather hazard, situational awareness`
     ].filter(Boolean).join('. ');
   }
-  if(m.type==='game'){
-    return `${m.title||m.name}. ${(m.genres||[]).join(', ')}. ${m.overview||m.description||''}`;
+  if(m.type==='music'){
+    return [`MUSIC: ${m.title||m.name||''}`,`ARTIST: ${m.artist||(m.authors||[]).join(', ')||''}`,`YEAR: ${m.year||''}`,`GENRE: ${(m.genres||[m.genre]).filter(Boolean).join(', ')}`,`SUBJECTS: ${(m.subjects||[]).slice(0,18).join(', ')}`,`OVERVIEW: ${m.overview||''}`,`SEARCH SURFACE: album, record, artist, genre, scene, subculture, release era, mood, rhythm, production texture, instrumentality, cultural signal`].filter(Boolean).join('. ');
   }
-  if(m.type==='book'){
-    return `${m.title||m.name}. By ${(m.authors||[]).join(', ')}. ${(m.subjects||[]).slice(0,12).join(', ')}. ${m.overview||''}`;
-  }
-  if(m.type==='tv'){
-    return `${m.title||m.name}. ${(m.genres||[]).join(', ')}. ${m.overview||''}`;
-  }
-  if(m.type==='signal'){
-    return `${m.title||m.name}. Source: ${m.source||''}. ${m.section||''}. ${m.overview||''}`;
-  }
-  return [
-    `${m.title||m.name||''}`,
-    `${m.year||''}`,
-    `${(m.genres||[]).join(', ')}`,
-    `${(m.subjects||[]).slice(0,12).join(', ')}`,
-    `${m.overview||''}`
-  ].filter(Boolean).join('. ');
+  if(m.type==='game')return `${m.title||m.name}. ${(m.genres||[]).join(', ')}. ${m.overview||m.description||''}`;
+  if(m.type==='book')return `${m.title||m.name}. By ${(m.authors||[]).join(', ')}. ${(m.subjects||[]).slice(0,12).join(', ')}. ${m.overview||''}`;
+  if(m.type==='tv')return `${m.title||m.name}. ${(m.genres||[]).join(', ')}. ${m.overview||''}`;
+  if(m.type==='signal')return `${m.title||m.name}. Source: ${m.source||''}. ${m.section||''}. ${m.overview||''}`;
+  return [`${m.title||m.name||''}`,`${m.year||''}`,`${(m.genres||[]).join(', ')}`,`${(m.subjects||[]).slice(0,12).join(', ')}`,`${m.overview||''}`].filter(Boolean).join('. ');
 }
 
 </script>
