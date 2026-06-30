@@ -1496,6 +1496,86 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"]::after{
   opacity:.105 !important;
 }
 
+
+
+/* ─── Better query traces ───
+   These should teach the input behavior, not sound like fake oracle copy. */
+.query-traces{
+  margin-top:18px !important;
+}
+.trace-label{
+  color:var(--ink-soft) !important;
+  letter-spacing:.14em !important;
+}
+.trace-line{
+  min-height:34px !important;
+  align-items:flex-start !important;
+  white-space:normal !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  gap:10px !important;
+  font-size:12px !important;
+  line-height:1.45 !important;
+  letter-spacing:.005em !important;
+  color:var(--ink-mid) !important;
+}
+.trace-prefix{
+  flex:0 0 auto !important;
+  margin-top:1px !important;
+  padding:2px 5px !important;
+  border:1px solid var(--ink-faint) !important;
+  color:var(--ink-soft) !important;
+  font-size:9px !important;
+  letter-spacing:.10em !important;
+  text-transform:uppercase !important;
+}
+.trace-cursor{
+  transform:translateY(1px) !important;
+  opacity:.55 !important;
+}
+@media(max-width:560px){
+  .trace-line{
+    font-size:11px !important;
+    min-height:44px !important;
+  }
+}
+
+
+
+/* ─── Clean trace treatment ───
+   No label. Just quiet rotating examples. */
+.trace-label,
+.trace-prefix{
+  display:none !important;
+}
+.query-traces{
+  margin-top:16px !important;
+  max-width:520px !important;
+}
+.trace-line{
+  min-height:36px !important;
+  display:block !important;
+  white-space:normal !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  font-size:12px !important;
+  line-height:1.45 !important;
+  letter-spacing:.005em !important;
+  color:var(--ink-soft) !important;
+}
+#traceText{
+  opacity:.82 !important;
+}
+.trace-cursor{
+  opacity:.38 !important;
+}
+@media(max-width:560px){
+  .trace-line{
+    min-height:48px !important;
+    font-size:11px !important;
+  }
+}
+
 </style>
 </head>
 <body data-mode="film">
@@ -1509,7 +1589,7 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"]::after{
         <button id="go" aria-label="Search">→</button>
       </form>
       <div class="search-hint">
-        <span id="modeHint">search film by meaning</span>
+        <span id="modeHint">surface films first · archive loads 3200</span>
       </div>
       <div class="mode-row">
         <div class="toggle-group" role="group" aria-label="Corpus mode">
@@ -1533,12 +1613,12 @@ body[data-mode="mixed"]:not(.has-results) .wall-cell[data-type="film"]::after{
         <div class="corpus-load-bar"><span id="corpusLoadBar"></span></div>
       </div>
       <div class="query-traces" id="queryTraces" aria-hidden="true">
-        <div class="trace-label">query traces</div>
-        <div class="trace-line"><span class="trace-prefix">›</span><span id="traceText"></span><span class="trace-cursor"></span></div>
+        
+        <div class="trace-line"><span id="traceText"></span><span class="trace-cursor"></span></div>
       </div>
       <div class="resolve-state" id="resolveState" aria-hidden="true">
         <div class="resolve-kicker">resolving</div>
-        <div class="resolve-status" id="resolveStatus">locking archive</div>
+        <div class="resolve-status" id="resolveStatus">measuring surface</div>
         <div class="resolve-bar"><span id="resolveBar"></span></div>
       </div>
     </div>
@@ -1652,10 +1732,11 @@ const RAWG_PAGE_SIZE=40;
 // Performance: ARBITER should receive one full candidate array per search.
 // Film provider detail expansion must not block that request.
 const CORPUS_MEMORY_CACHE_LIMIT=12;
-const TMDB_DISCOVERY_CONCURRENCY=8;
-const TMDB_DISCOVERY_OVERFETCH=1.45;
-const TMDB_DISCOVERY_MAX_REQUESTS=160;
-const TMDB_DISCOVERY_MIN_REQUESTS=24;
+const TMDB_DISCOVERY_CONCURRENCY=16;
+const TMDB_DISCOVERY_OVERFETCH=6.0;
+const TMDB_DISCOVERY_MAX_REQUESTS=960;
+const TMDB_DISCOVERY_MIN_REQUESTS=40;
+const TMDB_DISCOVERY_BACKFILL_MAX_REQUESTS=900;
 const TMDB_FAST_FILM_LOAD=window.SUMMON_FAST_FILM_LOAD!==false;
 
 const CORPUS_MODES=['film','games','books','tv','music','signal','mixed'];
@@ -1666,10 +1747,10 @@ const MODE_LABEL={film:'films',games:'games',books:'books',tv:'tv shows',music:'
 const DEPTHS={
   surface:{film:240,games:80,books:80,tv:80,music:160,mixedFilm:50,mixedGames:30,mixedBooks:30,mixedTv:30,mixedMusic:40,rawgPages:3},
   field:{film:900,games:140,books:160,tv:160,music:420,mixedFilm:115,mixedGames:55,mixedBooks:55,mixedTv:55,mixedMusic:80,rawgPages:5},
-  archive:{film:1600,games:500,books:500,tv:500,music:900,mixedFilm:200,mixedGames:100,mixedBooks:100,mixedTv:100,mixedMusic:140,rawgPages:13}
+  archive:{film:3200,games:500,books:500,tv:500,music:900,mixedFilm:320,mixedGames:100,mixedBooks:100,mixedTv:100,mixedMusic:140,rawgPages:13}
 };
 
-let corpusMode='film',searchDepth='field';
+let corpusMode='film',searchDepth='surface';
 let cache=null,results=[],active=0,currentQuery='',corpusPageOffset=0,shuffleSeed=0;
 let corpusRequestId=0;
 const corpusPoolCache=new Map();
@@ -2059,39 +2140,71 @@ function buildTmdbBroadSources(genreMap={}){
     {path:'/movie/popular',params:{},name:'TMDB popular'},
     {path:'/movie/top_rated',params:{},name:'TMDB top rated'},
     {path:'/movie/now_playing',params:{},name:'TMDB now playing'},
-    {path:'/discover/movie',params:{sort_by:'popularity.desc','vote_count.gte':10},name:'TMDB broad popularity'},
-    {path:'/discover/movie',params:{sort_by:'revenue.desc','vote_count.gte':10},name:'TMDB broad box office'},
-    {path:'/discover/movie',params:{sort_by:'vote_count.desc','vote_count.gte':10},name:'TMDB broad vote count'},
-    {path:'/discover/movie',params:{sort_by:'vote_average.desc','vote_count.gte':40},name:'TMDB broad critical'},
-    {path:'/discover/movie',params:{sort_by:'primary_release_date.desc','vote_count.gte':5},name:'TMDB recent release'}
+    {path:'/discover/movie',params:{sort_by:'popularity.desc','vote_count.gte':3},name:'TMDB broad popularity'},
+    {path:'/discover/movie',params:{sort_by:'revenue.desc','vote_count.gte':3},name:'TMDB broad box office'},
+    {path:'/discover/movie',params:{sort_by:'vote_count.desc','vote_count.gte':3},name:'TMDB broad vote count'},
+    {path:'/discover/movie',params:{sort_by:'vote_average.desc','vote_count.gte':20},name:'TMDB broad critical'},
+    {path:'/discover/movie',params:{sort_by:'primary_release_date.desc','vote_count.gte':2},name:'TMDB recent release'}
+  ];
+
+  const genreSorts=[
+    {sort_by:'popularity.desc','vote_count.gte':2,label:'popularity'},
+    {sort_by:'vote_count.desc','vote_count.gte':2,label:'audience'},
+    {sort_by:'vote_average.desc','vote_count.gte':12,label:'critical'},
+    {sort_by:'primary_release_date.desc','vote_count.gte':1,label:'recent'}
   ];
 
   Object.entries(genreMap||{}).forEach(([id,name])=>{
     if(!id||!name)return;
-    sourceList.push({
-      path:'/discover/movie',
-      params:{with_genres:id,sort_by:'popularity.desc','vote_count.gte':5},
-      name:`TMDB genre taxonomy: ${name}`
+    genreSorts.forEach(sortSpec=>{
+      const {label,...params}=sortSpec;
+      sourceList.push({
+        path:'/discover/movie',
+        params:{with_genres:id,...params},
+        name:`TMDB genre taxonomy: ${name} / ${label}`
+      });
     });
   });
 
   const now=new Date().getFullYear();
-  for(let start=1950;start<=now;start+=10){
+  const decadeSorts=[
+    {sort_by:'popularity.desc','vote_count.gte':2,label:'popularity'},
+    {sort_by:'vote_count.desc','vote_count.gte':2,label:'audience'},
+    {sort_by:'primary_release_date.desc','vote_count.gte':1,label:'late-decade'}
+  ];
+  for(let start=1930;start<=now;start+=10){
     const end=Math.min(start+9,now);
-    sourceList.push({
-      path:'/discover/movie',
-      params:{
-        sort_by:'popularity.desc',
-        'vote_count.gte':8,
-        'primary_release_date.gte':`${start}-01-01`,
-        'primary_release_date.lte':`${end}-12-31`
-      },
-      name:`TMDB decade surface: ${start}s`
+    decadeSorts.forEach(sortSpec=>{
+      const {label,...params}=sortSpec;
+      sourceList.push({
+        path:'/discover/movie',
+        params:{
+          ...params,
+          'primary_release_date.gte':`${start}-01-01`,
+          'primary_release_date.lte':`${end}-12-31`
+        },
+        name:`TMDB decade surface: ${start}s / ${label}`
+      });
     });
   }
 
+  const languageLanes=['es','fr','ja','ko','zh','hi','it','de','pt','ar','tr','id','th','ru','pl','sv'];
+  languageLanes.forEach(lang=>{
+    sourceList.push({
+      path:'/discover/movie',
+      params:{sort_by:'popularity.desc','vote_count.gte':1,with_original_language:lang},
+      name:`TMDB original language: ${lang}`
+    });
+    sourceList.push({
+      path:'/discover/movie',
+      params:{sort_by:'primary_release_date.desc','vote_count.gte':1,with_original_language:lang},
+      name:`TMDB recent original language: ${lang}`
+    });
+  });
+
   return sourceList;
 }
+
 function stableParamString(params={}){
   return Object.keys(params||{}).sort().map(k=>`${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`).join('&');
 }
@@ -2117,6 +2230,56 @@ async function runLimited(tasks=[],limit=TMDB_DISCOVERY_CONCURRENCY,fn){
   });
   await Promise.all(workers);
 }
+async function appendTmdbRowsFromTasks(tasks=[],out=[],seen=new Set(),requested=filmLimit(),genreMap={}){
+  await runLimited(tasks,TMDB_DISCOVERY_CONCURRENCY,async task=>{
+    if(out.length>=requested)return;
+    try{
+      const rows=await fetchTmdbMoviePage(task.path,task.params,task.page,task.name,genreMap);
+      for(const row of rows){
+        addFilmIfNew(out,seen,row);
+        if(out.length>=requested)break;
+      }
+    }catch(err){
+      console.warn('tmdb film page failed',task.name,task.page,err);
+    }
+  });
+}
+
+async function backfillTmdbToRequested(out=[],seen=new Set(),requested=filmLimit(),genreMap={},startPage=1){
+  if(out.length>=requested)return out;
+
+  const fillLanes=[
+    {params:{sort_by:'popularity.desc','vote_count.gte':0},name:'TMDB full fill / popularity'},
+    {params:{sort_by:'primary_release_date.desc','vote_count.gte':0},name:'TMDB full fill / recent'},
+    {params:{sort_by:'vote_count.desc','vote_count.gte':0},name:'TMDB full fill / vote count'},
+    {params:{sort_by:'revenue.desc','vote_count.gte':0},name:'TMDB full fill / revenue'},
+    {params:{sort_by:'vote_average.desc','vote_count.gte':5},name:'TMDB full fill / critical'}
+  ];
+
+  let cursor=Math.max(1,Number(startPage)||1);
+  let requests=0;
+  let staleRounds=0;
+
+  while(out.length<requested && requests<TMDB_DISCOVERY_BACKFILL_MAX_REQUESTS && staleRounds<6){
+    const before=out.length;
+    const batch=[];
+    const remaining=Math.max(1,requested-out.length);
+    const batchSize=Math.min(160,Math.max(32,Math.ceil(remaining/20)*fillLanes.length+24));
+
+    for(let i=0;i<batchSize && requests<TMDB_DISCOVERY_BACKFILL_MAX_REQUESTS;i++,requests++){
+      const lane=fillLanes[(cursor+i)%fillLanes.length];
+      const page=((cursor+i-1)%500)+1;
+      batch.push({path:'/discover/movie',params:lane.params,page,name:lane.name});
+    }
+
+    await appendTmdbRowsFromTasks(batch,out,seen,requested,genreMap);
+    cursor+=batchSize;
+    staleRounds=(out.length===before)?staleRounds+1:0;
+  }
+
+  return out;
+}
+
 async function loadTmdbBroadFilms(limit=filmLimit()){
   if(!tmdbEnabled())return [];
   const requested=Math.max(1,Number(limit)||filmLimit());
@@ -2125,10 +2288,6 @@ async function loadTmdbBroadFilms(limit=filmLimit()){
   const seen=new Set();
   const out=[];
 
-  // Build a bounded, interleaved provider-backed corpus.
-  // Old behavior walked every source across dozens of rounds and then fetched hundreds
-  // of movie details before ARBITER could run. This keeps broad coverage while
-  // making the corpus step a small parallel page fanout.
   const pagesNeeded=Math.ceil(requested/20);
   const targetRequests=Math.min(
     TMDB_DISCOVERY_MAX_REQUESTS,
@@ -2146,28 +2305,21 @@ async function loadTmdbBroadFilms(limit=filmLimit()){
     }
   }
 
-  await runLimited(tasks,TMDB_DISCOVERY_CONCURRENCY,async task=>{
-    if(out.length>=requested)return;
-    try{
-      const rows=await fetchTmdbMoviePage(task.path,task.params,task.page,task.name,genreMap);
-      for(const row of rows){
-        addFilmIfNew(out,seen,row);
-        if(out.length>=requested)break;
-      }
-    }catch(err){
-      console.warn('tmdb broad film page failed',task.name,task.page,err);
-    }
-  });
+  await appendTmdbRowsFromTasks(tasks,out,seen,requested,genreMap);
+
+  if(out.length<requested){
+    await backfillTmdbToRequested(out,seen,requested,genreMap,basePage+pagesPerSource);
+  }
 
   const fastRows=out.slice(0,requested);
 
-  // Optional only. Detail expansion is expensive and should never block normal search.
   if(!TMDB_FAST_FILM_LOAD&&fastRows.length){
     return enrichTmdbFilms(fastRows,Math.min(fastRows.length,120));
   }
 
   return fastRows;
 }
+
 function normalizeProxyFilmRecord(row={},source='film proxy'){
   const rec=filmRecord(row);
   const image=firstImage([row.backdrop_url,row.backdrop,row.image,row.poster,row.poster_url,row.image_url,row.backdrop_path,row.poster_path,rec.image,rec.cover],'w780');
@@ -3124,41 +3276,63 @@ function setResolveCopy(t){
 
 const TRACES={
   film:[
-    'grief as geometry',
-    'a lonely person finds connection',
-    'energy becomes memory',
-    'beauty without sentimentality',
-    'a room that should not exist'
+    'i want something tense but beautiful, not just slow',
+    'a normal room starts feeling unsafe and nobody says why',
+    'a character is trying to be good after doing real damage',
+    'something strange, emotional, and still watchable tonight',
+    'not horror exactly — more like dread under ordinary life',
+    'a lonely person gets pulled into a world bigger than them',
+    'fun, sharp, a little dangerous, not empty background noise',
+    'a movie for being restless at night and needing momentum'
   ],
   tv:[
-    'a detective distrusts memory',
-    'power eating itself',
-    'the office is alive',
-    'surveillance wearing family drama',
-    'a town remembers too much'
+    'a show where every friendly room has a power game underneath',
+    'smart people lying to themselves until the whole system cracks',
+    'family drama but with pressure, secrets, and consequences',
+    'a town or office where the place itself feels like a character',
+    'something addictive, tense, and not stupid',
+    'slow-burn paranoia with actual human stakes'
   ],
   books:[
-    'a ghost remembers being human',
-    'a city pretends to be a person',
-    'infinity behaving badly',
-    'a king studies mercy',
-    'language becomes dangerous'
+    'a book with a haunted voice but not cheap horror',
+    'someone trying to understand the damage they inherited',
+    'beautiful sentences, moral pressure, and a world that feels real',
+    'a mind unraveling while the outside world stays normal',
+    'something strange but readable, not academic homework',
+    'a book about power, guilt, memory, and escape'
   ],
   games:[
-    'a fallen astronomer wants stars',
-    'chess if the board were haunted',
-    'a playable myth about consequence',
-    'hidden systems under pressure',
-    'a world older than the player'
+    'a game world I can disappear into without it feeling shallow',
+    'systems, exploration, consequence, and atmosphere',
+    'beautiful but brutal, with real pressure in the mechanics',
+    'I want discovery more than shooting',
+    'a game that feels lonely in a good way',
+    'something with momentum, style, and actual stakes'
+  ],
+  music:[
+    'late night music, emotional but not soft',
+    'driving at night, city lights, a little danger',
+    'beautiful noise with a pulse under it',
+    'sad but not sleepy, dark but still alive',
+    'something that feels like memory and motion',
+    'romantic, strange, and a little damaged'
   ],
   mixed:[
-    'the square root of negative one wants culture',
-    'a lonely satellite returns home',
-    'a person made of equations',
-    'myth translated into media',
-    'one signal across every medium'
+    'I do not know if I want a film, song, book, show, or game — just pull the strongest match',
+    'something for tonight: restless, funny, dark, and alive',
+    'I want a world to enter, not a category',
+    'give me the thing that fits this mood across everything',
+    'a normal life with something impossible pressing through it',
+    'something beautiful with danger under the surface'
   ],
-  signal:['what the tech giants are hiding','coherence gradient in the news cycle','platform capture under policy language','capital moving through infrastructure','the story behind the headline']
+  signal:[
+    'what story is hiding under this headline',
+    'is this actually risky or just loud',
+    'what does this site or policy really cohere with',
+    'where is the platform power in this situation',
+    'what is the operational signal, not the PR layer',
+    'what should I pay attention to first'
+  ]
 };
 
 let traceTimer=null,traceIdx=0,tracePaused=false;
@@ -3188,7 +3362,7 @@ function resumeQueryTraces(){
   tracePaused=false;clearTraceTimer();
   const el=$('#traceText');if(el&&!el.textContent)typeTrace((TRACES[corpusMode]||TRACES.film)[traceIdx]);
 }
-function resolvingTrace(q){clearTraceTimer();tracePaused=true;const el=$('#traceText');if(el)el.textContent=q?`${q}  /  resolving`:'resolving'}
+function resolvingTrace(q){clearTraceTimer();tracePaused=true;const el=$('#traceText');if(el)el.textContent=q?`${q}  /  measuring`:'measuring'}
 function resetQueryTraces(){const el=$('#traceText');if(el)el.textContent='';tracePaused=false;clearTraceTimer();setTimeout(startQueryTraces,320)}
 function clearTraceTimer(){if(traceTimer){clearTimeout(traceTimer);traceTimer=null}}
 
