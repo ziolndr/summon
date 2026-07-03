@@ -3787,7 +3787,7 @@ function normalizeDate(value=''){
 }
 
 function signalCacheKey(provider='guardian'){
-  return `summon:${provider}:geo-signals:${searchDepth}:v16-more`;
+  return `summon:${provider}:geo-signals:${searchDepth}:v17-static-guard`;
 }
 
 function readSignalCache(provider='guardian'){
@@ -3911,6 +3911,124 @@ function newsDataSignalRecord(article,i=0){
     country:Array.isArray(article.country)?article.country.join(', '):article.country,
     tags:article.keywords||article.category||[]
   },i);
+}
+
+/* Static signal base layer.
+   These are not fake headlines. They are standing geopolitical / market / tech signal surfaces
+   so signal mode still loads, renders, and searches when live providers rate-limit, CORS-fail,
+   return too few rows, or have missing images. Live articles still rank ahead when available. */
+const STATIC_SIGNAL_SEEDS=[
+  ['Red Sea maritime pressure','Middle East','Shipping / Energy','insurance rates, naval escorts, rerouting, port delays, fuel cost pressure, supply chain friction'],
+  ['Hormuz energy chokepoint','Energy','Oil / Gulf','tanker exposure, LNG flows, Gulf security, sanctions pressure, naval risk, price volatility'],
+  ['Taiwan Strait escalation risk','China / Pacific','Semiconductors','deterrence, blockade risk, chip supply, maritime insurance, allied posture, gray-zone pressure'],
+  ['South China Sea coercion','China / Pacific','Maritime','coast guard pressure, fishing fleets, disputed reefs, Philippines, freedom of navigation, regional deterrence'],
+  ['Ukraine attrition and drone war','Russia / Europe','Defense','air defense depletion, long-range strike, artillery supply, energy grid pressure, NATO production'],
+  ['NATO industrial base pressure','Defense','Europe','munitions capacity, procurement bottlenecks, readiness, air defense, deterrence, budget expansion'],
+  ['Export controls on advanced chips','AI / Compute','Semiconductors','Nvidia, ASML, TSMC, China controls, compute access, dual-use technology, industrial policy'],
+  ['AI data center energy strain','AI / Compute','Infrastructure','grid demand, power purchase agreements, water cooling, utility queues, compute concentration'],
+  ['Rare earth supply concentration','Supply Chain','Minerals','China processing leverage, magnets, defense inputs, EV supply, mine permitting, industrial policy'],
+  ['Battery supply chain dependency','Supply Chain','Energy Transition','lithium, nickel, graphite, refining, subsidies, tariffs, storage, EV demand'],
+  ['Sanctions evasion networks','Markets','Finance','shipping flags, shadow fleet, banking channels, oil caps, enforcement gaps, commodity rerouting'],
+  ['Shadow fleet oil movement','Energy','Russia / Middle East','dark tankers, insurance gaps, AIS spoofing, sanctions, port access, maritime risk'],
+  ['Sovereign debt stress','Markets','Finance','refinancing wall, dollar strength, IMF pressure, capital flight, elections, austerity risk'],
+  ['Food security shock','Food + Water Security','Agriculture','grain corridors, drought, fertilizer prices, conflict, migration, humanitarian logistics'],
+  ['Water stress migration pressure','Climate Risk','Migration','drought, aquifers, crop loss, urban pressure, border politics, regional instability'],
+  ['Extreme heat infrastructure stress','Climate Risk','Cities','grid overload, labor productivity, health systems, cooling demand, insurance exposure'],
+  ['Cyber attack on critical infrastructure','Cyber','Security','ransomware, utilities, hospitals, ports, operational technology, attribution, resilience'],
+  ['Undersea cable vulnerability','Cyber','Infrastructure','subsea routes, sabotage, internet resilience, financial networks, naval monitoring'],
+  ['Satellite and space-domain risk','Space + Defense Tech','Defense','anti-satellite capability, GPS dependence, launch capacity, orbital congestion, ISR'],
+  ['Hypersonic missile race','Space + Defense Tech','Defense','deterrence, air defense gaps, glide vehicles, escalation speed, procurement pressure'],
+  ['Election interference signal','Institutions + Law','Democracy','deepfakes, disinformation, cyber intrusion, platform policy, legitimacy, domestic tension'],
+  ['Regulatory backlash against platforms','Institutions + Law','Technology','antitrust, data privacy, content moderation, AI rules, market power, consumer protection'],
+  ['Trade war tariff pressure','Trade + Industrial Policy','Markets','tariffs, retaliation, reshoring, price inflation, manufacturing incentives, supply rerouting'],
+  ['Friendshoring and industrial policy','Trade + Industrial Policy','Supply Chain','domestic capacity, subsidies, trusted suppliers, security exceptions, capital expenditure'],
+  ['Port congestion and chokepoint risk','Markets + Supply Chain','Shipping','container rates, canal drought, labor action, rerouting, inventory buffers, delivery reliability'],
+  ['Commodity corridor disruption','Markets + Supply Chain','Energy / Food','rail, port, pipeline, canal, sanctions, weather, war risk, storage pressure'],
+  ['Middle East escalation spillover','Middle East','Regional Risk','proxy networks, shipping lanes, oil markets, base security, diplomatic pressure, deterrence'],
+  ['India energy-security balancing act','India / Ocean','Energy','Russian crude, Gulf dependence, refinery margins, shipping risk, sanctions navigation, growth demand'],
+  ['Indian Ocean maritime competition','India / Ocean','Maritime','China ports, naval presence, chokepoints, island states, trade routes, energy flows'],
+  ['Dollar liquidity stress','Markets','Finance','funding costs, emerging markets, capital flows, swap lines, Treasury yields, risk-off behavior'],
+  ['Insurance repricing of physical risk','Climate Risk','Finance','wildfire, flood, coastal property, reinsurance, municipal budgets, stranded assets'],
+  ['Fertilizer price instability','Food + Water Security','Agriculture','natural gas, potash, sanctions, crop yields, food inflation, import dependence'],
+  ['Defense procurement bottleneck','Defense','Industrial Base','single-source suppliers, munitions, shipyards, labor shortages, surge capacity, contract lag'],
+  ['Private-sector intelligence gap','Institutions + Law','Enterprise Risk','geopolitical monitoring, supplier exposure, travel risk, sanctions compliance, executive decisions'],
+  ['Luxury sponsorship culture shift','Markets','Brand / Sport','attention economy, hospitality, global events, premium audiences, cultural reach, experiential marketing'],
+  ['Sports as geopolitical soft power','Institutions + Law','Culture','nation branding, sponsorship, tourism, media rights, global attention, diplomatic signaling'],
+  ['F1 commercial platform expansion','Markets','Sport / Entertainment','brand partnerships, hospitality, destination storytelling, luxury, fandom, year-round experiences'],
+  ['Las Vegas destination-risk premium','Markets','Travel / Events','hospitality demand, security, heat, transport, sponsorship, premium event economics'],
+  ['Supply chain exposure to conflict zones','Markets + Supply Chain','Enterprise Risk','vendor geography, maritime lanes, insurance, sanctions, contingency planning, inventory buffers'],
+  ['Compute sovereignty race','AI / Compute','Industrial Policy','national AI infrastructure, chip access, cloud regulation, data localization, security requirements'],
+  ['Model safety regulation pressure','AI / Compute','Law','frontier models, auditability, liability, export controls, compute governance, institutional trust'],
+  ['Currency volatility transmission','Markets','Macro','dollar strength, import prices, central banks, emerging-market debt, trade balances, political stress'],
+  ['Energy grid fragility','Energy','Infrastructure','transmission queues, peak demand, extreme weather, cyber risk, generation mix, reliability margins'],
+  ['Nuclear energy revival signal','Energy','Industrial Policy','small modular reactors, baseload demand, permitting, uranium supply, AI data centers'],
+  ['Climate adaptation capital gap','Climate Risk','Finance','resilience spending, insurance withdrawal, infrastructure bonds, migration, public finance'],
+  ['Urban security and event logistics','Institutions + Law','Cities','crowd movement, policing, transport closure, tourism pressure, private security, brand safety'],
+  ['Luxury hospitality as data surface','Markets','Experience Economy','VIP behavior, sponsor intent, premium access, retention, event design, loyalty signals'],
+  ['Brand activation misfit risk','Markets','Sponsorship','campaign coherence, audience resonance, cultural timing, venue fit, story alignment, wasted spend'],
+  ['Fan identity segmentation','Markets','Sport / Entertainment','new fans, purists, luxury seekers, family spectacle, engineering identity, fashion culture'],
+  ['Humanitarian access constraint','Middle East','Aid / Conflict','border crossings, ceasefire pressure, logistics, aid convoys, security guarantees, donor politics'],
+  ['Global health supply fragility','Food + Water Security','Healthcare','pharmaceutical inputs, cold chain, shipping lanes, procurement, regulatory delays'],
+  ['Aviation route disruption','Markets + Supply Chain','Travel','airspace closure, fuel burn, insurance, passenger demand, route economics, geopolitical risk'],
+  ['Tourism economy shock','Markets','Travel','visa rules, security risk, exchange rates, climate events, destination branding, hotel occupancy'],
+  ['Strategic reserves drawdown signal','Energy','Policy','oil reserves, emergency stocks, price control, election timing, refinery constraints, supply confidence'],
+  ['Border pressure and asylum politics','Institutions + Law','Migration','conflict displacement, climate migration, labor demand, enforcement, humanitarian capacity'],
+  ['Arctic shipping and resource competition','Climate Risk','Maritime','sea ice, northern routes, minerals, military presence, sovereignty claims, insurance uncertainty'],
+  ['Data localization and cloud sovereignty','Cyber','Technology Policy','regional cloud, national security, compliance, procurement, platform dependence, cross-border data'],
+  ['Quantum and encryption risk','Cyber','Defense Tech','post-quantum migration, intelligence collection, financial security, standards timelines, critical infrastructure'],
+  ['Drone swarm threat surface','Defense','Autonomy','low-cost drones, counter-UAS, air defense saturation, battlefield learning, homeland security'],
+  ['Autonomous weapons governance','Defense','Law','human control, targeting, accountability, treaties, procurement, operational doctrine'],
+  ['Africa critical minerals corridor','Supply Chain','Minerals','cobalt, copper, rail corridors, China investment, Western financing, governance risk'],
+  ['Latin America lithium politics','Supply Chain','Energy Transition','resource nationalism, water rights, indigenous consultation, EV demand, export strategy'],
+  ['Europe energy storage race','Energy','Europe','grid batteries, hydrogen, interconnectors, winter demand, gas replacement, industrial competitiveness'],
+  ['Insurance as early warning system','Markets','Risk Pricing','premiums, exclusions, reinsurance retreat, catastrophe models, asset repricing, operational exposure'],
+  ['Legal risk around sanctions compliance','Institutions + Law','Compliance','beneficial ownership, export controls, shipping documents, banking exposure, enforcement'],
+  ['Narrative warfare around institutions','Institutions + Law','Information','trust erosion, media ecosystems, influence operations, legitimacy, election timing']
+];
+
+function staticSignalRecord(seed,i=0){
+  const [title,section='Signal',source='Standing Signal',terms='']=seed;
+  const year=String(new Date().getFullYear());
+  const image=signalFallbackCard(title,section,source,i);
+  return {
+    type:'signal',
+    title,
+    section,
+    year,
+    source,
+    publishedAt:new Date(Date.now()-(i*3600000)).toISOString(),
+    genres:[section,source,...String(terms).split(',').map(s=>s.trim()).filter(Boolean)].slice(0,7),
+    overview:`${title}. Source: ${source}. Section: ${section}. Standing signal surface for meaning-based search. Indexed through ${terms}.`,
+    image,
+    cover:image,
+    src:image,
+    externalUrl:`https://www.google.com/search?q=${encodeURIComponent(title+' geopolitical signal')}`,
+    isStaticSignal:true
+  };
+}
+
+function loadStaticSignals(limit=signalLimit()){
+  const target=Math.max(1,Number(limit)||signalLimit());
+  const seeds=[];
+  while(seeds.length<target){
+    seeds.push(...STATIC_SIGNAL_SEEDS);
+    if(STATIC_SIGNAL_SEEDS.length===0)break;
+  }
+  return seeds.slice(0,target).map(staticSignalRecord);
+}
+
+function mergeSignalRows(primary=[],fallback=[],target=signalLimit()){
+  const out=[];
+  const seen=new Set();
+  for(const row of [...(primary||[]),...(fallback||[])]){
+    if(!row||!row.title)continue;
+    const key=String(row.externalUrl||row.title||'').toLowerCase().trim();
+    if(!key||seen.has(key))continue;
+    seen.add(key);
+    out.push(row);
+    if(out.length>=target)break;
+  }
+  return out;
 }
 
 async function fetchProxySignals(limit){
@@ -4120,6 +4238,8 @@ function rankSignalRichness(row){
 
 async function loadSignals(limit){
   const target=Math.max(1,Number(limit)||signalLimit());
+  const baseLayer=loadStaticSignals(target);
+
   try{
     setStatus(`loading ${target} geopolitical signals`);
     let rows=[];
@@ -4134,26 +4254,23 @@ async function loadSignals(limit){
       rows=await fetchGuardianSignals(target);
     }
 
-    const seen=new Set(),out=[];
-    for(const row of rows){
-      const key=String(row.externalUrl||row.title||'').toLowerCase().trim();
-      if(!row.title||seen.has(key))continue;
-      seen.add(key);
-      out.push(row);
-    }
-
-    out.sort((a,b)=>{
+    const out=mergeSignalRows(rows,baseLayer,target).sort((a,b)=>{
       const rich=rankSignalRichness(b)-rankSignalRichness(a);
       if(rich)return rich;
       return new Date(b.publishedAt||0)-new Date(a.publishedAt||0);
     });
 
     if(!out.length)throw new Error('signal provider returned zero articles');
+    if(out.some(row=>row.isStaticSignal)){
+      setStatus(`loaded ${out.length} signals · live + base layer`);
+    }else{
+      setStatus(`loaded ${out.length} live signals`);
+    }
     return out.slice(0,target);
   }catch(e){
     console.error(e);
-    setStatus('signal provider unavailable');
-    return [newsApiUnavailableRecord(e)];
+    setStatus(`live signal provider unavailable · using ${baseLayer.length} base signals`);
+    return baseLayer;
   }
 }
 
