@@ -855,7 +855,6 @@ body.playing #projector{display:block}
         <div class="actions">
           <button class="solid" id="play" type="button">watch trailer</button>
           <button id="watch" type="button">open title ↗</button>
-          <button id="share" type="button">share result</button>
           <button id="copy" type="button">copy link</button>
         </div>
       </div>
@@ -1371,304 +1370,6 @@ function whenBarFull(){
 
 function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;document.body.appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300)},1600)}
 const show=id=>$$('.plate').forEach(p=>p.classList.toggle('on',p.id===id));
-
-/* ═══════ SHARE ART — the result itself becomes the artifact ═══════ */
-const SHARE_W=1200, SHARE_H=630;
-let initialSharedResultIndex=null;
-
-function resultShareUrl(index=active){
-  const url=new URL(location.href.split('#')[0]);
-  url.searchParams.set('result',String(Math.max(0,index)+1));
-  url.hash=encodeURIComponent(currentQuery||'');
-  return url.toString();
-}
-
-function shareSlug(s){
-  return String(s||'summon-result')
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g,'')
-    .replace(/[^a-z0-9]+/g,'-')
-    .replace(/^-+|-+$/g,'')
-    .slice(0,64)||'summon-result';
-}
-
-function wrapCanvasText(ctx,text,maxWidth,maxLines=4){
-  const words=String(text||'').trim().split(/\s+/).filter(Boolean);
-  if(!words.length)return [];
-  const lines=[];
-  let line='';
-  for(let i=0;i<words.length;i++){
-    const test=line?`${line} ${words[i]}`:words[i];
-    if(ctx.measureText(test).width<=maxWidth||!line){
-      line=test;
-      continue;
-    }
-    lines.push(line);
-    line=words[i];
-    if(lines.length===maxLines-1){
-      const rest=[line,...words.slice(i+1)].join(' ');
-      let clipped=rest;
-      while(clipped.length&&ctx.measureText(clipped+'…').width>maxWidth)clipped=clipped.slice(0,-1);
-      lines.push(clipped+(clipped!==rest?'…':''));
-      return lines;
-    }
-  }
-  if(line&&lines.length<maxLines)lines.push(line);
-  return lines;
-}
-
-function fitCanvasFont(ctx,text,maxWidth,start,min,family,weight='400'){
-  let size=start;
-  do{
-    ctx.font=`${weight} ${size}px ${family}`;
-    if(ctx.measureText(String(text||'')).width<=maxWidth)return size;
-    size-=1;
-  }while(size>min);
-  return min;
-}
-
-function drawCoverImage(ctx,image,x,y,w,h){
-  const iw=image.naturalWidth||image.width||1;
-  const ih=image.naturalHeight||image.height||1;
-  const scale=Math.max(w/iw,h/ih);
-  const sw=w/scale, sh=h/scale;
-  const sx=Math.max(0,(iw-sw)/2), sy=Math.max(0,(ih-sh)/2);
-  ctx.drawImage(image,sx,sy,sw,sh,x,y,w,h);
-}
-
-function loadShareImage(src,timeoutMs=8000){
-  return new Promise(async resolve=>{
-    if(!src){resolve(null);return}
-    const finish=(img,url)=>{
-      if(url)URL.revokeObjectURL(url);
-      resolve(img||null);
-    };
-    let timer=null;
-    try{
-      let url=src, revoke='';
-      if(!String(src).startsWith('data:')){
-        const response=await fetch(src,{mode:'cors',cache:'force-cache'});
-        if(!response.ok)throw new Error(`art ${response.status}`);
-        const blob=await response.blob();
-        revoke=URL.createObjectURL(blob);
-        url=revoke;
-      }
-      const image=new Image();
-      image.decoding='async';
-      image.onload=()=>{clearTimeout(timer);finish(image,revoke)};
-      image.onerror=()=>{clearTimeout(timer);finish(null,revoke)};
-      timer=setTimeout(()=>finish(null,revoke),timeoutMs);
-      image.src=url;
-    }catch(e){
-      clearTimeout(timer);
-      resolve(null);
-    }
-  });
-}
-
-function drawShareGradient(ctx){
-  let g=ctx.createLinearGradient(0,0,760,0);
-  g.addColorStop(0,'rgba(7,7,7,.91)');
-  g.addColorStop(.44,'rgba(7,7,7,.58)');
-  g.addColorStop(1,'rgba(7,7,7,0)');
-  ctx.fillStyle=g;ctx.fillRect(0,0,SHARE_W,SHARE_H);
-
-  g=ctx.createLinearGradient(0,0,0,SHARE_H);
-  g.addColorStop(0,'rgba(7,7,7,.30)');
-  g.addColorStop(.48,'rgba(7,7,7,.02)');
-  g.addColorStop(1,'rgba(7,7,7,.96)');
-  ctx.fillStyle=g;ctx.fillRect(0,0,SHARE_W,SHARE_H);
-}
-
-function drawShareThought(ctx,thought){
-  ctx.save();
-  ctx.fillStyle='#F6F4EF';
-  ctx.textBaseline='top';
-  ctx.font='400 31px "Instrument Serif", Georgia, serif';
-  const lines=wrapCanvasText(ctx,thought,720,2);
-  const startX=300;
-  lines.forEach((line,i)=>ctx.fillText(line,startX,31+i*34));
-  ctx.restore();
-}
-
-function drawShareDeckTile(ctx,r,i,x,y,w,h,image,selected){
-  ctx.save();
-  ctx.fillStyle='rgba(8,8,7,.60)';
-  ctx.fillRect(x,y,w,h);
-  if(image)drawCoverImage(ctx,image,x,y,w,h);
-  else{
-    ctx.fillStyle='rgba(246,244,239,.08)';ctx.fillRect(x,y,w,h);
-    ctx.fillStyle='rgba(246,244,239,.44)';ctx.font='500 9px "DM Mono", monospace';
-    const lines=wrapCanvasText(ctx,r?.title||'',w-10,4);
-    lines.forEach((line,j)=>ctx.fillText(line.toUpperCase(),x+5,y+10+j*12));
-  }
-
-  ctx.strokeStyle=selected?'#E50914':'rgba(246,244,239,.18)';
-  ctx.lineWidth=selected?2:1;
-  ctx.strokeRect(x+.5,y+.5,w-1,h-1);
-
-  ctx.fillStyle=selected?'#E50914':'rgba(10,10,9,.74)';
-  ctx.fillRect(x,y,20,16);
-  ctx.fillStyle='#F6F4EF';
-  ctx.font='500 8px "DM Mono", monospace';
-  ctx.fillText(String(i+1).padStart(2,'0'),x+4,y+11);
-
-  ctx.fillStyle=selected?'#E50914':'rgba(246,244,239,.68)';
-  ctx.font='500 8px "DM Mono", monospace';
-  ctx.fillText(Number(r?.score||0).toFixed(3),x,y+h+13);
-  ctx.restore();
-}
-
-async function makeResultShareBlob(){
-  const m=results[active];
-  if(!m)throw new Error('no active result');
-  if(document.fonts?.ready){try{await document.fonts.ready}catch(e){}}
-
-  const canvas=document.createElement('canvas');
-  canvas.width=SHARE_W;canvas.height=SHARE_H;
-  const ctx=canvas.getContext('2d',{alpha:false});
-  ctx.imageSmoothingEnabled=true;
-  ctx.imageSmoothingQuality='high';
-  ctx.fillStyle='#0A0A09';ctx.fillRect(0,0,SHARE_W,SHARE_H);
-
-  const heroSrc=isSquare(m)?(m.imageUrl||poster(m,'w780')):backdrop(m,'original');
-  const hero=await loadShareImage(heroSrc);
-  if(hero){
-    if(isSquare(m)){
-      ctx.save();
-      ctx.filter='blur(28px) saturate(1.12) brightness(.62)';
-      drawCoverImage(ctx,hero,-40,-40,SHARE_W+80,SHARE_H+80);
-      ctx.restore();
-      const size=350;
-      ctx.save();
-      ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=38;
-      drawCoverImage(ctx,hero,SHARE_W-size-52,118,size,size);
-      ctx.restore();
-    }else{
-      drawCoverImage(ctx,hero,0,0,SHARE_W,SHARE_H);
-    }
-  }
-  drawShareGradient(ctx);
-
-  ctx.textBaseline='alphabetic';
-  ctx.fillStyle='#F6F4EF';
-  ctx.font='400 36px "Instrument Serif", Georgia, serif';
-  ctx.fillText('SUMMON',32,55);
-  drawShareThought(ctx,currentQuery);
-
-  ctx.font='500 9px "DM Mono", monospace';
-  ctx.fillStyle='#E50914';
-  ctx.fillText(String(active+1).padStart(2,'0'),1090,47);
-  ctx.fillStyle='rgba(246,244,239,.58)';
-  ctx.fillText(` / ${String(results.length).padStart(2,'0')}`,1114,47);
-
-  const left=32;
-  const contentTop=190;
-  ctx.font='500 9px "DM Mono", monospace';
-  ctx.fillStyle='rgba(246,244,239,.68)';
-  ctx.fillText(`${fmt(m).toUpperCase()}  ·  RESONANCE`,left,contentTop);
-  ctx.fillStyle='#E50914';
-  ctx.fillText(Number(m.score||0).toFixed(3),left+152,contentTop);
-
-  const titleMax=isSquare(m)?650:720;
-  let titleSize=fitCanvasFont(ctx,m.title,titleMax,72,42,'"Instrument Serif", Georgia, serif');
-  ctx.font=`400 ${titleSize}px "Instrument Serif", Georgia, serif`;
-  ctx.fillStyle='#F6F4EF';
-  let titleLines=wrapCanvasText(ctx,m.title,titleMax,2);
-  const titleY=contentTop+20;
-  const titleLH=titleSize*.88;
-  titleLines.forEach((line,i)=>ctx.fillText(line,left,titleY+(i+1)*titleLH));
-
-  let cursorY=titleY+titleLines.length*titleLH+27;
-  const meta=[m.year,...(m.genres||[]).slice(0,2)].filter(Boolean).join('  /  ');
-  ctx.font='500 9px "DM Mono", monospace';
-  ctx.fillStyle='rgba(246,244,239,.62)';
-  if(meta){ctx.fillText(meta.toUpperCase(),left,cursorY);cursorY+=27}
-
-  const synopsis=(m.overview||'').trim();
-  if(synopsis){
-    ctx.font='400 18px "Instrument Serif", Georgia, serif';
-    ctx.fillStyle='rgba(246,244,239,.94)';
-    const maxSynopsisW=isSquare(m)?610:650;
-    const synopsisLines=wrapCanvasText(ctx,synopsis,maxSynopsisW,4);
-    synopsisLines.forEach((line,i)=>ctx.fillText(line,left,cursorY+i*23));
-  }
-
-  const deckLabelY=490;
-  ctx.font='500 8px "DM Mono", monospace';
-  ctx.fillStyle='rgba(246,244,239,.68)';
-  ctx.fillText('RANKED RESONANCE FIELD',left,deckLabelY);
-  ctx.textAlign='right';
-  ctx.fillText(`${new Set(results.map(r=>r.type)).size} FORMATS`,SHARE_W-32,deckLabelY);
-  ctx.textAlign='left';
-
-  const deckResults=results.slice(0,10);
-  const tileW=72,tileH=84,gap=8,startY=505;
-  const posterImages=await Promise.all(deckResults.map(r=>loadShareImage(poster(r,'w342'),5000)));
-  deckResults.forEach((r,i)=>drawShareDeckTile(ctx,r,i,left+i*(tileW+gap),startY,tileW,tileH,posterImages[i],i===active));
-
-  return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('image encode failed')),'image/png',.96));
-}
-
-async function shareCurrentResult(){
-  const m=results[active];
-  if(!m)return;
-  const btn=$('#share');
-  const original=btn?.textContent||'share result';
-  if(btn){btn.disabled=true;btn.textContent='making image';}
-
-  try{
-    const blob=await makeResultShareBlob();
-    const url=resultShareUrl(active);
-    const file=new File([blob],`summon-${shareSlug(m.title)}.png`,{type:'image/png'});
-    const payload={
-      title:`SUMMON — ${m.title}`,
-      text:`${currentQuery} → ${m.title}`,
-      url,
-      files:[file]
-    };
-
-    if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){
-      try{
-        await navigator.share(payload);
-        toast('result shared');
-        return;
-      }catch(e){
-        if(e?.name==='AbortError')return;
-      }
-    }
-
-    let copiedBundle=false, linkCopied=false;
-    if(navigator.clipboard?.write&&window.ClipboardItem){
-      try{
-        await navigator.clipboard.write([new ClipboardItem({
-          'image/png':blob,
-          'text/plain':new Blob([url],{type:'text/plain'})
-        })]);
-        copiedBundle=true;
-      }catch(e){}
-    }
-    if(!copiedBundle){
-      try{await navigator.clipboard?.writeText(url);linkCopied=true}catch(e){}
-    }
-
-    const a=document.createElement('a');
-    const objectUrl=URL.createObjectURL(blob);
-    a.href=objectUrl;
-    a.download=file.name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(()=>URL.revokeObjectURL(objectUrl),4000);
-    toast(copiedBundle?'image + link copied':(linkCopied?'image saved · link copied':'share image saved'));
-  }catch(e){
-    console.error('share result failed',e);
-    toast('share image unavailable');
-  }finally{
-    if(btn){btn.disabled=false;btn.textContent=original;}
-  }
-}
 
 /* ═══════ MASSIVE PRE-EMBEDDED FIELD ═══════ */
 const FIELD_FILES={
@@ -2375,8 +2076,7 @@ async function search(text){
 
     if(!results.length){setState('nothing came close');await pause(1000);show('landing');return}
 
-    active=initialSharedResultIndex==null?0:Math.max(0,Math.min(results.length-1,initialSharedResultIndex));
-    initialSharedResultIndex=null;
+    active=0;
     results.forEach(m=>{
       if(!m.posterPath&&!m.backdropPath&&!m.imageUrl){
         resolveArt(m).then(ok=>{if(ok&&$('#reveal').classList.contains('on'))render()}).catch(()=>{});
@@ -2387,7 +2087,7 @@ async function search(text){
       if($('#reveal').classList.contains('on'))render();
     }).catch(()=>{});
     // preload the hero so the reveal appears fully formed, then cross-fade
-    const first=results[active];
+    const first=results[0];
     const heroArt=isSquare(first)?first.imageUrl:backdrop(first,'original');
     await new Promise(res=>{if(!heroArt)return res();const im=new Image();im.onload=res;im.onerror=res;im.src=heroArt;setTimeout(res,1200)});
     $('#reveal').classList.add('on');
@@ -2494,8 +2194,7 @@ function render(){
   $('#play').textContent=m.tmdbId?'watch trailer':'no trailer';
   $('#watch').textContent='open title ↗';
   $('#watch').onclick=()=>window.open(contentUrl(m),'_blank');
-  $('#share').onclick=shareCurrentResult;
-  $('#copy').onclick=()=>navigator.clipboard?.writeText(resultShareUrl(active)).then(()=>toast('link copied'));
+  $('#copy').onclick=()=>navigator.clipboard?.writeText(location.href.split('#')[0]+'#'+encodeURIComponent(currentQuery)).then(()=>toast('link copied'));
 
   renderDeck();
   autoResize($('#revealQuery'));
@@ -2949,8 +2648,6 @@ document.addEventListener('keydown',e=>{
     setStatus(statusLine('ready'));
 
     const h=decodeURIComponent(location.hash.replace(/^#/,''));
-    const sharedResult=Number(new URLSearchParams(location.search).get('result'));
-    if(Number.isFinite(sharedResult)&&sharedResult>0)initialSharedResultIndex=sharedResult-1;
     if(h){
       await whenBarFull();
       await pause(260);
