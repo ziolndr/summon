@@ -1,0 +1,229 @@
+name: Feed LIVE SUMMON field
+
+# Runs on the Mac that is already producing finalized ARBITER/OpenAlex shards.
+# Required repository secrets:
+#   SUMMON_PROD_HOST
+#   SUMMON_PROD_USER
+#   SUMMON_PROD_SSH_KEY
+#   SUMMON_PROD_KNOWN_HOSTS
+# Optional repository variables:
+#   SUMMON_FIELD_DIR         default: ~/ARBITER_UNIVERSAL_FIELD
+#   SUMMON_PROD_PORT         default: 22
+#   SUMMON_REMOTE_FIELD_DIR  default: /srv/summon/data/field/shards/openalex
+#   SUMMON_LIVE_URL          example: https://summon.actualgeneralintelligence.com
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/main.yml"
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: summon-live-field-feed
+  cancel-in-progress: false
+
+jobs:
+  feed-live-field:
+    runs-on: [self-hosted, macOS]
+    timeout-minutes: 180
+
+    env:
+      FIELD_DIR: ${{ vars.SUMMON_FIELD_DIR }}
+      PROD_HOST: ${{ secrets.SUMMON_PROD_HOST }}
+      PROD_USER: ${{ secrets.SUMMON_PROD_USER }}
+      PROD_PORT: ${{ vars.SUMMON_PROD_PORT }}
+      REMOTE_FIELD_DIR: ${{ vars.SUMMON_REMOTE_FIELD_DIR }}
+      LIVE_URL: ${{ vars.SUMMON_LIVE_URL }}
+
+    steps:
+      - name: Configure production SSH
+        shell: bash
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SUMMON_PROD_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SUMMON_PROD_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+
+          : "${PROD_HOST:?Missing SUMMON_PROD_HOST secret}"
+          : "${PROD_USER:?Missing SUMMON_PROD_USER secret}"
+          : "${SSH_PRIVATE_KEY:?Missing SUMMON_PROD_SSH_KEY secret}"
+          : "${SSH_KNOWN_HOSTS:?Missing SUMMON_PROD_KNOWN_HOSTS secret}"
+
+          SSH_DIR="$RUNNER_TEMP/summon-live-ssh"
+          mkdir -p "$SSH_DIR"
+          chmod 700 "$SSH_DIR"
+
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$SSH_DIR/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$SSH_DIR/known_hosts"
+          chmod 600 "$SSH_DIR/id_ed25519" "$SSH_DIR/known_hosts"
+
+          echo "SUMMON_SSH_DIR=$SSH_DIR" >> "$GITHUB_ENV"
+
+      - name: Publish newly finalized shards atomically
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          FIELD_DIR="${FIELD_DIR:-$HOME/ARBITER_UNIVERSAL_FIELD}"
+          PROD_PORT="${PROD_PORT:-22}"
+          REMOTE_FIELD_DIR="${REMOTE_FIELD_DIR:-/srv/summon/data/field/shards/openalex}"
+          LOCAL_SHARDS="$FIELD_DIR/shards/openalex"
+          REMOTE_INCOMING="$(dirname "$(dirname "$(dirname "$REMOTE_FIELD_DIR")")")/incoming/openalex"
+
+          if [[ ! -d "$LOCAL_SHARDS" ]]; then
+            echo "Finalized shard directory does not exist: $LOCAL_SHARDS" >&2
+            exit 1
+          fi
+
+          SSH=(
+            ssh
+            -i "$SUMMON_SSH_DIR/id_ed25519"
+            -p "$PROD_PORT"
+            -o "UserKnownHostsFile=$SUMMON_SSH_DIR/known_hosts"
+            -o StrictHostKeyChecking=yes
+            -o BatchMode=yes
+          )
+
+          RSYNC_SSH="ssh -i $SUMMON_SSH_DIR/id_ed25519 -p $PROD_PORT -o UserKnownHostsFile=$SUMMON_SSH_DIR/known_hosts -o StrictHostKeyChecking=yes -o BatchMode=yes"
+          REMOTE="$PROD_USER@$PROD_HOST"
+
+          "${SSH[@]}" "$REMOTE" \
+            "mkdir -p '$REMOTE_FIELD_DIR' '$REMOTE_INCOMING'"
+
+          uploaded=0
+          skipped=0
+          invalid=0
+
+          while IFS= read -r shard; do
+            [[ -n "$shard" ]] || continue
+            shard_name="$(basename "$shard")"
+
+            if [[ ! "$shard_name" =~ ^shard-[0-9]+$ ]]; then
+              echo "Skipping unexpected directory: $shard_name"
+              invalid=$((invalid + 1))
+              continue
+            fi
+
+            # A shard is publishable only after its manifest, metadata, vectors,
+            # and norms are complete and internally consistent.
+            if ! python3 - "$shard" <<'PY'
+          import gzip
+          import json
+          import pathlib
+          import sys
+          
+          root = pathlib.Path(sys.argv[1])
+          manifest_path = root / "manifest.json"
+          if not manifest_path.is_file():
+              raise SystemExit(1)
+          
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          count = int(manifest.get("count") or 0)
+          dim = int(manifest.get("dim") or 0)
+          if count <= 0 or dim <= 0:
+              raise SystemExit(1)
+          
+          vectors = root / str(manifest.get("vectors_file") or "vectors.f32")
+          norms = root / str(manifest.get("norms_file") or "norms.f32")
+          metadata = root / str(manifest.get("metadata_file") or "metadata.jsonl.gz")
+          
+          if not vectors.is_file() or vectors.stat().st_size != count * dim * 4:
+              raise SystemExit(1)
+          if not norms.is_file() or norms.stat().st_size != count * 4:
+              raise SystemExit(1)
+          if not metadata.is_file() or metadata.stat().st_size == 0:
+              raise SystemExit(1)
+          
+          # Confirm the gzip stream is readable without scanning the whole metadata file.
+          with gzip.open(metadata, "rb") as fh:
+              if not fh.readline():
+                  raise SystemExit(1)
+          PY
+            then
+              echo "Not finalized yet: $shard_name"
+              invalid=$((invalid + 1))
+              continue
+            fi
+
+            destination="$REMOTE_FIELD_DIR/$shard_name"
+            if "${SSH[@]}" "$REMOTE" "test -f '$destination/manifest.json'"; then
+              skipped=$((skipped + 1))
+              continue
+            fi
+
+            temporary="$REMOTE_INCOMING/${shard_name}.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}.partial"
+            "${SSH[@]}" "$REMOTE" "rm -rf '$temporary' && mkdir -p '$temporary'"
+
+            rsync -a --partial --delete \
+              -e "$RSYNC_SSH" \
+              "$shard/" \
+              "$REMOTE:$temporary/"
+
+            # Promotion is a same-filesystem rename. The live server therefore
+            # never observes a half-uploaded shard.
+            "${SSH[@]}" "$REMOTE" \
+              "test -f '$temporary/manifest.json' && \
+               test -f '$temporary/vectors.f32' && \
+               test -f '$temporary/norms.f32' && \
+               test -f '$temporary/metadata.jsonl.gz' && \
+               if test -e '$destination'; then \
+                 rm -rf '$temporary'; \
+               else \
+                 mv '$temporary' '$destination'; \
+               fi"
+
+            echo "Published: $shard_name"
+            uploaded=$((uploaded + 1))
+          done < <(find "$LOCAL_SHARDS" -mindepth 1 -maxdepth 1 -type d -name 'shard-*' -print | LC_ALL=C sort)
+
+          echo "uploaded=$uploaded" >> "$GITHUB_OUTPUT"
+          echo "skipped=$skipped" >> "$GITHUB_OUTPUT"
+          echo "invalid=$invalid" >> "$GITHUB_OUTPUT"
+          echo "Published $uploaded new shard(s); $skipped already live; $invalid incomplete/invalid."
+
+      - name: Verify LIVE SUMMON
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROD_PORT="${PROD_PORT:-22}"
+
+          if [[ -n "${LIVE_URL:-}" ]]; then
+            curl -fsS \
+              --retry 20 \
+              --retry-delay 3 \
+              --retry-all-errors \
+              "${LIVE_URL%/}/field/health"
+          else
+            ssh \
+              -i "$SUMMON_SSH_DIR/id_ed25519" \
+              -p "$PROD_PORT" \
+              -o "UserKnownHostsFile=$SUMMON_SSH_DIR/known_hosts" \
+              -o StrictHostKeyChecking=yes \
+              -o BatchMode=yes \
+              "$PROD_USER@$PROD_HOST" \
+              "curl -fsS --retry 20 --retry-delay 3 http://127.0.0.1:8787/field/health"
+          fi
+
+      - name: Job summary
+        shell: bash
+        run: |
+          {
+            echo "## LIVE SUMMON field feed"
+            echo
+            echo "- New shards published: ${{ steps.publish.outputs.uploaded }}"
+            echo "- Already present: ${{ steps.publish.outputs.skipped }}"
+            echo "- Incomplete or invalid: ${{ steps.publish.outputs.invalid }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove temporary SSH material
+        if: always()
+        shell: bash
+        run: |
+          rm -rf "${SUMMON_SSH_DIR:-$RUNNER_TEMP/summon-live-ssh}"
