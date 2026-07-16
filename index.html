@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- LIVE_FIELD_BACKEND https://pumps-bacterial-fifty-martin.trycloudflare.com · 789,865 objects -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0A0A09">
@@ -925,7 +926,7 @@ const RETURN_COUNT=10, TMDB_MAX_PAGE=500;
 const ARBITER_URL='https://api.arbiter.traut.ai/public/embed';
 // The sidecar is served from the same origin as this page. It continuously adds
 // every finalized ARBITER field shard without changing the core ARBITER server.
-const LIVE_FIELD_URL=new URLSearchParams(location.search).get('field')||'/field/v1/search';
+const LIVE_FIELD_URL=new URLSearchParams(location.search).get('field')||'https://pumps-bacterial-fifty-martin.trycloudflare.com/field/v1/search';
 const LIVE_FIELD_MANIFEST_URL=LIVE_FIELD_URL.replace(/\/v1\/search(?:\?.*)?$/,'/v1/manifest');
 const FORMAT_LABELS={film:'film',series:'series',game:'game',book:'book',music:'music',podcast:'podcast',short:'short',live:'live',paper:'paper',patent:'patent',business:'business',place:'place',law:'law',record:'record'};
 
@@ -1375,7 +1376,7 @@ function setOpeningStage(pct,labelText){
 
 function renderOpeningMeta(){
   const count=$('#openingCount');
-  if(count)count.textContent=openingCount?`${openingCount.toLocaleString()} titles`:'opening';
+  if(count)count.textContent=openingCount?`${openingCount.toLocaleString()} objects`:'opening';
 }
 
 function startOpeningProgressAnimation(){
@@ -1748,6 +1749,7 @@ async function refreshUniversalFieldInfo(){
       sources:d.sources||{},
       updated_at:d.updated_at||null
     };
+    if(universalFieldInfo.count)setFieldOpening(universalFieldInfo.count);
     if(cache)setStatus(statusLine('ready'));
     return universalFieldInfo;
   }catch(e){
@@ -2235,7 +2237,11 @@ async function loadCorpus(){
     setOpeningStage(5,'loading field');
 
     const manifest=await required(FIELD_FILES.manifest,'json','__manifest',0,false);
-    setFieldOpening(manifest.count);
+
+    // The browser bundle supplies artwork and an offline fallback. The opening
+    // count represents the complete live index served by this machine.
+    await refreshUniversalFieldInfo();
+    setFieldOpening(universalFieldInfo.count||manifest.count);
 
     const count=Number(manifest.count)||0;
     const dim=Number(manifest.dim)||72;
