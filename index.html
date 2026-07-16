@@ -750,6 +750,41 @@ body.playing #projector{display:block}
   text-shadow:0 2px 28px rgba(0,0,0,.78);
 }
 
+
+/* ═══════ REVEAL FIT — keep every result inside the reserved winner area ═══════ */
+@media(min-width:1001px){
+  #reveal .stage{
+    min-height:0;
+    overflow:hidden;
+    align-items:end;
+  }
+  #reveal .info{
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    min-height:0;
+    max-height:100%;
+    overflow:hidden;
+  }
+  #reveal #title{
+    flex:0 0 auto;
+    font-size:var(--reveal-title-size,clamp(40px,5.2vw,92px));
+  }
+  #reveal .meta,
+  #reveal .eyebrow,
+  #reveal .actions{flex:0 0 auto}
+  #reveal .synopsis{
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:var(--reveal-synopsis-lines,4);
+    overflow:hidden;
+  }
+  #reveal .actions{
+    flex-wrap:nowrap;
+    white-space:nowrap;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -855,6 +890,7 @@ body.playing #projector{display:block}
         <div class="actions">
           <button class="solid" id="play" type="button">watch trailer</button>
           <button id="watch" type="button">open title ↗</button>
+          <button id="share" type="button">share result</button>
           <button id="copy" type="button">copy link</button>
         </div>
       </div>
@@ -887,7 +923,11 @@ const TMDB_KEY='1616a31a4f3bbcb387e74cbe0ae3c7b6';
 const TMDB_BASE='https://api.themoviedb.org/3';
 const RETURN_COUNT=10, TMDB_MAX_PAGE=500;
 const ARBITER_URL='https://api.arbiter.traut.ai/public/embed';
-const FORMAT_LABELS={film:'film',series:'series',game:'game',book:'book',music:'music',podcast:'podcast',short:'short',live:'live'};
+// The sidecar is served from the same origin as this page. It continuously adds
+// every finalized ARBITER field shard without changing the core ARBITER server.
+const LIVE_FIELD_URL=new URLSearchParams(location.search).get('field')||'/field/v1/search';
+const LIVE_FIELD_MANIFEST_URL=LIVE_FIELD_URL.replace(/\/v1\/search(?:\?.*)?$/,'/v1/manifest');
+const FORMAT_LABELS={film:'film',series:'series',game:'game',book:'book',music:'music',podcast:'podcast',short:'short',live:'live',paper:'paper',patent:'patent',business:'business',place:'place',law:'law',record:'record'};
 
 const CURATED_ENTERTAINMENT_FIELD=[{"title":"The Bill Simmons Podcast","year":"2026","type":"podcast","publisher":"The Ringer / Spotify","availability":"now on Netflix","genres":["Sports","Culture","Conversation"],"overview":"Long-form sports and culture conversations, arguments, predictions, and deep dives with athletes, celebrities, and voices from The Ringer universe."},{"title":"Pardon My Take","year":"2026","type":"podcast","publisher":"Barstool Sports","availability":"now on Netflix","genres":["Sports","Comedy","Conversation"],"overview":"Irreverent sports talk built around fan culture, sharp commentary, recurring bits, big personalities, and the absurdity surrounding the games."},{"title":"Spittin' Chiclets","year":"2026","type":"podcast","publisher":"Barstool Sports","availability":"now on Netflix","genres":["Hockey","Sports","Storytelling"],"overview":"NHL analysis, hockey culture, locker-room stories, pop culture, and candid conversation with players and personalities."},{"title":"The Ryen Russillo Podcast","year":"2026","type":"podcast","publisher":"Barstool Sports","availability":"now on Netflix","genres":["Sports","Analysis","Interviews"],"overview":"Long-form sports analysis and conversations with athletes, media figures, and people shaping modern sports culture."},{"title":"The Zach Lowe Show","year":"2026","type":"podcast","publisher":"The Ringer / Spotify","availability":"on Netflix","genres":["Basketball","NBA","Analysis"],"overview":"Detailed NBA analysis focused on strategy, roster construction, player fit, league trends, and the small tactical decisions that change games."},{"title":"The Rewatchables","year":"2026","type":"podcast","publisher":"The Ringer / Spotify","availability":"on Netflix","genres":["Film","Culture","Conversation"],"overview":"A joyful, obsessive return to beloved movies: best scenes, performances, casting what-ifs, legacy, quotability, and why certain films stay alive in memory."},{"title":"The Big Picture","year":"2026","type":"podcast","publisher":"The Ringer / Spotify","availability":"on Netflix","genres":["Film","Industry","Criticism"],"overview":"Movies, filmmakers, awards, the business of cinema, and wide-ranging conversations about how films are made, received, and remembered."},{"title":"Dissect","year":"2026","type":"podcast","publisher":"Spotify","availability":"on Netflix","genres":["Music","Analysis","Storytelling"],"overview":"Long-form analysis of major albums and songs, tracing lyrics, themes, production choices, symbolism, and cultural context piece by piece."},{"title":"Conspiracy Theories","year":"2026","type":"podcast","publisher":"Spotify","availability":"on Netflix","genres":["Mystery","History","Psychology"],"overview":"A guided investigation of famous conspiracy theories, separating documented history, plausible questions, hidden incentives, and mythology."},{"title":"Serial Killers","year":"2026","type":"podcast","publisher":"Spotify","availability":"on Netflix","genres":["True Crime","Psychology","History"],"overview":"True-crime stories examining notorious killers, investigative failures, psychology, victims, and the systems surrounding major cases."},{"title":"My Favorite Murder","year":"2026","type":"podcast","publisher":"iHeartMedia","availability":"on Netflix","genres":["True Crime","Comedy","Conversation"],"overview":"True crime told through candid conversation, dark humor, personal reactions, and the strange details that make cases impossible to forget."},{"title":"The Breakfast Club","year":"2026","type":"podcast","publisher":"iHeartMedia","availability":"on Netflix","genres":["Music","Culture","Interviews"],"overview":"Unfiltered interviews and conversation spanning music, celebrity, politics, internet culture, controversy, and the personalities driving the moment."},{"title":"The Pete Davidson Show","year":"2026","type":"podcast","publisher":"Netflix","availability":"now on Netflix","genres":["Comedy","Conversation","Celebrity"],"overview":"Candid, no-holds-barred conversations with Pete Davidson and friends, mostly from his garage, with the looseness of hanging out after midnight."},{"title":"BEEF: The Official Podcast","year":"2026","type":"podcast","publisher":"Netflix","availability":"now on Netflix","genres":["Behind the Scenes","Drama","Creative Process"],"overview":"Creator Lee Sung Jin and the cast unpack BEEF Season 2, creative decisions, performance, rivalry, music, and how the story was built."},{"title":"Bridgerton: The Official Podcast","year":"2026","type":"podcast","publisher":"Netflix / Shondaland","availability":"now on Netflix","genres":["Romance","Behind the Scenes","Drama"],"overview":"A companion journey through Bridgerton Season 4 with cast and creators discussing love, heartbreak, friendship, performance, and the world behind the ton."},{"title":"The Rest Is Football","year":"2026","type":"podcast","publisher":"Goalhanger","availability":"daily during the 2026 tournament","genres":["Football","World Cup","Analysis"],"overview":"Gary Lineker, Alan Shearer, and Micah Richards deliver daily world football analysis, big-match reactions, interviews, honesty, and humor."},{"title":"On Purpose with Jay Shetty","year":"2026","type":"podcast","publisher":"Netflix / Spotify","availability":"2026 on Netflix","genres":["Personal Growth","Relationships","Conversation"],"overview":"Deep conversations about grief, anxiety, love, identity, healing, purpose, and the hardest truths people carry into their lives."},{"title":"We're Back! with Brian Williams","year":"2026","type":"podcast","publisher":"Netflix","availability":"announced for 2026","genres":["Culture","Interviews","Ideas"],"overview":"Unhurried conversations with actors, writers, musicians, athletes, journalists, scientists, and consequential people shaping culture."},{"title":"FIFA World Cup: Launch Edition","year":"2026","type":"game","publisher":"Netflix Games / Delphi Interactive","availability":"play now","genres":["Football","Sports","Multiplayer"],"overview":"A reimagined football simulation built for instant play on TV, with the phone as controller, featuring the drama and emotion of the 2026 World Cup."},{"title":"Boggle Party","year":"2026","type":"game","publisher":"Netflix Games","availability":"play now","genres":["Words","Party","Puzzle"],"overview":"A fast social word game for one to eight players where phones become controllers and everyone races to find the best words on the shared TV grid."},{"title":"LEGO Party!","year":"2026","type":"game","publisher":"Netflix Games","availability":"play now","genres":["Party","Family","Minigames"],"overview":"A competitive collection of playful LEGO minigames, board-game chaos, customization, and living-room rivalry for friends and families."},{"title":"Party Crashers: Fool Your Friends","year":"2026","type":"game","publisher":"Netflix Games","availability":"play now","genres":["Social Deduction","Party","Comedy"],"overview":"A bluffing game where one player does not know the secret word and must fake their way through clues without being exposed as the party crasher."},{"title":"Pictionary: Game Night","year":"2026","type":"game","publisher":"Netflix Games","availability":"play now","genres":["Drawing","Party","Family"],"overview":"Draw on a phone, watch the image appear on the TV, and race against the clock as friends try to decipher increasingly questionable masterpieces."},{"title":"Tetris Time Warp","year":"2026","type":"game","publisher":"Netflix Games","availability":"play now","genres":["Puzzle","Arcade","Multiplayer"],"overview":"Classic Tetris with time-warps into historic versions of the game, each with altered rules, retro constraints, and competitive living-room play."},{"title":"Overcooked! All You Can Eat","year":"2026","type":"game","publisher":"Netflix Games","availability":"play on TV","genres":["Co-op","Party","Chaos"],"overview":"A frantic cooperative cooking game where communication collapses, kitchens move, orders pile up, and friendship is tested under ridiculous pressure."},{"title":"Jackbox Party Pack","year":"2026","type":"game","publisher":"Netflix Games","availability":"play on TV","genres":["Party","Comedy","Trivia"],"overview":"A living-room collection of social games built around jokes, drawing, trivia, bluffing, and group chemistry, with phones used as controllers."},{"title":"Red Dead Redemption","year":"2026","type":"game","publisher":"Netflix Games","availability":"on mobile","genres":["Western","Open World","Story"],"overview":"A sprawling western about violence, loyalty, fading myths, and a man trying to survive as the frontier world that made him begins to disappear."},{"title":"Netflix Puzzled: Scattergories Daily","year":"2026","type":"game","publisher":"Netflix Puzzled","availability":"play daily","genres":["Word Game","Daily","Puzzle"],"overview":"A quick daily word challenge built around categories, speed, originality, and the pressure to find answers nobody else would think of."},{"title":"Unhinged","year":"2026","type":"game","publisher":"Netflix Games","availability":"play on TV","genres":["Horror","Interactive","Motion"],"overview":"A motion-controlled horror experience where real-world phone movements guide a character's flashlight through darkness, uncertainty, and whatever is waiting there."},{"title":"Dead Man's Party: A Knives Out Game","year":"2026","type":"game","publisher":"Netflix Games","availability":"announced","genres":["Mystery","Social Deduction","Party"],"overview":"A social murder mystery inspired by Knives Out, where Benoit Blanc is investigating and the room itself becomes part of the case."},{"title":"Architectural Digest: Open Door","year":"2026","type":"short","publisher":"Condé Nast","availability":"arriving Aug 3","genres":["Design","Architecture","Homes"],"overview":"Short-form access inside remarkable celebrity homes, with architecture, objects, taste, memory, and the private worlds people build around themselves."},{"title":"Vanity Fair: Lie Detector Test","year":"2026","type":"short","publisher":"Condé Nast","availability":"arriving Aug 3","genres":["Celebrity","Interviews","Comedy"],"overview":"Celebrities answer uncomfortable, playful, and revealing questions while wired to a lie detector, turning tension into confession and comedy."},{"title":"Vogue: Fashion and Culture Shorts","year":"2026","type":"short","publisher":"Condé Nast","availability":"arriving Aug 3","genres":["Fashion","Celebrity","Lifestyle"],"overview":"Fast-moving interviews through personal spaces, revealing taste, routine, ambition, style, memories, and unexpected details in a single continuous encounter."},{"title":"WIRED: Tech and Internet Culture Shorts","year":"2026","type":"short","publisher":"Condé Nast","availability":"arriving Aug 3","genres":["Technology","Celebrity","Internet Culture"],"overview":"Public figures answer the internet's most searched questions about themselves, moving from curiosity and myth to strange facts and self-explanation."},{"title":"Bon Appétit: Kitchen and Food Stories","year":"2026","type":"short","publisher":"Condé Nast","availability":"arriving Aug 3","genres":["Food","Cooking","Craft"],"overview":"Short culinary stories about technique, obsession, ingredients, restaurant culture, experimentation, and the craft behind food people cannot stop thinking about."},{"title":"BuzzFeed Studios: Internet Culture Shorts","year":"2026","type":"short","publisher":"BuzzFeed Studios","availability":"arriving Aug 3","genres":["Internet Culture","Comedy","Food"],"overview":"Short-form internet-native entertainment spanning food, identity, experiments, comedy, social behavior, and the cultural questions people share and argue about."},{"title":"Eater: Food, Restaurants and Obsession","year":"2026","type":"short","publisher":"Penske Media","availability":"arriving Aug 3","genres":["Food","Restaurants","Travel"],"overview":"Short documentaries and field pieces about restaurants, hidden kitchens, culinary craft, regional obsession, and the people behind unforgettable food."},{"title":"Rolling Stone: Music and Culture","year":"2026","type":"short","publisher":"Penske Media","availability":"arriving Aug 3","genres":["Music","Culture","Artists"],"overview":"Artists, songs, scenes, performances, and cultural moments explored through short-form music journalism and direct conversations."},{"title":"Billboard: Music Interviews and Performances","year":"2026","type":"short","publisher":"Penske Media","availability":"arriving Aug 3","genres":["Music","Performance","Pop Culture"],"overview":"Short-form interviews, performances, chart stories, and conversations with artists driving the sound and mood of the current moment."},{"title":"The Hollywood Reporter: Creative Roundtables","year":"2026","type":"short","publisher":"Penske Media","availability":"arriving Aug 3","genres":["Film","Television","Creative Process"],"overview":"Actors, directors, writers, and craftspeople discuss performance, ambition, failure, process, pressure, and what actually happens behind finished work."},{"title":"Variety: Actors, Filmmakers and Industry Conversations","year":"2026","type":"short","publisher":"Penske Media","availability":"arriving Aug 3","genres":["Film","Television","Interviews"],"overview":"Direct conversations across cinema and television about craft, careers, collaboration, difficult choices, and the business around storytelling."},{"title":"People: Human Stories and Celebrity Profiles","year":"2026","type":"short","publisher":"People Inc.","availability":"arriving Aug 3","genres":["People","Celebrity","Human Interest"],"overview":"Short human-interest stories and profiles centered on relationships, transformation, celebrity, resilience, and the personal lives behind public figures."},{"title":"Tastemade: Food, Travel and Beautiful Places","year":"2026","type":"short","publisher":"Tastemade","availability":"arriving Aug 3","genres":["Travel","Food","Lifestyle"],"overview":"Visually driven short-form stories about where to go, what to eat, how places feel, and the small details that make travel worth remembering."},{"title":"WWE Raw","year":"2026","type":"live","publisher":"WWE / Netflix","availability":"live weekly","genres":["Wrestling","Sports Entertainment","Drama"],"overview":"A weekly live collision of athleticism, rivalry, spectacle, betrayal, crowd energy, and serialized drama where the outcome still unfolds in real time."},{"title":"2026 T-Mobile Home Run Derby","year":"2026","type":"live","publisher":"MLB / Netflix","availability":"live July 13","genres":["Baseball","Competition","Live Sports"],"overview":"Baseball's top sluggers attack the fences in Philadelphia in a live skills competition built around pressure, power, rhythm, and one swing changing everything."},{"title":"MLB at Field of Dreams 2026","year":"2026","type":"live","publisher":"MLB / Netflix","availability":"live Aug 13","genres":["Baseball","Nostalgia","Live Sports"],"overview":"The Minnesota Twins and Philadelphia Phillies play live from the iconic Field of Dreams site in Iowa, blending major-league competition with cinematic mythology."},{"title":"NFL on Netflix: Rams vs. 49ers in Australia","year":"2026","type":"live","publisher":"NFL / Netflix","availability":"live Sept 10","genres":["Football","Rivalry","Live Sports"],"overview":"The NFL's first regular-season game in Australia: divisional rivals Los Angeles and San Francisco meet live at the Melbourne Cricket Ground."},{"title":"NFL Thanksgiving Eve on Netflix","year":"2026","type":"live","publisher":"NFL / Netflix","availability":"live Nov 25","genres":["Football","Holiday","Live Sports"],"overview":"The NFL's first Thanksgiving Eve game brings the Packers and Rams together live under holiday pressure with an audience gathering in real time."},{"title":"NFL Christmas Day on Netflix","year":"2026","type":"live","publisher":"NFL / Netflix","availability":"live Dec 25","genres":["Football","Holiday","Live Sports"],"overview":"Christmas Day football becomes a global live event, with major matchups, family rituals, rivalry, and the unpredictability of games that have not been written yet."},{"title":"FIFA Women's World Cup 2027","year":"2027","type":"live","publisher":"FIFA / Netflix","availability":"announced","genres":["Football","World Cup","Live Sports"],"overview":"The world's biggest women's football tournament, live on Netflix in the United States and Canada, where national identity, pressure, and history collide."}];
 
@@ -1145,6 +1185,7 @@ window.addEventListener('load',()=>{
 
 /* ═══════ STATE ═══════ */
 let cache=null, results=[], active=0, currentQuery='', corpusLock=null, silentLoad=false;
+let universalFieldInfo={count:0,units:0,sources:{},updated_at:null};
 
 /* live resonance state: debounce input, serialize /v1/embed calls, discard stale answers */
 const LIVE_RESONANCE_DEBOUNCE=170;
@@ -1166,7 +1207,7 @@ const fmt=m=>FORMAT_LABELS[m?.type]||'title';
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 
 /* colour-coded fallback art per format, so nothing renders as grey-on-black */
-const FMT_HUE={film:'#7a1226',series:'#1a2a6b',game:'#4a1a6b',book:'#6d4b2f',music:'#314f68',podcast:'#0f5a4a',short:'#7a4a10',live:'#8a1710'};
+const FMT_HUE={film:'#7a1226',series:'#1a2a6b',game:'#4a1a6b',book:'#6d4b2f',music:'#314f68',podcast:'#0f5a4a',short:'#7a4a10',live:'#8a1710',paper:'#253551',patent:'#50452a',business:'#31503c',place:'#4e2f45',law:'#4b2630',record:'#343434'};
 const artCache=new Map();
 function wrap(t,max){const w=String(t||'').split(/\s+/),l=[];let c='';for(const x of w){const n=c?c+' '+x:x;if(n.length>max&&c){l.push(c);c=x}else c=n}if(c)l.push(c);return l.slice(0,4)}
 function fieldArt(m,mode='poster'){
@@ -1232,7 +1273,13 @@ function artTerms(title){
   const t=title.split(' — ')[0].split(' – ')[0].trim();
   return [...new Set([t,t.split(':')[0].trim()])];
 }
+const REMOTE_ART_TYPES=new Set(['film','series','game','music','podcast','short','live']);
 async function resolveArt(m){
+  // Never guess artwork for field-native records such as papers, law, patents,
+  // businesses, places, or scientific records. Their titles can collide with
+  // entertainment titles and return a completely unrelated TMDB/iTunes image.
+  if(!REMOTE_ART_TYPES.has(m?.type))return false;
+
   const terms=artTerms(m.title);
   const plans=m.type==='podcast'
     ? [...terms.map(t=>()=>itunesArt(t,'podcast','podcast')),...terms.map(t=>()=>itunesArt(t,'all'))]
@@ -1275,8 +1322,8 @@ function fieldCount(c){
   return c?.movies?.length||0;
 }
 function statusLine(p){
-  const loaded=cache?.movies?.length||0;
-  return `${p} · ${loaded.toLocaleString()} titles`;
+  const loaded=universalFieldInfo.count||cache?.movies?.length||0;
+  return `${p} · ${loaded.toLocaleString()} objects`;
 }
 const setStatus=t=>{
   const el=$('#status');
@@ -1371,6 +1418,304 @@ function whenBarFull(){
 function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;document.body.appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300)},1600)}
 const show=id=>$$('.plate').forEach(p=>p.classList.toggle('on',p.id===id));
 
+/* ═══════ SHARE ART — the result itself becomes the artifact ═══════ */
+const SHARE_W=1200, SHARE_H=630;
+let initialSharedResultIndex=null;
+
+function resultShareUrl(index=active){
+  const url=new URL(location.href.split('#')[0]);
+  url.searchParams.set('result',String(Math.max(0,index)+1));
+  url.hash=encodeURIComponent(currentQuery||'');
+  return url.toString();
+}
+
+function shareSlug(s){
+  return String(s||'summon-result')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-')
+    .replace(/^-+|-+$/g,'')
+    .slice(0,64)||'summon-result';
+}
+
+function wrapCanvasText(ctx,text,maxWidth,maxLines=4){
+  const words=String(text||'').trim().split(/\s+/).filter(Boolean);
+  if(!words.length)return [];
+  const lines=[];
+  let line='';
+  for(let i=0;i<words.length;i++){
+    const test=line?`${line} ${words[i]}`:words[i];
+    if(ctx.measureText(test).width<=maxWidth||!line){
+      line=test;
+      continue;
+    }
+    lines.push(line);
+    line=words[i];
+    if(lines.length===maxLines-1){
+      const rest=[line,...words.slice(i+1)].join(' ');
+      let clipped=rest;
+      while(clipped.length&&ctx.measureText(clipped+'…').width>maxWidth)clipped=clipped.slice(0,-1);
+      lines.push(clipped+(clipped!==rest?'…':''));
+      return lines;
+    }
+  }
+  if(line&&lines.length<maxLines)lines.push(line);
+  return lines;
+}
+
+function fitCanvasFont(ctx,text,maxWidth,start,min,family,weight='400'){
+  let size=start;
+  do{
+    ctx.font=`${weight} ${size}px ${family}`;
+    if(ctx.measureText(String(text||'')).width<=maxWidth)return size;
+    size-=1;
+  }while(size>min);
+  return min;
+}
+
+function drawCoverImage(ctx,image,x,y,w,h){
+  const iw=image.naturalWidth||image.width||1;
+  const ih=image.naturalHeight||image.height||1;
+  const scale=Math.max(w/iw,h/ih);
+  const sw=w/scale, sh=h/scale;
+  const sx=Math.max(0,(iw-sw)/2), sy=Math.max(0,(ih-sh)/2);
+  ctx.drawImage(image,sx,sy,sw,sh,x,y,w,h);
+}
+
+function loadShareImage(src,timeoutMs=8000){
+  return new Promise(async resolve=>{
+    if(!src){resolve(null);return}
+    const finish=(img,url)=>{
+      if(url)URL.revokeObjectURL(url);
+      resolve(img||null);
+    };
+    let timer=null;
+    try{
+      let url=src, revoke='';
+      if(!String(src).startsWith('data:')){
+        const response=await fetch(src,{mode:'cors',cache:'force-cache'});
+        if(!response.ok)throw new Error(`art ${response.status}`);
+        const blob=await response.blob();
+        revoke=URL.createObjectURL(blob);
+        url=revoke;
+      }
+      const image=new Image();
+      image.decoding='async';
+      image.onload=()=>{clearTimeout(timer);finish(image,revoke)};
+      image.onerror=()=>{clearTimeout(timer);finish(null,revoke)};
+      timer=setTimeout(()=>finish(null,revoke),timeoutMs);
+      image.src=url;
+    }catch(e){
+      clearTimeout(timer);
+      resolve(null);
+    }
+  });
+}
+
+function drawShareGradient(ctx){
+  let g=ctx.createLinearGradient(0,0,760,0);
+  g.addColorStop(0,'rgba(7,7,7,.91)');
+  g.addColorStop(.44,'rgba(7,7,7,.58)');
+  g.addColorStop(1,'rgba(7,7,7,0)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,SHARE_W,SHARE_H);
+
+  g=ctx.createLinearGradient(0,0,0,SHARE_H);
+  g.addColorStop(0,'rgba(7,7,7,.30)');
+  g.addColorStop(.48,'rgba(7,7,7,.02)');
+  g.addColorStop(1,'rgba(7,7,7,.96)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,SHARE_W,SHARE_H);
+}
+
+function drawShareThought(ctx,thought){
+  ctx.save();
+  ctx.fillStyle='#F6F4EF';
+  ctx.textBaseline='top';
+  ctx.font='400 31px "Instrument Serif", Georgia, serif';
+  const lines=wrapCanvasText(ctx,thought,720,2);
+  const startX=300;
+  lines.forEach((line,i)=>ctx.fillText(line,startX,31+i*34));
+  ctx.restore();
+}
+
+function drawShareDeckTile(ctx,r,i,x,y,w,h,image,selected){
+  ctx.save();
+  ctx.fillStyle='rgba(8,8,7,.60)';
+  ctx.fillRect(x,y,w,h);
+  if(image)drawCoverImage(ctx,image,x,y,w,h);
+  else{
+    ctx.fillStyle='rgba(246,244,239,.08)';ctx.fillRect(x,y,w,h);
+    ctx.fillStyle='rgba(246,244,239,.44)';ctx.font='500 9px "DM Mono", monospace';
+    const lines=wrapCanvasText(ctx,r?.title||'',w-10,4);
+    lines.forEach((line,j)=>ctx.fillText(line.toUpperCase(),x+5,y+10+j*12));
+  }
+
+  ctx.strokeStyle=selected?'#E50914':'rgba(246,244,239,.18)';
+  ctx.lineWidth=selected?2:1;
+  ctx.strokeRect(x+.5,y+.5,w-1,h-1);
+
+  ctx.fillStyle=selected?'#E50914':'rgba(10,10,9,.74)';
+  ctx.fillRect(x,y,20,16);
+  ctx.fillStyle='#F6F4EF';
+  ctx.font='500 8px "DM Mono", monospace';
+  ctx.fillText(String(i+1).padStart(2,'0'),x+4,y+11);
+
+  ctx.fillStyle=selected?'#E50914':'rgba(246,244,239,.68)';
+  ctx.font='500 8px "DM Mono", monospace';
+  ctx.fillText(Number(r?.score||0).toFixed(3),x,y+h+13);
+  ctx.restore();
+}
+
+async function makeResultShareBlob(){
+  const m=results[active];
+  if(!m)throw new Error('no active result');
+  if(document.fonts?.ready){try{await document.fonts.ready}catch(e){}}
+
+  const canvas=document.createElement('canvas');
+  canvas.width=SHARE_W;canvas.height=SHARE_H;
+  const ctx=canvas.getContext('2d',{alpha:false});
+  ctx.imageSmoothingEnabled=true;
+  ctx.imageSmoothingQuality='high';
+  ctx.fillStyle='#0A0A09';ctx.fillRect(0,0,SHARE_W,SHARE_H);
+
+  const heroSrc=isSquare(m)?(m.imageUrl||poster(m,'w780')):backdrop(m,'original');
+  const hero=await loadShareImage(heroSrc);
+  if(hero){
+    if(isSquare(m)){
+      ctx.save();
+      ctx.filter='blur(28px) saturate(1.12) brightness(.62)';
+      drawCoverImage(ctx,hero,-40,-40,SHARE_W+80,SHARE_H+80);
+      ctx.restore();
+      const size=350;
+      ctx.save();
+      ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=38;
+      drawCoverImage(ctx,hero,SHARE_W-size-52,118,size,size);
+      ctx.restore();
+    }else{
+      drawCoverImage(ctx,hero,0,0,SHARE_W,SHARE_H);
+    }
+  }
+  drawShareGradient(ctx);
+
+  ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#F6F4EF';
+  ctx.font='400 36px "Instrument Serif", Georgia, serif';
+  ctx.fillText('SUMMON',32,55);
+  drawShareThought(ctx,currentQuery);
+
+  ctx.font='500 9px "DM Mono", monospace';
+  ctx.fillStyle='#E50914';
+  ctx.fillText(String(active+1).padStart(2,'0'),1090,47);
+  ctx.fillStyle='rgba(246,244,239,.58)';
+  ctx.fillText(` / ${String(results.length).padStart(2,'0')}`,1114,47);
+
+  const left=32;
+  const contentTop=190;
+  ctx.font='500 9px "DM Mono", monospace';
+  ctx.fillStyle='rgba(246,244,239,.68)';
+  ctx.fillText(`${fmt(m).toUpperCase()}  ·  RESONANCE`,left,contentTop);
+  ctx.fillStyle='#E50914';
+  ctx.fillText(Number(m.score||0).toFixed(3),left+152,contentTop);
+
+  const titleMax=isSquare(m)?650:720;
+  let titleSize=fitCanvasFont(ctx,m.title,titleMax,72,42,'"Instrument Serif", Georgia, serif');
+  ctx.font=`400 ${titleSize}px "Instrument Serif", Georgia, serif`;
+  ctx.fillStyle='#F6F4EF';
+  let titleLines=wrapCanvasText(ctx,m.title,titleMax,2);
+  const titleY=contentTop+20;
+  const titleLH=titleSize*.88;
+  titleLines.forEach((line,i)=>ctx.fillText(line,left,titleY+(i+1)*titleLH));
+
+  let cursorY=titleY+titleLines.length*titleLH+27;
+  const meta=[m.year,...(m.genres||[]).slice(0,2)].filter(Boolean).join('  /  ');
+  ctx.font='500 9px "DM Mono", monospace';
+  ctx.fillStyle='rgba(246,244,239,.62)';
+  if(meta){ctx.fillText(meta.toUpperCase(),left,cursorY);cursorY+=27}
+
+  const synopsis=(m.overview||'').trim();
+  if(synopsis){
+    ctx.font='400 18px "Instrument Serif", Georgia, serif';
+    ctx.fillStyle='rgba(246,244,239,.94)';
+    const maxSynopsisW=isSquare(m)?610:650;
+    const synopsisLines=wrapCanvasText(ctx,synopsis,maxSynopsisW,4);
+    synopsisLines.forEach((line,i)=>ctx.fillText(line,left,cursorY+i*23));
+  }
+
+  const deckLabelY=490;
+  ctx.font='500 8px "DM Mono", monospace';
+  ctx.fillStyle='rgba(246,244,239,.68)';
+  ctx.fillText('RANKED RESONANCE FIELD',left,deckLabelY);
+  ctx.textAlign='right';
+  ctx.fillText(`${new Set(results.map(r=>r.type)).size} FORMATS`,SHARE_W-32,deckLabelY);
+  ctx.textAlign='left';
+
+  const deckResults=results.slice(0,10);
+  const tileW=72,tileH=84,gap=8,startY=505;
+  const posterImages=await Promise.all(deckResults.map(r=>loadShareImage(poster(r,'w342'),5000)));
+  deckResults.forEach((r,i)=>drawShareDeckTile(ctx,r,i,left+i*(tileW+gap),startY,tileW,tileH,posterImages[i],i===active));
+
+  return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('image encode failed')),'image/png',.96));
+}
+
+async function shareCurrentResult(){
+  const m=results[active];
+  if(!m)return;
+  const btn=$('#share');
+  const original=btn?.textContent||'share result';
+  if(btn){btn.disabled=true;btn.textContent='making image';}
+
+  try{
+    const blob=await makeResultShareBlob();
+    const url=resultShareUrl(active);
+    const file=new File([blob],`summon-${shareSlug(m.title)}.png`,{type:'image/png'});
+    const payload={
+      title:`SUMMON — ${m.title}`,
+      text:`${currentQuery} → ${m.title}`,
+      url,
+      files:[file]
+    };
+
+    if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){
+      try{
+        await navigator.share(payload);
+        toast('result shared');
+        return;
+      }catch(e){
+        if(e?.name==='AbortError')return;
+      }
+    }
+
+    let copiedBundle=false, linkCopied=false;
+    if(navigator.clipboard?.write&&window.ClipboardItem){
+      try{
+        await navigator.clipboard.write([new ClipboardItem({
+          'image/png':blob,
+          'text/plain':new Blob([url],{type:'text/plain'})
+        })]);
+        copiedBundle=true;
+      }catch(e){}
+    }
+    if(!copiedBundle){
+      try{await navigator.clipboard?.writeText(url);linkCopied=true}catch(e){}
+    }
+
+    const a=document.createElement('a');
+    const objectUrl=URL.createObjectURL(blob);
+    a.href=objectUrl;
+    a.download=file.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(objectUrl),4000);
+    toast(copiedBundle?'image + link copied':(linkCopied?'image saved · link copied':'share image saved'));
+  }catch(e){
+    console.error('share result failed',e);
+    toast('share image unavailable');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=original;}
+  }
+}
+
 /* ═══════ MASSIVE PRE-EMBEDDED FIELD ═══════ */
 const FIELD_FILES={
   manifest:'./SUMMON_field_manifest.json',
@@ -1391,6 +1736,26 @@ function contentUrl(m){
   if(m?.type==='live')return `https://www.google.com/search?q=${encodeURIComponent((m?.title||'')+' live stream')}`;
   return `https://www.google.com/search?q=${q}`;
 }
+
+async function refreshUniversalFieldInfo(){
+  try{
+    const r=await fetch(LIVE_FIELD_MANIFEST_URL,{cache:'no-store'});
+    if(!r.ok)throw new Error(`live field ${r.status}`);
+    const d=await r.json();
+    universalFieldInfo={
+      count:Number(d.count)||0,
+      units:Number(d.units)||0,
+      sources:d.sources||{},
+      updated_at:d.updated_at||null
+    };
+    if(cache)setStatus(statusLine('ready'));
+    return universalFieldInfo;
+  }catch(e){
+    return universalFieldInfo;
+  }
+}
+setInterval(refreshUniversalFieldInfo,30000);
+window.addEventListener('load',refreshUniversalFieldInfo,{once:true});
 
 async function required(url,kind='json',progressKey=url,expectedTotal=0,track=true){
   const r=await fetch(url,{cache:'no-store'});
@@ -2039,8 +2404,37 @@ function topKField(q,corpus,count,k=RETURN_COUNT){
 }
 
 async function measure(q,corpus,count){
-  setState(`measuring ${count.toLocaleString()} titles`);
+  const visibleCount=universalFieldInfo.count||count;
+  setState(`measuring ${visibleCount.toLocaleString()} objects`);
 
+  // Primary path: the continuously growing unified index. The sidecar embeds the
+  // thought once, measures every object indexed so far, and returns the global top 10.
+  try{
+    const res=await fetch(LIVE_FIELD_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({text:q,k:RETURN_COUNT})
+    });
+    const raw=await res.text();
+    if(!res.ok)throw new Error(`live field ${res.status} · ${raw.slice(0,180)}`);
+    const data=JSON.parse(raw);
+    universalFieldInfo={
+      count:Number(data.count)||universalFieldInfo.count||count,
+      units:Number(data.units)||universalFieldInfo.units||0,
+      sources:data.sources||universalFieldInfo.sources||{},
+      updated_at:data.updated_at||universalFieldInfo.updated_at||null
+    };
+    const next=Array.isArray(data.results)?data.results:[];
+    if(next.length){
+      setStatus(statusLine('ready'));
+      return next;
+    }
+  }catch(e){
+    console.warn('unified field unavailable; using loaded entertainment field',e);
+  }
+
+  // Offline fallback: the original precomputed entertainment field still works
+  // when the sidecar is not running.
   const useFreq=corpus.manifest.use_freq!==false;
   const embedded=await arbiter({texts:[q],use_freq:useFreq});
   const qVector=embedRows(embedded)[0];
@@ -2068,7 +2462,7 @@ async function search(text){
 
     const count=fieldCount(corpus);
     $('#workLabel').textContent='summoning';
-    setState(`measuring ${count.toLocaleString()} titles`);
+    setState(`measuring ${(universalFieldInfo.count||count).toLocaleString()} objects`);
     await pause(120);
 
     try{results=await measure(q,corpus,count)}
@@ -2076,7 +2470,8 @@ async function search(text){
 
     if(!results.length){setState('nothing came close');await pause(1000);show('landing');return}
 
-    active=0;
+    active=initialSharedResultIndex==null?0:Math.max(0,Math.min(results.length-1,initialSharedResultIndex));
+    initialSharedResultIndex=null;
     results.forEach(m=>{
       if(!m.posterPath&&!m.backdropPath&&!m.imageUrl){
         resolveArt(m).then(ok=>{if(ok&&$('#reveal').classList.contains('on'))render()}).catch(()=>{});
@@ -2087,11 +2482,14 @@ async function search(text){
       if($('#reveal').classList.contains('on'))render();
     }).catch(()=>{});
     // preload the hero so the reveal appears fully formed, then cross-fade
-    const first=results[0];
+    const first=results[active];
     const heroArt=isSquare(first)?first.imageUrl:backdrop(first,'original');
     await new Promise(res=>{if(!heroArt)return res();const im=new Image();im.onload=res;im.onerror=res;im.src=heroArt;setTimeout(res,1200)});
     $('#reveal').classList.add('on');
-    requestAnimationFrame(()=>autoResize($('#revealQuery')));
+    requestAnimationFrame(()=>{
+      autoResize($('#revealQuery'));
+      fitRevealContent();
+    });
     await pause(480);
     $('#landing').classList.remove('on');
     $('#leader').classList.remove('on');
@@ -2167,6 +2565,65 @@ async function openProjector(){
   setTimeout(()=>p.classList.remove('show'),1600);
 }
 
+
+/* Keep the winner block inside the fixed space above the ranked field.
+   Long paper titles shrink; synopsis lines yield only when necessary.
+   Buttons never get pushed into the deck. */
+let revealFitRAF=0;
+function fitRevealContent(){
+  cancelAnimationFrame(revealFitRAF);
+  revealFitRAF=requestAnimationFrame(()=>{
+    const stage=$('#reveal .stage');
+    const info=$('#reveal .info');
+    const title=$('#title');
+    const synopsis=$('#synopsis');
+    if(!stage||!info||!title||!synopsis)return;
+
+    title.style.removeProperty('font-size');
+    synopsis.style.removeProperty('-webkit-line-clamp');
+    synopsis.style.removeProperty('display');
+
+    if(window.innerWidth<=1000)return;
+    const available=Math.floor(stage.clientHeight);
+    if(available<80)return;
+
+    const maxSize=Math.min(92,Math.max(40,window.innerWidth*.052));
+    const minSize=24;
+    const fits=()=>info.scrollHeight<=available-2;
+
+    const fitAtLines=lines=>{
+      synopsis.style.display=synopsis.textContent.trim()?' -webkit-box':'none';
+      synopsis.style.setProperty('-webkit-line-clamp',String(lines));
+      let lo=minSize,hi=maxSize,best=minSize;
+      title.style.fontSize=`${minSize}px`;
+      if(!fits())return false;
+      for(let i=0;i<12;i++){
+        const mid=(lo+hi)/2;
+        title.style.fontSize=`${mid}px`;
+        if(fits()){best=mid;lo=mid}else hi=mid;
+      }
+      title.style.fontSize=`${Math.floor(best*10)/10}px`;
+      return true;
+    };
+
+    for(const lines of [4,3,2,1]){
+      if(fitAtLines(lines))return;
+    }
+
+    /* Pathological records can carry exceptionally long titles. Keep every
+       control visible and use the remaining space for the title itself. */
+    synopsis.style.display='none';
+    let lo=18,hi=maxSize,best=18;
+    title.style.fontSize='18px';
+    for(let i=0;i<12;i++){
+      const mid=(lo+hi)/2;
+      title.style.fontSize=`${mid}px`;
+      if(fits()){best=mid;lo=mid}else hi=mid;
+    }
+    title.style.fontSize=`${Math.floor(best*10)/10}px`;
+  });
+}
+
 function render(){
   const m=results[active];
   if(!m)return;
@@ -2194,10 +2651,12 @@ function render(){
   $('#play').textContent=m.tmdbId?'watch trailer':'no trailer';
   $('#watch').textContent='open title ↗';
   $('#watch').onclick=()=>window.open(contentUrl(m),'_blank');
-  $('#copy').onclick=()=>navigator.clipboard?.writeText(location.href.split('#')[0]+'#'+encodeURIComponent(currentQuery)).then(()=>toast('link copied'));
+  $('#share').onclick=shareCurrentResult;
+  $('#copy').onclick=()=>navigator.clipboard?.writeText(resultShareUrl(active)).then(()=>toast('link copied'));
 
   renderDeck();
   autoResize($('#revealQuery'));
+  fitRevealContent();
 }
 function resultKey(r){
   return [r?.type||'',r?.sourceId||r?.tmdbId||r?.externalUrl||'',r?.title||'',r?.year||''].join('|');
@@ -2634,6 +3093,10 @@ document.addEventListener('keydown',e=>{
   el.dispatchEvent(new Event('input',{bubbles:true}));
 });
 
+
+window.addEventListener('resize',fitRevealContent,{passive:true});
+if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{});
+
 /* ═══════ INIT ═══════ */
 (async()=>{
   try{
@@ -2648,6 +3111,8 @@ document.addEventListener('keydown',e=>{
     setStatus(statusLine('ready'));
 
     const h=decodeURIComponent(location.hash.replace(/^#/,''));
+    const sharedResult=Number(new URLSearchParams(location.search).get('result'));
+    if(Number.isFinite(sharedResult)&&sharedResult>0)initialSharedResultIndex=sharedResult-1;
     if(h){
       await whenBarFull();
       await pause(260);

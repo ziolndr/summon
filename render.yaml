@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: summon-live
+    runtime: python
+    plan: starter
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash render-start.sh
+    healthCheckPath: /field/health
+    disk:
+      name: summon-field
+      mountPath: /var/data
+      sizeGB: 10
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: ARBITER_EMBED_URL
+        value: https://api.arbiter.traut.ai/public/embed
+      - key: FIELD_SYNC_INTERVAL
+        value: 20
+      - key: SEARCH_CHUNK_ROWS
+        value: 100000
