@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- LIVE_FIELD_BACKEND https://airports-oecd-proposition-crest.trycloudflare.com · 789,865 objects -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0A0A09">
@@ -1126,9 +1127,51 @@ async function wikiArt(term){
   return hit?.thumbnail?.source||null;
 }
 
-async function tmdbArt(term){
-  const r=await fetch(`${TMDB_BASE}/search/multi?api_key=${TMDB_KEY}&language=en-US&query=${encodeURIComponent(term)}`).then(x=>x.json()).catch(()=>null);
-  const hit=(r?.results||[]).find(x=>x.backdrop_path||x.poster_path);
+const SERIES_ART_MATCH_VERSION='strict-series-art-v1';
+function artTitleKey(value){
+  return String(value||'')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase()
+    .replace(/&/g,' and ')
+    .replace(/[^a-z0-9]+/g,' ')
+    .replace(/\b(the|a|an)\b/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function artYear(value){
+  const match=String(value||'').match(/\b(18|19|20|21)\d{2}\b/);
+  return match?Number(match[0]):0;
+}
+async function tmdbArt(term,kind='',year=''){
+  const endpoint=kind==='series'?'tv':kind==='film'?'movie':'multi';
+  const params=new URLSearchParams({
+    api_key:TMDB_KEY,
+    language:'en-US',
+    query:term,
+    include_adult:'true'
+  });
+  const wantedYear=artYear(year);
+  if(wantedYear){
+    if(endpoint==='tv')params.set('first_air_date_year',String(wantedYear));
+    if(endpoint==='movie')params.set('year',String(wantedYear));
+  }
+
+  const r=await fetch(`${TMDB_BASE}/search/${endpoint}?${params}`)
+    .then(x=>x.json())
+    .catch(()=>null);
+
+  const wanted=artTitleKey(term);
+  const exact=(r?.results||[]).filter(item=>{
+    const actual=artTitleKey(item?.name||item?.title||item?.original_name||item?.original_title);
+    if(!actual||actual!==wanted)return false;
+
+    if(!wantedYear)return true;
+    const resultYear=artYear(item?.first_air_date||item?.release_date);
+    return !resultYear||Math.abs(resultYear-wantedYear)<=1;
+  });
+
+  const hit=exact.find(item=>item?.backdrop_path||item?.poster_path);
   return hit?img(hit.backdrop_path||hit.poster_path,'w1280'):null;
 }
 function artTerms(title){
@@ -1149,9 +1192,13 @@ async function resolveArt(m){
       ? [...terms.map(t=>()=>itunesArt(t,'music','album')),...terms.map(t=>()=>itunesArt(t,'music','song'))]
       : m.type==='game'
         ? [...terms.map(t=>()=>wikiArt(t)),...terms.map(t=>()=>itunesArt(t,'software','software')),...terms.map(t=>()=>itunesArt(t,'all'))]
-        : m.type==='book'
-          ? []
-          : [...terms.map(t=>()=>tmdbArt(t)),...terms.map(t=>()=>itunesArt(t,'tvShow','tvSeason')),...terms.map(t=>()=>itunesArt(t,'all'))];
+        : m.type==='series'
+          ? [...terms.map(t=>()=>tmdbArt(t,'series',m.year))]
+          : m.type==='film'
+            ? [...terms.map(t=>()=>tmdbArt(t,'film',m.year))]
+            : m.type==='book'
+              ? []
+              : [...terms.map(t=>()=>tmdbArt(t,m.type,m.year)),...terms.map(t=>()=>itunesArt(t,'all'))];
   for(const plan of plans){
     try{const url=await plan();if(url){m.imageUrl=url;return true}}catch(e){}
   }
