@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- SUMMON_PRODUCTION_BUILD SUMMON-CLEAR-MUSIC-HERO-V26_4-20260718T164741Z · clear-album-art-music-hero · no-blurred-music-bed · continuous-same-vector-pagination -->
+<!-- SUMMON_PRODUCTION_BUILD SUMMON-MUSIC-FULL-HERO-V26_5-20260718T165702Z · music-bypasses-square-mode · clear-full-album-art-hero · no-blur-no-duplicate-card -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0A0A09">
@@ -828,6 +828,27 @@ body.playing #projector{display:block}
   transform:none!important;
 }
 #revealCanvas.music ~ #revealFrame #card{display:none!important}
+
+
+/* SUMMON_MUSIC_FULL_HERO_V26_5
+   Music bypasses generic square-art mode completely. */
+#reveal.music-hero #revealCanvas{background:#080807}
+#reveal.music-hero #revealCanvas #still{
+  opacity:1!important;
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+  object-position:center center!important;
+  filter:none!important;
+  transform:none!important;
+  animation:none!important;
+}
+#reveal.music-hero #revealCanvas #stillBg{
+  opacity:0!important;
+  filter:none!important;
+  transform:none!important;
+}
+#reveal.music-hero #card{display:none!important}
 
 </style>
 </head>
@@ -2699,7 +2720,9 @@ function render(){
   const music=m?.type==='music';
   const art=backdrop(m,'original');
 
-  $('#revealCanvas').classList.toggle('square',square);
+  $('#revealCanvas').classList.toggle('square',square&&!music);
+  $('#revealCanvas').classList.toggle('music',music);
+  $('#reveal').classList.toggle('music-hero',music);
   $('#revealCanvas').classList.toggle('music',music);
   $('#stillBg').src=art;
   $('#still').src=art;$('#still').alt=m.title;
