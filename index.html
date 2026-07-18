@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- SUMMON_PRODUCTION_BUILD SUMMON-STACKED-RESULT-ROWS-V26_1-20260718T083140Z · stacked-ranked-rows · ten-per-row-desktop · continuous-same-vector-pagination -->
+<!-- SUMMON_PRODUCTION_BUILD SUMMON-HERO-RESTORE-V26_2-20260718T084037Z · stacked-ranked-rows · reveal-frame-scroller · tile-selection-restores-hero · continuous-same-vector-pagination -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0A0A09">
@@ -786,6 +786,28 @@ body.playing #projector{display:block}
   #reveal .actions{
     flex-wrap:nowrap;
     white-space:nowrap;
+  }
+}
+
+
+/* SUMMON_HERO_RESTORE_V26_2
+   The reveal frame—not body/window—is the vertical result surface. */
+#revealFrame{
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  align-content:start;
+}
+#revealFrame::-webkit-scrollbar{display:none}
+@media(min-width:1001px){
+  #revealFrame{
+    grid-template-rows:auto minmax(clamp(420px,58vh,720px),auto) auto!important;
+  }
+  #reveal .stage{
+    min-height:clamp(420px,58vh,720px);
+    align-self:stretch;
   }
 }
 
@@ -2611,6 +2633,7 @@ async function loadMoreResults({advance=false,preserveScroll=false,play=false}={
     if(preserveScroll&&!advance)resultPreserveDeckScroll=true;
     closeProjector();
     render();
+    if(advance)restoreHeroView({smooth:true});
 
     added.forEach(m=>{
       if(!m.posterPath&&!m.backdropPath&&!m.imageUrl){
@@ -2632,6 +2655,23 @@ async function loadMoreResults({advance=false,preserveScroll=false,play=false}={
   }finally{
     if(generation===resultPageGeneration)resultLoadingMore=false;
   }
+}
+
+/* SUMMON_HERO_RESTORE_V26_2 */
+function restoreHeroView({smooth=true}={}){
+  const frame=$('#revealFrame');
+  if(!frame)return;
+  frame.scrollTo({top:0,behavior:smooth?'smooth':'auto'});
+}
+
+function selectRankedResult(index,{play=false}={}){
+  if(!results.length)return;
+  const next=Math.max(0,Math.min(Number(index)||0,results.length-1));
+  active=next;
+  closeProjector();
+  render();
+  restoreHeroView({smooth:true});
+  if(play)openProjector();
 }
 
 function render(){
@@ -2675,8 +2715,9 @@ function resultKey(r){
 function renderDeck(){
   const deck=$('#deck');
   if(!deck)return;
+  const frame=$('#revealFrame');
   const preserveScroll=resultPreserveDeckScroll;
-  const priorWindowY=window.scrollY;
+  const priorScrollTop=frame?.scrollTop||0;
   resultPreserveDeckScroll=false;
 
   const old=new Map();
@@ -2709,7 +2750,7 @@ function renderDeck(){
     const n=tile.querySelector('.n');if(n)n.textContent=String(i+1).padStart(2,'0');
     const cap=tile.querySelector('.cap');if(cap)cap.textContent=r.title||'';
     const sc=tile.querySelector('.sc');if(sc)sc.textContent=Number(r.score).toFixed(3);
-    tile.onclick=()=>{active=+tile.dataset.i;closeProjector();render()};
+    tile.onclick=()=>selectRankedResult(+tile.dataset.i);
     frag.appendChild(tile);
   });
 
@@ -2737,13 +2778,8 @@ function renderDeck(){
     });
   }
 
-  const on=$('#deck .tile.on');
-  if(preserveScroll){
-    requestAnimationFrame(()=>window.scrollTo({top:priorWindowY,behavior:'auto'}));
-  }else if(on){
-    requestAnimationFrame(()=>{
-      on.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
-    });
+  if(preserveScroll&&frame){
+    requestAnimationFrame(()=>frame.scrollTo({top:priorScrollTop,behavior:'auto'}));
   }
 }
 async function step(d,{play=false}={}){
@@ -2752,10 +2788,8 @@ async function step(d,{play=false}={}){
     await loadMoreResults({advance:true,play});
     return;
   }
-  active=(active+d+results.length)%results.length;
-  closeProjector();
-  render();
-  if(play)openProjector();
+  const next=(active+d+results.length)%results.length;
+  selectRankedResult(next,{play});
 }
 
 
@@ -2866,6 +2900,7 @@ function commitLiveResults(next,q,raw,source,generation,commit){
   }
 
   if(commit)history.replaceState(null,'','#'+encodeURIComponent(q));
+  restoreHeroView({smooth:false});
   scheduleLiveArt(generation);
 }
 
@@ -3036,17 +3071,18 @@ const markDeckScrollIntent=()=>{
   clearTimeout(deckScrollIntentTimer);
   deckScrollIntentTimer=setTimeout(()=>{deckScrollIntent=false},900);
 };
-window.addEventListener('wheel',markDeckScrollIntent,{passive:true});
-window.addEventListener('touchstart',markDeckScrollIntent,{passive:true});
-window.addEventListener('pointerdown',markDeckScrollIntent,{passive:true});
-window.addEventListener('scroll',()=>{
+const revealScroller=$('#revealFrame');
+revealScroller?.addEventListener('wheel',markDeckScrollIntent,{passive:true});
+revealScroller?.addEventListener('touchstart',markDeckScrollIntent,{passive:true});
+revealScroller?.addEventListener('pointerdown',markDeckScrollIntent,{passive:true});
+revealScroller?.addEventListener('scroll',()=>{
   if(!deckScrollIntent||resultLoadingMore||!resultHasMore)return;
   clearTimeout(deckScrollTimer);
   deckScrollTimer=setTimeout(()=>{
-    const deck=$('#deck');
-    if(!deck||!deckScrollIntent||resultLoadingMore||!resultHasMore)return;
-    const bottom=deck.getBoundingClientRect().bottom;
-    if(bottom<=window.innerHeight+180){
+    const frame=$('#revealFrame');
+    if(!frame||!deckScrollIntent||resultLoadingMore||!resultHasMore)return;
+    const remaining=frame.scrollHeight-(frame.scrollTop+frame.clientHeight);
+    if(remaining<=180){
       deckScrollIntent=false;
       loadMoreResults({preserveScroll:true});
     }
