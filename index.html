@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- SUMMON_PRODUCTION_BUILD SUMMON-CONTINUOUS-RESULTS-V26-20260718T082122Z · https://standard-philadelphia-lime-lib.trycloudflare.com/field/v1/search · 1,280,252 objects · continuous-10-row-pagination · same-vector-offset-pages -->
+<!-- SUMMON_PRODUCTION_BUILD SUMMON-STACKED-RESULT-ROWS-V26_1-20260718T083140Z · stacked-ranked-rows · ten-per-row-desktop · continuous-same-vector-pagination -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0A0A09">
@@ -395,9 +395,10 @@ body.locked .shuttle::after{animation:none;left:0;width:100%;transition:width .5
 /* deck */
 .deck{align-self:end}
 .deck-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
-.deck-strip{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;scroll-behavior:smooth;scrollbar-width:none;padding-bottom:8px;min-width:0;max-width:100%;touch-action:pan-x;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+/* SUMMON_STACKED_RESULT_ROWS_V26_1 */
+.deck-strip{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));column-gap:10px;row-gap:22px;overflow:visible;padding-bottom:8px;min-width:0;max-width:100%;width:100%;align-items:start}
 .deck-strip::-webkit-scrollbar{display:none}
-.tile{flex:0 0 auto;width:clamp(74px,5.8vw,96px);text-align:left;opacity:.5;transition:opacity .2s ease}
+.tile{width:100%;min-width:0;text-align:left;opacity:.5;transition:opacity .2s ease}
 .tile:hover{opacity:.85}
 .tile.on{opacity:1}
 .tile .shot{position:relative;display:block;width:100%;aspect-ratio:2/3;overflow:hidden;background:#141412;border:1px solid transparent}
@@ -451,8 +452,8 @@ body.playing #projector{display:block}
   .meta span:nth-child(n+4){display:none}
   .deck{width:100%;min-width:0;padding-bottom:4px}
   .deck-head{position:relative;z-index:2;margin-bottom:10px}
-  .deck-strip{width:100%;padding-right:42px;scroll-snap-type:x proximity}
-  .tile{width:74px;scroll-snap-align:start}
+  .deck-strip{width:100%;padding-right:0;grid-template-columns:repeat(5,minmax(0,1fr));}
+  .tile{width:100%;scroll-snap-align:none}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none !important;transition-duration:.01ms !important}}
 /* ── mobile landing: stop the top-right + credits overlap ── */
@@ -492,8 +493,10 @@ body.playing #projector{display:block}
 }
 @media(max-width:700px){
   #card{display:none !important}
+  .deck-strip{grid-template-columns:repeat(3,minmax(0,1fr));column-gap:9px;row-gap:18px}
 }
 @media(max-width:480px){
+  .deck-strip{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:8px;row-gap:16px}
   .bar{row-gap:10px}
   #revealQuery{font-size:15px;line-height:1.2;max-height:4.2em}
   .summon-bar .icon,.summon-bar .send{width:34px;height:34px}
@@ -2652,7 +2655,8 @@ function render(){
 
   $('#pos').textContent=String(active+1).padStart(2,'0');
   $('#total').textContent=String(results.length).padStart(2,'0');
-  $('#deckCount').textContent=`${new Set(results.map(r=>r.type)).size} formats`;
+  const formatCount=new Set(results.map(r=>r.type)).size;
+  $('#deckCount').textContent=`${results.length} ranked · ${formatCount} formats`;
 
   $('#play').disabled=!m.tmdbId;
   $('#play').textContent=m.tmdbId?'watch trailer':'no trailer';
@@ -2672,7 +2676,7 @@ function renderDeck(){
   const deck=$('#deck');
   if(!deck)return;
   const preserveScroll=resultPreserveDeckScroll;
-  const priorScrollLeft=deck.scrollLeft;
+  const priorWindowY=window.scrollY;
   resultPreserveDeckScroll=false;
 
   const old=new Map();
@@ -2735,11 +2739,10 @@ function renderDeck(){
 
   const on=$('#deck .tile.on');
   if(preserveScroll){
-    requestAnimationFrame(()=>{deck.scrollLeft=priorScrollLeft});
+    requestAnimationFrame(()=>window.scrollTo({top:priorWindowY,behavior:'auto'}));
   }else if(on){
     requestAnimationFrame(()=>{
-      const left=on.offsetLeft-(deck.clientWidth-on.offsetWidth)/2;
-      deck.scrollTo({left:Math.max(0,left),behavior:'smooth'});
+      on.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
     });
   }
 }
@@ -3031,19 +3034,19 @@ document.addEventListener('keydown',e=>{
 const markDeckScrollIntent=()=>{
   deckScrollIntent=true;
   clearTimeout(deckScrollIntentTimer);
-  deckScrollIntentTimer=setTimeout(()=>{deckScrollIntent=false},700);
+  deckScrollIntentTimer=setTimeout(()=>{deckScrollIntent=false},900);
 };
-$('#deck').addEventListener('wheel',markDeckScrollIntent,{passive:true});
-$('#deck').addEventListener('touchstart',markDeckScrollIntent,{passive:true});
-$('#deck').addEventListener('pointerdown',markDeckScrollIntent,{passive:true});
-$('#deck').addEventListener('scroll',()=>{
+window.addEventListener('wheel',markDeckScrollIntent,{passive:true});
+window.addEventListener('touchstart',markDeckScrollIntent,{passive:true});
+window.addEventListener('pointerdown',markDeckScrollIntent,{passive:true});
+window.addEventListener('scroll',()=>{
   if(!deckScrollIntent||resultLoadingMore||!resultHasMore)return;
   clearTimeout(deckScrollTimer);
   deckScrollTimer=setTimeout(()=>{
     const deck=$('#deck');
     if(!deck||!deckScrollIntent||resultLoadingMore||!resultHasMore)return;
-    const remaining=deck.scrollWidth-(deck.scrollLeft+deck.clientWidth);
-    if(remaining<=96){
+    const bottom=deck.getBoundingClientRect().bottom;
+    if(bottom<=window.innerHeight+180){
       deckScrollIntent=false;
       loadMoreResults({preserveScroll:true});
     }
