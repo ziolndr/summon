@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- SUMMON_PRODUCTION_BUILD SUMMON-PRODUCTION-VECTOR-FIELD-V23_1-20260718T072058Z · https://standard-philadelphia-lime-lib.trycloudflare.com/field/v1/search · 1,207,345 objects · 85,676 music · ordinary-embed-to-vector-search -->
+<!-- SUMMON_PRODUCTION_BUILD SUMMON-CONTINUOUS-RESULTS-V26-20260718T082122Z · https://standard-philadelphia-lime-lib.trycloudflare.com/field/v1/search · 1,280,252 objects · continuous-10-row-pagination · same-vector-offset-pages -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0A0A09">
@@ -922,7 +922,7 @@ body.playing #projector{display:block}
 const IMG='https://image.tmdb.org/t/p/';
 const TMDB_KEY='1616a31a4f3bbcb387e74cbe0ae3c7b6';
 const TMDB_BASE='https://api.themoviedb.org/3';
-const RETURN_COUNT=10, TMDB_MAX_PAGE=500;
+const RETURN_COUNT=10, RESULT_PAGE_SIZE=10, TMDB_MAX_PAGE=500;
 const ARBITER_URL='https://api.arbiter.traut.ai/public/embed';
 // The sidecar is served from the same origin as this page. It continuously adds
 // every finalized ARBITER field shard without changing the core ARBITER server.
@@ -1049,6 +1049,10 @@ window.addEventListener('load',()=>{
 /* ═══════ STATE ═══════ */
 let cache=null, results=[], active=0, currentQuery='', corpusLock=null, silentLoad=false;
 let universalFieldInfo={count:0,dim:72,use_freq:true,units:0,sources:{},updated_at:null};
+/* SUMMON_CONTINUOUS_RESULTS_V26 */
+let resultVector=null,resultOffset=0,resultHasMore=false,resultLoadingMore=false;
+let resultPageGeneration=0,resultPreserveDeckScroll=false,deckScrollTimer=null;
+let deckScrollIntent=false,deckScrollIntentTimer=null;
 
 /* live resonance state: debounce input, serialize /v1/embed calls, discard stale answers */
 const LIVE_RESONANCE_DEBOUNCE=170;
@@ -2331,17 +2335,24 @@ async function measure(q,corpus,count){
     throw new Error(`query embedding dimension ${qVector?.length||0} != ${expectedDim}`);
   }
 
+  const generation=++resultPageGeneration;
+  resultVector=Array.from(qVector);
+  resultOffset=0;
+  resultHasMore=false;
+  resultLoadingMore=false;
+
   const res=await fetch(LIVE_FIELD_URL,{
     method:'POST',
     mode:'cors',
     cache:'no-store',
     headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify({vector:qVector,k:RETURN_COUNT})
+    body:JSON.stringify({vector:resultVector,k:RESULT_PAGE_SIZE,offset:0})
   });
   const raw=await res.text();
   if(!res.ok)throw new Error(`live field ${res.status} - ${raw.slice(0,180)}`);
 
   const data=JSON.parse(raw);
+  if(generation!==resultPageGeneration)throw new Error('stale result page');
   universalFieldInfo={
     count:Number(data.count)||universalFieldInfo.count||count,
     dim:Number(data.dim)||universalFieldInfo.dim||72,
@@ -2353,6 +2364,8 @@ async function measure(q,corpus,count){
 
   const next=Array.isArray(data.results)?data.results:[];
   if(!next.length)throw new Error('live field returned no ranked results');
+  resultOffset=next.length;
+  resultHasMore=next.length===RESULT_PAGE_SIZE;
   setStatus(statusLine('ready'));
   return next;
 }
@@ -2537,6 +2550,87 @@ function fitRevealContent(){
   });
 }
 
+async function loadMoreResults({advance=false,preserveScroll=false,play=false}={}){
+  if(resultLoadingMore||!resultHasMore||!resultVector?.length||!results.length)return false;
+
+  const generation=resultPageGeneration;
+  const offset=resultOffset;
+  const vector=resultVector.slice();
+  const oldLength=results.length;
+  resultLoadingMore=true;
+
+  const countLabel=$('#deckCount');
+  if(countLabel)countLabel.textContent='opening next 10';
+
+  try{
+    const res=await fetch(LIVE_FIELD_URL,{
+      method:'POST',
+      mode:'cors',
+      cache:'no-store',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({vector,k:RESULT_PAGE_SIZE,offset})
+    });
+    const raw=await res.text();
+    if(!res.ok)throw new Error(`live field ${res.status} - ${raw.slice(0,180)}`);
+
+    const data=JSON.parse(raw);
+    if(generation!==resultPageGeneration)return false;
+
+    universalFieldInfo={
+      count:Number(data.count)||universalFieldInfo.count,
+      dim:Number(data.dim)||universalFieldInfo.dim||72,
+      use_freq:data.use_freq!==false,
+      units:Number(data.units)||universalFieldInfo.units||0,
+      sources:data.sources||universalFieldInfo.sources||{},
+      updated_at:data.updated_at||universalFieldInfo.updated_at||null
+    };
+
+    const page=Array.isArray(data.results)?data.results:[];
+    resultOffset=offset+page.length;
+    resultHasMore=page.length===RESULT_PAGE_SIZE;
+
+    const seen=new Set(results.map(resultKey));
+    const added=page.filter(row=>{
+      const key=resultKey(row);
+      if(seen.has(key))return false;
+      seen.add(key);
+      return true;
+    });
+
+    if(!added.length){
+      if(!page.length)resultHasMore=false;
+      render();
+      return false;
+    }
+
+    results.push(...added);
+    if(advance)active=oldLength;
+    if(preserveScroll&&!advance)resultPreserveDeckScroll=true;
+    closeProjector();
+    render();
+
+    added.forEach(m=>{
+      if(!m.posterPath&&!m.backdropPath&&!m.imageUrl){
+        resolveArt(m).then(ok=>{
+          if(ok&&generation===resultPageGeneration&&results.includes(m)&&$('#reveal').classList.contains('on'))render();
+        }).catch(()=>{});
+      }
+    });
+    Promise.all(added.map(hydrateProviders)).then(()=>{
+      if(generation===resultPageGeneration&&$('#reveal').classList.contains('on'))render();
+    }).catch(()=>{});
+
+    if(play&&advance)openProjector();
+    return true;
+  }catch(e){
+    console.error('next ranked page failed',e);
+    toast('could not open more results');
+    return false;
+  }finally{
+    if(generation===resultPageGeneration)resultLoadingMore=false;
+  }
+}
+
 function render(){
   const m=results[active];
   if(!m)return;
@@ -2577,6 +2671,9 @@ function resultKey(r){
 function renderDeck(){
   const deck=$('#deck');
   if(!deck)return;
+  const preserveScroll=resultPreserveDeckScroll;
+  const priorScrollLeft=deck.scrollLeft;
+  resultPreserveDeckScroll=false;
 
   const old=new Map();
   [...deck.children].forEach(tile=>{
@@ -2637,15 +2734,21 @@ function renderDeck(){
   }
 
   const on=$('#deck .tile.on');
-  if(on){
+  if(preserveScroll){
+    requestAnimationFrame(()=>{deck.scrollLeft=priorScrollLeft});
+  }else if(on){
     requestAnimationFrame(()=>{
       const left=on.offsetLeft-(deck.clientWidth-on.offsetWidth)/2;
       deck.scrollTo({left:Math.max(0,left),behavior:'smooth'});
     });
   }
 }
-function step(d,{play=false}={}){
+async function step(d,{play=false}={}){
   if(!results.length)return;
+  if(d>0&&active>=results.length-1&&resultHasMore){
+    await loadMoreResults({advance:true,play});
+    return;
+  }
   active=(active+d+results.length)%results.length;
   closeProjector();
   render();
@@ -2915,11 +3018,37 @@ $('#projNext').onclick=()=>step(1,{play:true});
 $('#projector').addEventListener('mousemove',()=>{const p=$('#projector');p.classList.add('show');clearTimeout(p._t);p._t=setTimeout(()=>p.classList.remove('show'),1500)});
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape')closeProjector();
-  if(!results.length||document.activeElement.tagName==='TEXTAREA')return;
+  if(!results.length||document.activeElement?.tagName==='TEXTAREA')return;
   if(!$('#reveal').classList.contains('on')&&!document.body.classList.contains('playing'))return;
   if(e.key==='ArrowRight')step(1);
   if(e.key==='ArrowLeft')step(-1);
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    loadMoreResults({advance:true});
+  }
 });
+
+const markDeckScrollIntent=()=>{
+  deckScrollIntent=true;
+  clearTimeout(deckScrollIntentTimer);
+  deckScrollIntentTimer=setTimeout(()=>{deckScrollIntent=false},700);
+};
+$('#deck').addEventListener('wheel',markDeckScrollIntent,{passive:true});
+$('#deck').addEventListener('touchstart',markDeckScrollIntent,{passive:true});
+$('#deck').addEventListener('pointerdown',markDeckScrollIntent,{passive:true});
+$('#deck').addEventListener('scroll',()=>{
+  if(!deckScrollIntent||resultLoadingMore||!resultHasMore)return;
+  clearTimeout(deckScrollTimer);
+  deckScrollTimer=setTimeout(()=>{
+    const deck=$('#deck');
+    if(!deck||!deckScrollIntent||resultLoadingMore||!resultHasMore)return;
+    const remaining=deck.scrollWidth-(deck.scrollLeft+deck.clientWidth);
+    if(remaining<=96){
+      deckScrollIntent=false;
+      loadMoreResults({preserveScroll:true});
+    }
+  },90);
+},{passive:true});
 
 
 /* auto-typed example queries cycle through the input placeholder */
