@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- LIVE_FIELD_BACKEND https://standard-philadelphia-lime-lib.trycloudflare.com · 1,083,985 objects -->
+<!-- SUMMON_PRODUCTION_BUILD SUMMON-PRODUCTION-VECTOR-FIELD-V23_1-20260718T072058Z · https://standard-philadelphia-lime-lib.trycloudflare.com/field/v1/search · 1,207,345 objects · 85,676 music · ordinary-embed-to-vector-search -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0A0A09">
@@ -1048,7 +1048,7 @@ window.addEventListener('load',()=>{
 
 /* ═══════ STATE ═══════ */
 let cache=null, results=[], active=0, currentQuery='', corpusLock=null, silentLoad=false;
-let universalFieldInfo={count:0,units:0,sources:{},updated_at:null};
+let universalFieldInfo={count:0,dim:72,use_freq:true,units:0,sources:{},updated_at:null};
 
 /* live resonance state: debounce input, serialize /v1/embed calls, discard stale answers */
 const LIVE_RESONANCE_DEBOUNCE=170;
@@ -1653,6 +1653,8 @@ async function refreshUniversalFieldInfo(){
     const d=await r.json();
     universalFieldInfo={
       count:Number(d.count)||0,
+      dim:Number(d.dim)||72,
+      use_freq:d.use_freq!==false,
       units:Number(d.units)||0,
       sources:d.sources||{},
       updated_at:d.updated_at||null
@@ -2321,41 +2323,38 @@ async function measure(q,corpus,count){
   const visibleCount=universalFieldInfo.count||count;
   setState(`measuring ${visibleCount.toLocaleString()} objects`);
 
-  // Primary path: the continuously growing unified index. The sidecar embeds the
-  // thought once, measures every object indexed so far, and returns the global top 10.
-  try{
-    const res=await fetch(LIVE_FIELD_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body:JSON.stringify({text:q,k:RETURN_COUNT})
-    });
-    const raw=await res.text();
-    if(!res.ok)throw new Error(`live field ${res.status} · ${raw.slice(0,180)}`);
-    const data=JSON.parse(raw);
-    universalFieldInfo={
-      count:Number(data.count)||universalFieldInfo.count||count,
-      units:Number(data.units)||universalFieldInfo.units||0,
-      sources:data.sources||universalFieldInfo.sources||{},
-      updated_at:data.updated_at||universalFieldInfo.updated_at||null
-    };
-    const next=Array.isArray(data.results)?data.results:[];
-    if(next.length){
-      setStatus(statusLine('ready'));
-      return next;
-    }
-  }catch(e){
-    console.warn('unified field unavailable; using loaded entertainment field',e);
-  }
-
-  // Offline fallback: the original precomputed entertainment field still works
-  // when the sidecar is not running.
-  const useFreq=corpus.manifest.use_freq!==false;
+  const useFreq=universalFieldInfo.use_freq!==false;
   const embedded=await arbiter({texts:[q],use_freq:useFreq});
   const qVector=embedRows(embedded)[0];
-  if(!qVector||qVector.length!==corpus.dim)throw new Error('query embedding dimension mismatch');
+  const expectedDim=Number(universalFieldInfo.dim)||72;
+  if(!qVector||qVector.length!==expectedDim){
+    throw new Error(`query embedding dimension ${qVector?.length||0} != ${expectedDim}`);
+  }
 
-  const measured=topKField(qVector,corpus,count,RETURN_COUNT);
-  return measured.map(x=>({...corpus.movies[x.index],score:x.score}));
+  const res=await fetch(LIVE_FIELD_URL,{
+    method:'POST',
+    mode:'cors',
+    cache:'no-store',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({vector:qVector,k:RETURN_COUNT})
+  });
+  const raw=await res.text();
+  if(!res.ok)throw new Error(`live field ${res.status} - ${raw.slice(0,180)}`);
+
+  const data=JSON.parse(raw);
+  universalFieldInfo={
+    count:Number(data.count)||universalFieldInfo.count||count,
+    dim:Number(data.dim)||universalFieldInfo.dim||72,
+    use_freq:data.use_freq!==false,
+    units:Number(data.units)||universalFieldInfo.units||0,
+    sources:data.sources||universalFieldInfo.sources||{},
+    updated_at:data.updated_at||universalFieldInfo.updated_at||null
+  };
+
+  const next=Array.isArray(data.results)?data.results:[];
+  if(!next.length)throw new Error('live field returned no ranked results');
+  setStatus(statusLine('ready'));
+  return next;
 }
 
 /* ═══════ SEARCH ═══════ */
