@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- SUMMON_PRODUCTION_BUILD SUMMON-MUSIC-FULL-HERO-V26_5-20260718T165702Z · music-bypasses-square-mode · clear-full-album-art-hero · no-blur-no-duplicate-card -->
+<!-- SUMMON_PRODUCTION_BUILD SUMMON-GAME-ART-FALLBACK-V26_7_1-20260719T182114Z · rawg-absolute-images · hero-and-tile-fallbacks · game-image-load-race-guard -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0A0A09">
@@ -849,6 +849,16 @@ body.playing #projector{display:block}
   transform:none!important;
 }
 #reveal.music-hero #card{display:none!important}
+
+
+/* SUMMON_GAME_ART_FALLBACK_V26_7_1 */
+#reveal.game-has-art #revealCanvas #still{
+  opacity:1!important;
+  filter:none!important;
+}
+#reveal.game-has-art #revealCanvas #stillBg{
+  opacity:.22!important;
+}
 
 </style>
 </head>
@@ -2713,21 +2723,142 @@ function selectRankedResult(index,{play=false}={}){
   if(play)openProjector();
 }
 
+/* SUMMON_GAME_ART_FALLBACK_V26_7_1
+   RAWG stores absolute image URLs. Film helpers expect TMDB-relative paths. */
+let gameArtworkRenderToken=0;
+
+function absoluteContentImage(value,size='original'){
+  const raw=String(value||'').trim();
+  if(!raw)return '';
+  if(/^(https?:|data:|blob:)/i.test(raw))return raw;
+  return img(raw,size);
+}
+
+function gameScreenshotValues(m){
+  const values=[];
+  const groups=[m?.short_screenshots,m?.shortScreenshots,m?.screenshots];
+  groups.forEach(group=>{
+    if(!Array.isArray(group))return;
+    group.forEach(item=>{
+      if(typeof item==='string')values.push(item);
+      else if(item&&typeof item==='object')values.push(item.image||item.url||item.src||'');
+    });
+  });
+  return values;
+}
+
+function gameArtworkCandidates(m,mode='hero'){
+  if(!m||m.type!=='game')return [];
+  const hero=[
+    m.imageUrl,m.image_url,m.image,
+    m.backdropPath,m.backdrop_path,m.background_image,m.backgroundImage,
+    m.posterPath,m.poster_path,m.cover,m.src,
+    ...gameScreenshotValues(m)
+  ];
+  const tile=[
+    m.imageUrl,m.image_url,m.image,
+    m.posterPath,m.poster_path,m.cover,
+    m.backdropPath,m.backdrop_path,m.background_image,m.backgroundImage,
+    m.src,
+    ...gameScreenshotValues(m)
+  ];
+  return [...new Set(
+    (mode==='tile'?tile:hero)
+      .map(value=>absoluteContentImage(value,mode==='tile'?'w500':'original'))
+      .filter(Boolean)
+  )];
+}
+
+function setImageCandidates(el,candidates,onSuccess,onFailure){
+  if(!el)return;
+  const token=String((Number(el.dataset.imageToken)||0)+1);
+  el.dataset.imageToken=token;
+  el.alt='';
+  el.onload=null;
+  el.onerror=null;
+
+  const sources=[...new Set((candidates||[]).filter(Boolean))];
+  let cursor=0;
+
+  const tryNext=()=>{
+    if(el.dataset.imageToken!==token)return;
+    if(cursor>=sources.length){
+      el.onload=null;
+      el.onerror=null;
+      el.removeAttribute('src');
+      if(typeof onFailure==='function')onFailure();
+      return;
+    }
+
+    const source=sources[cursor++];
+    el.onload=()=>{
+      if(el.dataset.imageToken!==token)return;
+      el.onload=null;
+      el.onerror=null;
+      if(typeof onSuccess==='function')onSuccess(source);
+    };
+    el.onerror=tryNext;
+    el.src=source;
+  };
+
+  tryNext();
+}
+
+function renderGameArtwork(m){
+  const token=++gameArtworkRenderToken;
+  const reveal=$('#reveal');
+  const still=$('#still');
+  const stillBg=$('#stillBg');
+  const cardImg=$('#cardImg');
+  const candidates=gameArtworkCandidates(m,'hero');
+
+  reveal.classList.remove('game-has-art');
+  still.alt='';
+  stillBg.alt='';
+  cardImg.alt=m?.title||'Game artwork';
+  stillBg.removeAttribute('src');
+  cardImg.removeAttribute('src');
+
+  setImageCandidates(
+    still,
+    candidates,
+    source=>{
+      if(token!==gameArtworkRenderToken)return;
+      reveal.classList.add('game-has-art');
+      stillBg.src=source;
+      cardImg.src=source;
+    },
+    ()=>{
+      if(token!==gameArtworkRenderToken)return;
+      reveal.classList.remove('game-has-art');
+      stillBg.removeAttribute('src');
+      cardImg.removeAttribute('src');
+    }
+  );
+}
+
 function render(){
   const m=results[active];
   if(!m)return;
   const square=isSquare(m);
   const music=m?.type==='music';
+  const game=m?.type==='game';
   const art=backdrop(m,'original');
 
   $('#revealCanvas').classList.toggle('square',square&&!music);
   $('#revealCanvas').classList.toggle('music',music);
   $('#reveal').classList.toggle('music-hero',music);
   $('#revealCanvas').classList.toggle('music',music);
-  $('#stillBg').src=art;
-  $('#still').src=art;$('#still').alt=m.title;
-  $('#cardImg').src=square?m.imageUrl:art;
-  $('#cardImg').alt=m.title;
+  if(game){
+    renderGameArtwork(m);
+  }else{
+    gameArtworkRenderToken++;
+    $('#reveal').classList.remove('game-has-art');
+    $('#stillBg').src=art;
+    $('#still').src=art;$('#still').alt=m.title;
+    $('#cardImg').src=square?m.imageUrl:art;
+    $('#cardImg').alt=m.title;
+  }
 
   $('#title').textContent=m.title;
   $('#format').textContent=fmt(m);
@@ -2788,8 +2919,21 @@ function renderDeck(){
     }
 
     const im=tile.querySelector('img');
-    const src=poster(r,'w342');
-    if(im&&im.src!==src)im.src=src;
+    if(im){
+      if(r?.type==='game'){
+        setImageCandidates(im,gameArtworkCandidates(r,'tile'));
+      }else{
+        im.dataset.imageToken=String((Number(im.dataset.imageToken)||0)+1);
+        im.onload=null;
+        im.onerror=null;
+        const src=poster(r,'w342');
+        if(src){
+          if(im.src!==src)im.src=src;
+        }else{
+          im.removeAttribute('src');
+        }
+      }
+    }
     const n=tile.querySelector('.n');if(n)n.textContent=String(i+1).padStart(2,'0');
     const cap=tile.querySelector('.cap');if(cap)cap.textContent=r.title||'';
     const sc=tile.querySelector('.sc');if(sc)sc.textContent=Number(r.score).toFixed(3);
