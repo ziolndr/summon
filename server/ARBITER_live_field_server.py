@@ -583,6 +583,54 @@ class LiveFieldIndex:
             or metadata.get("backdrop_path")
             or image_url
         )
+
+        # SUMMON_EXTENDED_IMAGE_ALIASES_V27_3
+        # Preserve artwork from connector schemas that use nested or plural
+        # image fields. Ranking vectors and row order are untouched.
+        def _summon_first_image(value):
+            if isinstance(value, str):
+                value = value.strip()
+                return value if value else ""
+            if isinstance(value, (list, tuple)):
+                for item in value:
+                    found = _summon_first_image(item)
+                    if found:
+                        return found
+                return ""
+            if isinstance(value, dict):
+                for key in (
+                    "url", "src", "imageUrl", "image_url", "image",
+                    "artworkUrl", "artwork_url", "artwork",
+                    "coverUrl", "cover_url", "cover",
+                    "thumbnailUrl", "thumbnail_url", "thumbnail",
+                    "posterPath", "poster_path", "poster",
+                    "backdropPath", "backdrop_path", "backdrop",
+                    "original", "large", "medium", "small",
+                ):
+                    if key in value:
+                        found = _summon_first_image(value.get(key))
+                        if found:
+                            return found
+            return ""
+
+        if not image_url:
+            for _container in (rec, metadata):
+                for _key in (
+                    "artworkUrl", "artwork_url", "artwork",
+                    "ogImage", "og_image",
+                    "primaryImage", "primary_image",
+                    "poster", "backdrop", "screenshot", "screenshots",
+                    "images", "media", "logo", "icon",
+                ):
+                    _candidate = _summon_first_image(_container.get(_key))
+                    if _candidate:
+                        image_url = clean_text(_candidate)
+                        break
+                if image_url:
+                    break
+
+        poster_path = poster_path or image_url
+        backdrop_path = backdrop_path or image_url
         tmdb_id = clean_text(rec.get("tmdbId") or metadata.get("tmdbId"))
         tmdb_kind = clean_text(rec.get("tmdbKind") or metadata.get("tmdbKind"))
 

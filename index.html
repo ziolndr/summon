@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- SUMMON_UNIVERSAL_ART_GEOMETRY_20260720T045523Z · native-media-geometry · retry-all-art-aliases · nonblocking -->
 <!-- SUMMON_STACKED_ROWS_HERO_RESTORE_20260720T043547Z · stacked-ranked-rows · reveal-frame-scroller · fixed-hero -->
 <!-- SUMMON_PRODUCTION_BUILD SUMMON-HERO-RESTORE-V26_2-20260718T084037Z · stacked-ranked-rows · reveal-frame-scroller · tile-selection-restores-hero · continuous-same-vector-pagination -->
 <meta charset="UTF-8">
@@ -834,6 +835,140 @@ html,body,#reveal,#revealFrame{
 }
 
 </style>
+
+<style id="summon-universal-art-geometry">
+/* Every artwork surface preserves its intended geometry. */
+.summon-art-frame{
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+  background:
+    radial-gradient(circle at 50% 38%,rgba(255,255,255,.035),transparent 62%),
+    linear-gradient(145deg,#121925,#090d13 70%)!important;
+  isolation:isolate;
+}
+.summon-art-frame[data-summon-geometry="portrait"]{aspect-ratio:2/3}
+.summon-art-frame[data-summon-geometry="person"]{aspect-ratio:4/5}
+.summon-art-frame[data-summon-geometry="square"]{aspect-ratio:1/1}
+.summon-art-frame[data-summon-geometry="landscape"]{aspect-ratio:16/9}
+.summon-art-frame>img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  object-position:center center!important;
+  transform:none!important;
+}
+.summon-art-frame>img[data-summon-fit="contain"]{
+  object-fit:contain!important;
+  padding:clamp(2px,.35vw,6px)!important;
+}
+.summon-art-frame>img[data-summon-fit="cover"]{
+  object-fit:cover!important;
+  padding:0!important;
+}
+.summon-art-fallback{
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  display:grid;
+  place-content:center;
+  gap:7px;
+  padding:12%;
+  text-align:center;
+  pointer-events:none;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.025),transparent 45%),
+    radial-gradient(circle at 50% 38%,rgba(255,255,255,.045),transparent 60%);
+}
+.summon-art-fallback strong{
+  display:block;
+  font:600 clamp(8px,.58vw,11px)/1.25 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.17em;
+  text-transform:uppercase;
+  color:rgba(235,239,245,.54);
+}
+.summon-art-fallback span{
+  display:-webkit-box;
+  overflow:hidden;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:4;
+  font:500 clamp(8px,.62vw,12px)/1.25 Georgia,serif;
+  color:rgba(235,239,245,.26);
+}
+.summon-art-frame[data-summon-ready="1"] .summon-art-fallback{
+  opacity:0;
+}
+
+/* Foreground hero: complete artwork, never arbitrary enlargement. */
+#still{
+  object-position:center center!important;
+  transform:none!important;
+  max-width:100%!important;
+  max-height:100%!important;
+}
+#still[data-summon-fit="contain"]{
+  object-fit:contain!important;
+  padding:clamp(10px,2.2vw,42px)!important;
+  filter:none!important;
+}
+#still[data-summon-fit="cover"]{
+  object-fit:cover!important;
+  padding:0!important;
+}
+
+/* Background is atmospheric only. It never substitutes for the foreground. */
+#stillBg{
+  object-position:center center!important;
+  opacity:.17!important;
+  filter:blur(22px) brightness(.42) saturate(.82)!important;
+  transform:scale(1.035)!important;
+}
+#reveal[data-summon-shape="portrait"] #stillBg,
+#reveal[data-summon-shape="square"] #stillBg{
+  object-fit:contain!important;
+  opacity:.13!important;
+  filter:blur(28px) brightness(.38) saturate(.78)!important;
+  transform:scale(1.02)!important;
+}
+#reveal[data-summon-shape="landscape"] #stillBg{
+  object-fit:cover!important;
+}
+#reveal[data-summon-kind="paper"] #still,
+#reveal[data-summon-kind="book"] #still,
+#reveal[data-summon-kind="document"] #still,
+#reveal[data-summon-kind="patent"] #still,
+#reveal[data-summon-kind="legal"] #still,
+#reveal[data-summon-kind="music"] #still,
+#reveal[data-summon-kind="podcast"] #still{
+  object-fit:contain!important;
+  padding:clamp(16px,3vw,56px)!important;
+}
+
+/* Card image follows its own media geometry. */
+#cardImg[data-summon-fit="contain"]{
+  object-fit:contain!important;
+  object-position:center!important;
+  padding:4px!important;
+  background:#090d13!important;
+}
+#cardImg[data-summon-fit="cover"]{
+  object-fit:cover!important;
+  object-position:center!important;
+  padding:0!important;
+}
+
+/* Broken and empty images never leave a black hole. */
+img[data-summon-ready="0"]{
+  opacity:0!important;
+}
+img[data-summon-ready="1"]{
+  opacity:1;
+}
+</style>
+
 </head>
 <body>
 
@@ -3234,5 +3369,498 @@ if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{
   }
 })();
 </script>
+
+<script id="summon-universal-art-director">
+(()=>{
+  'use strict';
+
+  const ART_KEYS=[
+    'imageUrl','image_url','image',
+    'artworkUrl','artwork_url','artwork',
+    'coverUrl','cover_url','cover',
+    'thumbnailUrl','thumbnail_url','thumbnail',
+    'posterPath','poster_path','poster',
+    'backdropPath','backdrop_path','backdrop',
+    'ogImage','og_image','primaryImage','primary_image',
+    'screenshot','screenshots','images','media','src','logo','icon'
+  ];
+
+  const PORTRAIT_TYPES=new Set([
+    'film','movie','series','tv','show','book','paper','document',
+    'publication','patent','legal','case','scripture'
+  ]);
+  const SQUARE_TYPES=new Set([
+    'music','album','track','song','audio','podcast','radio'
+  ]);
+  const LANDSCAPE_TYPES=new Set([
+    'video','game','news','article','web','website','webpage','blog',
+    'post','signal','commerce','event'
+  ]);
+  const PERSON_TYPES=new Set(['person','people','profile','biography']);
+
+  let scheduled=false;
+  let artGeneration=0;
+  const resolving=new WeakSet();
+
+  function clean(value){
+    return typeof value==='string'?value.trim():'';
+  }
+
+  function flatten(value,out=[]){
+    if(!value)return out;
+    if(typeof value==='string'){
+      const v=value.trim();
+      if(v)out.push(v);
+      return out;
+    }
+    if(Array.isArray(value)){
+      value.forEach(item=>flatten(item,out));
+      return out;
+    }
+    if(typeof value==='object'){
+      for(const key of ART_KEYS){
+        if(key in value)flatten(value[key],out);
+      }
+      for(const key of ['url','src','original','large','medium','small']){
+        if(key in value)flatten(value[key],out);
+      }
+    }
+    return out;
+  }
+
+  function absoluteUrl(value,role='tile'){
+    let url=clean(value);
+    if(!url)return '';
+    if(/^(?:data|blob|javascript):/i.test(url))return '';
+    if(url.startsWith('//'))url='https:'+url;
+    if(/^https?:\/\//i.test(url))return url;
+    if(url.startsWith('/')){
+      const size=role==='tile'?'w500':'original';
+      return `https://image.tmdb.org/t/p/${size}${url}`;
+    }
+    return '';
+  }
+
+  function itemType(item){
+    const raw=[
+      item?.type,item?.format,item?.kind,item?.mediaType,item?.media_type,
+      item?.sourceType,item?.source_type,item?.category
+    ].map(clean).join(' ').toLowerCase();
+
+    for(const type of PERSON_TYPES)if(raw.includes(type))return 'person';
+    for(const type of SQUARE_TYPES)if(raw.includes(type))return type==='album'||type==='track'||type==='song'?'music':type;
+    for(const type of LANDSCAPE_TYPES)if(raw.includes(type))return type;
+    for(const type of PORTRAIT_TYPES)if(raw.includes(type))return type;
+    return raw.split(/\s+/)[0]||'result';
+  }
+
+  function expectedGeometry(item){
+    const type=itemType(item);
+    if(PERSON_TYPES.has(type))return 'person';
+    if(SQUARE_TYPES.has(type)||type==='music')return 'square';
+    if(LANDSCAPE_TYPES.has(type))return 'landscape';
+    if(PORTRAIT_TYPES.has(type))return 'portrait';
+    return 'portrait';
+  }
+
+  function actualShape(width,height){
+    if(!width||!height)return 'unknown';
+    const ratio=width/height;
+    if(ratio<.82)return 'portrait';
+    if(ratio<=1.18)return 'square';
+    return 'landscape';
+  }
+
+  function displayFit(item,role,shape){
+    const type=itemType(item);
+    if(role==='background')return shape==='landscape'?'cover':'contain';
+    if(role==='hero'){
+      if(
+        type==='film'||type==='movie'||type==='series'||type==='tv'||
+        type==='show'||type==='video'||type==='game'||type==='news'||
+        type==='article'||type==='web'||type==='website'||type==='webpage'
+      ){
+        return shape==='landscape'?'cover':'contain';
+      }
+      return 'contain';
+    }
+    if(role==='card'){
+      return (
+        type==='film'||type==='movie'||type==='series'||type==='tv'||
+        type==='show'||type==='person'
+      )?'cover':'contain';
+    }
+    if(
+      type==='book'||type==='paper'||type==='document'||type==='publication'||
+      type==='patent'||type==='legal'||type==='case'||type==='scripture'||
+      type==='music'||type==='album'||type==='track'||type==='audio'||
+      type==='podcast'||type==='radio'
+    )return 'contain';
+    return 'cover';
+  }
+
+  function candidateValues(item,role){
+    const metadata=item?.metadata&&typeof item.metadata==='object'?item.metadata:{};
+    const type=itemType(item);
+
+    const portraitOrder=[
+      item?.cover,item?.coverUrl,item?.cover_url,
+      item?.posterPath,item?.poster_path,item?.poster,
+      item?.imageUrl,item?.image_url,item?.image,
+      item?.thumbnail,item?.thumbnailUrl,item?.thumbnail_url,
+      metadata.cover,metadata.coverUrl,metadata.cover_url,
+      metadata.posterPath,metadata.poster_path,metadata.poster,
+      metadata.imageUrl,metadata.image_url,metadata.image,
+      metadata.thumbnail,metadata.thumbnailUrl,metadata.thumbnail_url
+    ];
+    const landscapeOrder=[
+      item?.backdropPath,item?.backdrop_path,item?.backdrop,
+      item?.screenshots,item?.screenshot,
+      item?.imageUrl,item?.image_url,item?.image,
+      item?.artwork,item?.artworkUrl,item?.artwork_url,
+      item?.thumbnail,item?.thumbnailUrl,item?.thumbnail_url,
+      item?.posterPath,item?.poster_path,item?.poster,
+      item?.cover,item?.coverUrl,item?.cover_url,
+      metadata.backdropPath,metadata.backdrop_path,metadata.backdrop,
+      metadata.screenshots,metadata.screenshot,
+      metadata.imageUrl,metadata.image_url,metadata.image,
+      metadata.artwork,metadata.artworkUrl,metadata.artwork_url,
+      metadata.thumbnail,metadata.thumbnailUrl,metadata.thumbnail_url
+    ];
+    const squareOrder=[
+      item?.imageUrl,item?.image_url,item?.image,
+      item?.artwork,item?.artworkUrl,item?.artwork_url,
+      item?.cover,item?.coverUrl,item?.cover_url,
+      item?.thumbnail,item?.thumbnailUrl,item?.thumbnail_url,
+      metadata.imageUrl,metadata.image_url,metadata.image,
+      metadata.artwork,metadata.artworkUrl,metadata.artwork_url,
+      metadata.cover,metadata.coverUrl,metadata.cover_url
+    ];
+
+    const ordered=(
+      role==='background'||LANDSCAPE_TYPES.has(type)
+        ?landscapeOrder
+        :(SQUARE_TYPES.has(type)||type==='music')
+          ?squareOrder
+          :portraitOrder
+    );
+
+    const raw=[];
+    ordered.forEach(value=>flatten(value,raw));
+    ART_KEYS.forEach(key=>{
+      flatten(item?.[key],raw);
+      flatten(metadata?.[key],raw);
+    });
+
+    if(typeof poster==='function'){
+      try{
+        const existing=poster(item,role==='tile'?'w500':'original');
+        if(existing)raw.push(existing);
+      }catch(_){}
+    }
+
+    const seen=new Set();
+    const urls=[];
+    for(const value of raw){
+      const url=absoluteUrl(value,role);
+      if(!url||seen.has(url))continue;
+      seen.add(url);
+      urls.push(url);
+    }
+
+    const isIcon=url=>/(?:favicon|apple-touch-icon|\/icon(?:s)?\/|logo(?:[._-]|$))/i.test(url);
+    urls.sort((a,b)=>{
+      const iconPenalty=(isIcon(a)?1:0)-(isIcon(b)?1:0);
+      if(iconPenalty)return iconPenalty;
+      const backdropScore=url=>/(?:backdrop|screenshot|hero|banner|og:image)/i.test(url)?-1:0;
+      if(role==='background')return backdropScore(a)-backdropScore(b);
+      return 0;
+    });
+    return urls;
+  }
+
+  function keyFor(item,role){
+    return [
+      role,item?.rowId,item?.id,item?.title,item?.year,
+      candidateValues(item,role).slice(0,3).join('|')
+    ].join('::');
+  }
+
+  function ensureFrame(img,item){
+    let frame=img.parentElement;
+    const tile=img.closest?.('.tile');
+    if(tile&&frame===tile){
+      const wrapper=document.createElement('div');
+      wrapper.className='summon-art-frame';
+      img.before(wrapper);
+      wrapper.appendChild(img);
+      frame=wrapper;
+    }
+    if(!frame)return null;
+    frame.classList.add('summon-art-frame');
+    frame.dataset.summonGeometry=expectedGeometry(item);
+
+    let fallback=frame.querySelector(':scope > .summon-art-fallback');
+    if(!fallback){
+      fallback=document.createElement('span');
+      fallback.className='summon-art-fallback';
+
+      const kind=document.createElement('strong');
+      const title=document.createElement('span');
+      fallback.append(kind,title);
+      frame.appendChild(fallback);
+    }
+    const parts=fallback.children;
+    if(parts[0])parts[0].textContent=itemType(item).toUpperCase();
+    if(parts[1])parts[1].textContent=clean(item?.title)||'Artwork unavailable';
+    return frame;
+  }
+
+  function acceptable(img,item,role,url){
+    const width=img.naturalWidth||0;
+    const height=img.naturalHeight||0;
+    if(!width||!height)return false;
+    const ratio=width/height;
+    if(ratio<.16||ratio>6.2)return false;
+
+    const iconLike=/(?:favicon|apple-touch-icon|\/icon(?:s)?\/|logo(?:[._-]|$))/i.test(url);
+    if(role==='background'&&iconLike)return false;
+
+    if(role==='background'){
+      if(width>=520&&height>=260)return true;
+      if(height>=420&&width>=260)return true;
+      return false;
+    }
+    if(role==='hero'){
+      if(width>=320&&height>=180)return true;
+      if(height>=360&&width>=220)return true;
+      return false;
+    }
+    return width>=110&&height>=90;
+  }
+
+  function tryResolve(item){
+    if(!item||resolving.has(item)||typeof resolveArt!=='function')return;
+    resolving.add(item);
+    Promise.resolve(resolveArt(item))
+      .catch(()=>false)
+      .finally(()=>{
+        resolving.delete(item);
+        schedule();
+      });
+  }
+
+  function applyImage(img,item,role='tile'){
+    if(!img||!item)return;
+    const generation=artGeneration;
+    const key=keyFor(item,role);
+    if(
+      img.dataset.summonArtKey===key&&
+      img.dataset.summonReady==='1'&&
+      img.complete&&img.naturalWidth
+    )return;
+
+    img.dataset.summonArtKey=key;
+    img.dataset.summonReady='0';
+    img.decoding='async';
+    img.loading=role==='tile'?'lazy':'eager';
+
+    const frame=role==='tile'?ensureFrame(img,item):img.parentElement;
+    if(frame){
+      frame.dataset.summonReady='0';
+      frame.dataset.summonGeometry=expectedGeometry(item);
+    }
+
+    const candidates=candidateValues(item,role);
+    let index=0;
+
+    const failAll=()=>{
+      if(generation!==artGeneration)return;
+      img.removeAttribute('src');
+      img.dataset.summonReady='0';
+      if(frame)frame.dataset.summonReady='0';
+      tryResolve(item);
+    };
+
+    const next=()=>{
+      if(generation!==artGeneration)return;
+      if(index>=candidates.length){
+        failAll();
+        return;
+      }
+
+      const url=candidates[index++];
+      const probe=new Image();
+      probe.decoding='async';
+
+      probe.onload=()=>{
+        if(generation!==artGeneration)return;
+        if(!acceptable(probe,item,role,url)){
+          next();
+          return;
+        }
+
+        const shape=actualShape(probe.naturalWidth,probe.naturalHeight);
+        const fit=displayFit(item,role,shape);
+
+        img.onload=()=>{
+          if(generation!==artGeneration)return;
+          img.dataset.summonReady='1';
+          img.dataset.summonFit=fit;
+          img.dataset.summonShape=shape;
+          if(frame){
+            frame.dataset.summonReady='1';
+            frame.dataset.summonGeometry=(
+              role==='tile'?expectedGeometry(item):shape
+            );
+          }
+          if(role==='hero'){
+            const reveal=document.querySelector('#reveal');
+            if(reveal){
+              reveal.dataset.summonShape=shape;
+              reveal.dataset.summonKind=itemType(item);
+            }
+          }
+        };
+        img.onerror=next;
+        img.src=url;
+      };
+      probe.onerror=next;
+      probe.src=url;
+    };
+    next();
+  }
+
+  function applyBackground(element,item){
+    if(!element||!item)return;
+    if(element.tagName==='IMG'){
+      applyImage(element,item,'background');
+      return;
+    }
+
+    const generation=artGeneration;
+    const candidates=candidateValues(item,'background');
+    let index=0;
+
+    const next=()=>{
+      if(generation!==artGeneration)return;
+      if(index>=candidates.length){
+        element.style.backgroundImage='none';
+        return;
+      }
+      const url=candidates[index++];
+      const probe=new Image();
+      probe.onload=()=>{
+        if(generation!==artGeneration)return;
+        if(!acceptable(probe,item,'background',url)){
+          next();
+          return;
+        }
+        const shape=actualShape(probe.naturalWidth,probe.naturalHeight);
+        element.style.backgroundImage=`url("${url.replace(/"/g,'\\"')}")`;
+        element.style.backgroundSize=shape==='landscape'?'cover':'contain';
+        element.style.backgroundPosition='center';
+        element.style.backgroundRepeat='no-repeat';
+
+        const reveal=document.querySelector('#reveal');
+        if(reveal){
+          reveal.dataset.summonShape=shape;
+          reveal.dataset.summonKind=itemType(item);
+        }
+      };
+      probe.onerror=next;
+      probe.src=url;
+    };
+    next();
+  }
+
+  function currentResults(){
+    try{
+      return Array.isArray(results)?results:[];
+    }catch(_){
+      return [];
+    }
+  }
+
+  function currentActive(){
+    try{
+      return Number(active)||0;
+    }catch(_){
+      return 0;
+    }
+  }
+
+  function syncTiles(rows){
+    document.querySelectorAll('#deck .tile').forEach((tile,position)=>{
+      const index=Number(tile.dataset.i);
+      const item=rows[Number.isFinite(index)?index:position];
+      if(!item)return;
+
+      tile.dataset.summonKind=itemType(item);
+      tile.dataset.summonGeometry=expectedGeometry(item);
+
+      const image=tile.querySelector('img');
+      if(image)applyImage(image,item,'tile');
+      else tryResolve(item);
+    });
+  }
+
+  function syncHero(rows){
+    const item=rows[currentActive()]||rows[0];
+    if(!item)return;
+
+    const reveal=document.querySelector('#reveal');
+    if(reveal){
+      reveal.dataset.summonKind=itemType(item);
+      reveal.dataset.summonShape=expectedGeometry(item);
+    }
+
+    const still=document.querySelector('#still');
+    const stillBg=document.querySelector('#stillBg');
+    const card=document.querySelector('#cardImg');
+
+    if(still)applyImage(still,item,'hero');
+    if(stillBg)applyBackground(stillBg,item);
+    if(card)applyImage(card,item,'card');
+  }
+
+  function sync(){
+    scheduled=false;
+    artGeneration++;
+    const rows=currentResults();
+    if(!rows.length)return;
+    syncTiles(rows);
+    syncHero(rows);
+  }
+
+  function schedule(){
+    if(scheduled)return;
+    scheduled=true;
+    requestAnimationFrame(sync);
+  }
+
+  const observer=new MutationObserver(schedule);
+  const start=()=>{
+    observer.observe(document.documentElement,{
+      subtree:true,
+      childList:true,
+      attributes:true,
+      attributeFilter:['src','style','class']
+    });
+    schedule();
+  };
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',start,{once:true});
+  }else{
+    start();
+  }
+  window.addEventListener('load',schedule,{once:true});
+  document.addEventListener('click',event=>{
+    if(event.target.closest?.('#deck .tile'))setTimeout(schedule,0);
+  });
+})();
+</script>
+
 </body>
 </html>
