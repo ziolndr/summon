@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <!-- SUMMON_PROPERTY_MARKETS_PROMPTS_V37_20260720T164148Z · real-estate · actual-market-snapshots · new-opening-and-loaded-prompts -->
-<!-- SUMMON_PRODUCTION_BUILD SUMMON_CLEAN_V26_FAST_V36 · uploaded-v26-visuals · hard-transparent-winner · buttons-cleared · direct-local-text-search -->
+<!-- SUMMON_PRODUCTION_BUILD SUMMON_HERO_SINGLE_ROW_DECK_V41_20260720T181229Z · fixed-hero · one-horizontal-ranked-row · fast-search-runtime-untouched -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0A0A09">
@@ -902,75 +902,133 @@ body.playing #projector{display:block}
 
 
 
-<style id="summon-natural-winner-fit-v39">
+
+
+<style id="summon-hero-single-row-deck-v41">
+/*
+  Desktop has exactly three stable regions:
+  prompt / hero / one horizontal ranked row.
+  Fetched ranks never create a second vertical row.
+*/
 @media(min-width:1001px){
   #revealFrame{
-    grid-template-rows:auto minmax(0,1fr) auto!important;
+    display:grid!important;
+    grid-template-rows:
+      auto
+      minmax(300px,1fr)
+      clamp(280px,32vh,320px)!important;
+    gap:16px!important;
+    overflow:hidden!important;
+    align-content:stretch!important;
+  }
+
+  #reveal .bar{
+    min-height:0!important;
+  }
+
+  #reveal .summon-bar{
+    min-width:0!important;
+    overflow:hidden!important;
+  }
+
+  #reveal #revealQuery{
+    max-height:2.08em!important;
+    overflow:hidden!important;
   }
 
   #reveal .stage{
-    height:auto!important;
-    min-height:0!important;
-    max-height:none!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
     align-items:end!important;
+    align-self:stretch!important;
+    min-height:0!important;
+    height:100%!important;
+    max-height:none!important;
     overflow:hidden!important;
-    padding-bottom:34px!important;
+    gap:32px!important;
+    padding:0!important;
   }
 
   #reveal .info{
+    display:block!important;
     width:auto!important;
+    max-width:min(60ch,54vw)!important;
     height:auto!important;
     min-height:0!important;
-    max-height:none!important;
-    overflow:visible!important;
-    display:block!important;
+    max-height:100%!important;
+    overflow:hidden!important;
     align-self:end!important;
-    justify-content:initial!important;
-    padding-top:0!important;
+    padding:0!important;
   }
 
-  #reveal .info.reveal-fit-measuring{
-    align-self:start!important;
+  #reveal #title{
+    line-height:.88!important;
+    overflow:hidden!important;
   }
 
-  #revealFrame.reveal-content-expanded-v39{
-    grid-template-rows:auto auto auto!important;
-    overflow-y:auto!important;
-    overflow-x:hidden!important;
+  #reveal .deck{
+    display:flex!important;
+    flex-direction:column!important;
+    align-self:stretch!important;
+    min-width:0!important;
+    min-height:0!important;
+    width:100%!important;
+    height:100%!important;
+    max-height:100%!important;
+    overflow:hidden!important;
+    margin:0!important;
+    padding:0!important;
   }
 
-  #revealFrame.reveal-content-expanded-v39 .stage{
-    min-height:clamp(420px,58vh,720px)!important;
-    height:auto!important;
-    overflow:visible!important;
+  #reveal .deck-head{
+    flex:0 0 auto!important;
+    margin:0 0 10px!important;
+  }
+
+  #reveal .deck-strip{
+    display:grid!important;
+    grid-template-columns:none!important;
+    grid-template-rows:1fr!important;
+    grid-auto-flow:column!important;
+    grid-auto-columns:calc((100% - 90px)/10)!important;
+    column-gap:10px!important;
+    row-gap:0!important;
     align-items:start!important;
+    align-content:start!important;
+    flex:1 1 auto!important;
+    width:100%!important;
+    min-width:0!important;
+    min-height:0!important;
+    height:100%!important;
+    max-height:none!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    overscroll-behavior-x:contain!important;
+    scroll-snap-type:x proximity!important;
+    scrollbar-width:none!important;
+    padding:0 0 8px!important;
   }
 
-  #revealFrame.reveal-content-expanded-v39 .info{
-    align-self:start!important;
-    padding-top:12px!important;
+  #reveal .deck-strip::-webkit-scrollbar{
+    display:none!important;
   }
 
-  #reveal .info.reveal-fit-compact .eyebrow{
-    margin-bottom:8px!important;
+  #reveal .tile{
+    display:block!important;
+    width:100%!important;
+    min-width:0!important;
+    height:max-content!important;
+    scroll-snap-align:start!important;
   }
 
-  #reveal .info.reveal-fit-compact .meta{
-    margin-top:10px!important;
-  }
-
-  #reveal .info.reveal-fit-compact .synopsis{
-    margin-top:11px!important;
-    line-height:1.30!important;
-  }
-
-  #reveal .info.reveal-fit-compact .actions{
-    margin-top:13px!important;
+  #reveal .tile .shot{
+    width:100%!important;
+    aspect-ratio:2/3!important;
   }
 }
 </style>
 
-<!-- SUMMON_NATURAL_WINNER_FIT_V39_20260720T172040Z · natural-height-measurement · fit-then-bottom-align · no-upward-clipping -->
+<!-- SUMMON_HERO_SINGLE_ROW_DECK_V41_20260720T181229Z · invariant-hero · one-horizontal-ranked-row · no-page-scroll -->
 </head>
 <body>
 
@@ -2589,132 +2647,75 @@ async function openProjector(){
    Long paper titles shrink; synopsis lines yield only when necessary.
    Buttons never get pushed into the deck. */
 let revealFitRAF=0;
-let revealFitSecondRAF=0;
-let revealFitSettleTimer=0;
-
 function fitRevealContent(){
   cancelAnimationFrame(revealFitRAF);
-  cancelAnimationFrame(revealFitSecondRAF);
-  clearTimeout(revealFitSettleTimer);
-
   revealFitRAF=requestAnimationFrame(()=>{
-    revealFitSecondRAF=requestAnimationFrame(()=>{
-      const frame=$('#revealFrame');
-      const stage=$('#reveal .stage');
-      const info=$('#reveal .info');
-      const title=$('#title');
-      const synopsis=$('#synopsis');
+    const stage=$('#reveal .stage');
+    const info=$('#reveal .info');
+    const title=$('#title');
+    const synopsis=$('#synopsis');
+    if(!stage||!info||!title||!synopsis)return;
 
-      if(!frame||!stage||!info||!title||!synopsis)return;
+    title.style.removeProperty('font-size');
+    title.style.removeProperty('display');
+    title.style.removeProperty('-webkit-line-clamp');
+    title.style.removeProperty('-webkit-box-orient');
+    synopsis.style.removeProperty('display');
+    synopsis.style.removeProperty('-webkit-line-clamp');
 
-      frame.classList.remove('reveal-content-expanded-v39');
-      info.classList.remove('reveal-fit-compact');
-      info.classList.add('reveal-fit-measuring');
+    if(window.innerWidth<=1000)return;
 
-      title.style.removeProperty('font-size');
-      synopsis.style.removeProperty('-webkit-line-clamp');
-      synopsis.style.removeProperty('display');
+    const available=Math.max(160,Math.floor(stage.clientHeight-2));
+    const maxSize=Math.min(92,Math.max(40,window.innerWidth*.052));
+    const minSize=18;
+    const hasSynopsis=Boolean(synopsis.textContent.trim());
+    const naturalHeight=()=>Math.ceil(info.scrollHeight);
+    const fits=()=>naturalHeight()<=available;
 
-      if(window.innerWidth<=1000){
-        info.classList.remove('reveal-fit-measuring');
+    const setSynopsisLines=lines=>{
+      if(!hasSynopsis||lines===0){
+        synopsis.style.display='none';
+        synopsis.style.removeProperty('-webkit-line-clamp');
         return;
       }
+      synopsis.style.display='-webkit-box';
+      synopsis.style.setProperty('-webkit-line-clamp',String(lines));
+    };
 
-      const stageStyle=getComputedStyle(stage);
-      const paddingTop=parseFloat(stageStyle.paddingTop)||0;
-      const paddingBottom=parseFloat(stageStyle.paddingBottom)||0;
-      const available=Math.max(
-        160,
-        Math.floor(stage.clientHeight-paddingTop-paddingBottom-2)
-      );
+    const maximizeTitle=lines=>{
+      setSynopsisLines(lines);
+      title.style.fontSize=`${minSize}px`;
+      if(!fits())return false;
 
-      const hasSynopsis=Boolean(synopsis.textContent.trim());
-      const maximumTitleSize=Math.min(
-        92,
-        Math.max(40,window.innerWidth*.052)
-      );
+      let low=minSize;
+      let high=maxSize;
+      let best=minSize;
 
-      const naturalHeight=()=>Math.ceil(info.getBoundingClientRect().height);
-      const fits=()=>naturalHeight()<=available;
-
-      const configureSynopsis=lines=>{
-        if(!hasSynopsis||lines===0){
-          synopsis.style.display='none';
-          synopsis.style.removeProperty('-webkit-line-clamp');
-          return;
-        }
-
-        synopsis.style.display='-webkit-box';
-        synopsis.style.setProperty('-webkit-line-clamp',String(lines));
-      };
-
-      const maximizeTitle=(minimum,lines)=>{
-        configureSynopsis(lines);
-        title.style.fontSize=`${minimum}px`;
-
-        if(!fits())return false;
-
-        let low=minimum;
-        let high=maximumTitleSize;
-        let best=minimum;
-
-        for(let attempt=0;attempt<15;attempt++){
-          const middle=(low+high)/2;
-          title.style.fontSize=`${middle}px`;
-
-          if(fits()){
-            best=middle;
-            low=middle;
-          }else{
-            high=middle;
-          }
-        }
-
-        title.style.fontSize=`${Math.floor(best*10)/10}px`;
-        return true;
-      };
-
-      let fitted=false;
-
-      for(const lines of [4,3,2,1,0]){
-        if(maximizeTitle(20,lines)){
-          fitted=true;
-          break;
+      for(let attempt=0;attempt<14;attempt++){
+        const middle=(low+high)/2;
+        title.style.fontSize=`${middle}px`;
+        if(fits()){
+          best=middle;
+          low=middle;
+        }else{
+          high=middle;
         }
       }
 
-      if(!fitted){
-        info.classList.add('reveal-fit-compact');
+      title.style.fontSize=`${Math.floor(best*10)/10}px`;
+      return true;
+    };
 
-        for(const lines of [2,1,0]){
-          if(maximizeTitle(14,lines)){
-            fitted=true;
-            break;
-          }
-        }
-      }
+    for(const lines of [4,3,2,1,0]){
+      if(maximizeTitle(lines))return;
+    }
 
-      info.classList.remove('reveal-fit-measuring');
-
-      if(!fitted){
-        synopsis.style.display='none';
-        title.style.fontSize='14px';
-        frame.classList.add('reveal-content-expanded-v39');
-        info.style.alignSelf='start';
-        frame.scrollTo({top:0,behavior:'auto'});
-      }else{
-        info.style.removeProperty('align-self');
-      }
-
-      /* Web fonts and late metadata can change line wrapping after render. */
-      revealFitSettleTimer=setTimeout(()=>{
-        if($('#reveal')?.classList.contains('on')){
-          const top=info.getBoundingClientRect().top;
-          const stageTop=stage.getBoundingClientRect().top;
-          if(top<stageTop-1)fitRevealContent();
-        }
-      },220);
-    });
+    /* Pathological source names keep the invariant hero and never cover it. */
+    synopsis.style.display='none';
+    title.style.fontSize='18px';
+    title.style.display='-webkit-box';
+    title.style.setProperty('-webkit-line-clamp','5');
+    title.style.setProperty('-webkit-box-orient','vertical');
   });
 }
 async function loadMoreResults({advance=false,preserveScroll=false,play=false}={}){
@@ -2756,11 +2757,13 @@ async function loadMoreResults({advance=false,preserveScroll=false,play=false}={
   finally{if(generation===resultPageGeneration)resultLoadingMore=false}
 }
 
-/* SUMMON_HERO_RESTORE_V26_2 */
+/* SUMMON_HERO_RESTORE_V41 */
 function restoreHeroView({smooth=true}={}){
   const frame=$('#revealFrame');
-  if(!frame)return;
-  frame.scrollTo({top:0,behavior:smooth?'smooth':'auto'});
+  if(frame&&frame.scrollTop){
+    frame.scrollTo({top:0,behavior:'auto'});
+  }
+  fitRevealContent();
 }
 
 function selectRankedResult(index,{play=false}={}){
@@ -2939,9 +2942,9 @@ function resultKey(r){
 function renderDeck(){
   const deck=$('#deck');
   if(!deck)return;
-  const frame=$('#revealFrame');
+
   const preserveScroll=resultPreserveDeckScroll;
-  const priorScrollTop=frame?.scrollTop||0;
+  const priorScrollLeft=deck.scrollLeft||0;
   resultPreserveDeckScroll=false;
 
   const old=new Map();
@@ -2984,9 +2987,13 @@ function renderDeck(){
         }
       }
     }
-    const n=tile.querySelector('.n');if(n)n.textContent=String(i+1).padStart(2,'0');
-    const cap=tile.querySelector('.cap');if(cap)cap.textContent=r.title||'';
-    const sc=tile.querySelector('.sc');if(sc)sc.textContent=Number(r.score).toFixed(3);
+
+    const n=tile.querySelector('.n');
+    if(n)n.textContent=String(i+1).padStart(2,'0');
+    const cap=tile.querySelector('.cap');
+    if(cap)cap.textContent=r.title||'';
+    const sc=tile.querySelector('.sc');
+    if(sc)sc.textContent=Number(r.score).toFixed(3);
     tile.onclick=()=>selectRankedResult(+tile.dataset.i);
     frag.appendChild(tile);
   });
@@ -3015,9 +3022,28 @@ function renderDeck(){
     });
   }
 
-  if(preserveScroll&&frame){
-    requestAnimationFrame(()=>frame.scrollTo({top:priorScrollTop,behavior:'auto'}));
-  }
+  requestAnimationFrame(()=>{
+    if(preserveScroll){
+      deck.scrollTo({left:priorScrollLeft,behavior:'auto'});
+    }
+
+    const selected=deck.children[active];
+    if(!selected)return;
+
+    const tileLeft=selected.offsetLeft;
+    const tileRight=tileLeft+selected.offsetWidth;
+    const viewLeft=deck.scrollLeft;
+    const viewRight=viewLeft+deck.clientWidth;
+
+    if(tileLeft<viewLeft){
+      deck.scrollTo({left:Math.max(0,tileLeft-10),behavior:'auto'});
+    }else if(tileRight>viewRight){
+      deck.scrollTo({
+        left:Math.max(0,tileRight-deck.clientWidth+10),
+        behavior:'auto'
+      });
+    }
+  });
 }
 async function step(d,{play=false}={}){
   if(!results.length)return;
@@ -3167,8 +3193,35 @@ function commitLiveExact(el,source){
 /* ═══════ INPUT ═══════ */
 function autoResize(el){
   if(!el)return;
-  if(el.offsetParent===null&&el.offsetHeight===0)return; // hidden plate: keep CSS height, don't zero it
+  if(el.offsetParent===null&&el.offsetHeight===0)return;
   el.style.height='auto';
+
+  if(el.id==='revealQuery'&&window.innerWidth>1000){
+    el.style.removeProperty('font-size');
+    let low=18;
+    let high=Math.min(42,Math.max(22,window.innerWidth*.0255));
+    let best=18;
+
+    for(let attempt=0;attempt<13;attempt++){
+      const middle=(low+high)/2;
+      el.style.fontSize=`${middle}px`;
+      const style=getComputedStyle(el);
+      const lineHeight=parseFloat(style.lineHeight)||middle*1.03;
+      if(el.scrollHeight<=lineHeight*2.12){
+        best=middle;
+        low=middle;
+      }else{
+        high=middle;
+      }
+    }
+
+    el.style.fontSize=`${Math.floor(best*10)/10}px`;
+    const style=getComputedStyle(el);
+    const lineHeight=parseFloat(style.lineHeight)||best*1.03;
+    el.style.height=`${Math.ceil(Math.min(el.scrollHeight,lineHeight*2.08))}px`;
+    return;
+  }
+
   const max=parseFloat(getComputedStyle(el).maxHeight)||Infinity;
   el.style.height=Math.min(max,el.scrollHeight)+'px';
 }
@@ -3297,7 +3350,7 @@ const markDeckScrollIntent=()=>{
   clearTimeout(deckScrollIntentTimer);
   deckScrollIntentTimer=setTimeout(()=>{deckScrollIntent=false},900);
 };
-const revealScroller=$('#revealFrame');
+const revealScroller=$('#deck');
 revealScroller?.addEventListener('wheel',markDeckScrollIntent,{passive:true});
 revealScroller?.addEventListener('touchstart',markDeckScrollIntent,{passive:true});
 revealScroller?.addEventListener('pointerdown',markDeckScrollIntent,{passive:true});
@@ -3305,16 +3358,15 @@ revealScroller?.addEventListener('scroll',()=>{
   if(!deckScrollIntent||resultLoadingMore||!resultHasMore)return;
   clearTimeout(deckScrollTimer);
   deckScrollTimer=setTimeout(()=>{
-    const frame=$('#revealFrame');
-    if(!frame||!deckScrollIntent||resultLoadingMore||!resultHasMore)return;
-    const remaining=frame.scrollHeight-(frame.scrollTop+frame.clientHeight);
-    if(remaining<=180){
+    const deck=$('#deck');
+    if(!deck||!deckScrollIntent||resultLoadingMore||!resultHasMore)return;
+    const remaining=deck.scrollWidth-(deck.scrollLeft+deck.clientWidth);
+    if(remaining<=Math.max(180,deck.clientWidth*.35)){
       deckScrollIntent=false;
       loadMoreResults({preserveScroll:true});
     }
   },90);
 },{passive:true});
-
 
 /* auto-typed example queries cycle through the input placeholder */
 let twTimer=null,twI=0,twC=0,twDel=false;
