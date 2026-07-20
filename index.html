@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- SUMMON_TUNNEL_LOCAL_EMBED_LIVE_20260720T015945Z · browser → HTTPS tunnel → local field → local ARBITER -->
 <!-- SUMMON_PRODUCTION_BUILD SUMMON-GAME-ART-FALLBACK-V26_7_1-20260719T182114Z · rawg-absolute-images · hero-and-tile-fallbacks · game-image-load-race-guard -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -1124,7 +1125,7 @@ window.addEventListener('load',()=>{
 let cache=null, results=[], active=0, currentQuery='', corpusLock=null, silentLoad=false;
 let universalFieldInfo={count:0,dim:72,use_freq:true,units:0,sources:{},updated_at:null};
 /* SUMMON_CONTINUOUS_RESULTS_V26 */
-let resultVector=null,resultOffset=0,resultHasMore=false,resultLoadingMore=false;
+let resultQuery='',resultOffset=0,resultHasMore=false,resultLoadingMore=false;
 let resultPageGeneration=0,resultPreserveDeckScroll=false,deckScrollTimer=null;
 let deckScrollIntent=false,deckScrollIntentTimer=null;
 
@@ -2401,16 +2402,9 @@ async function measure(q,corpus,count){
   const visibleCount=universalFieldInfo.count||count;
   setState(`measuring ${visibleCount.toLocaleString()} objects`);
 
-  const useFreq=universalFieldInfo.use_freq!==false;
-  const embedded=await arbiter({texts:[q],use_freq:useFreq});
-  const qVector=embedRows(embedded)[0];
-  const expectedDim=Number(universalFieldInfo.dim)||72;
-  if(!qVector||qVector.length!==expectedDim){
-    throw new Error(`query embedding dimension ${qVector?.length||0} != ${expectedDim}`);
-  }
 
   const generation=++resultPageGeneration;
-  resultVector=Array.from(qVector);
+  resultQuery=q;
   resultOffset=0;
   resultHasMore=false;
   resultLoadingMore=false;
@@ -2420,7 +2414,7 @@ async function measure(q,corpus,count){
     mode:'cors',
     cache:'no-store',
     headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify({vector:resultVector,k:RESULT_PAGE_SIZE,offset:0})
+    body:JSON.stringify({text:q,k:RESULT_PAGE_SIZE,offset:0})
   });
   const raw=await res.text();
   if(!res.ok)throw new Error(`live field ${res.status} - ${raw.slice(0,180)}`);
@@ -2625,11 +2619,11 @@ function fitRevealContent(){
 }
 
 async function loadMoreResults({advance=false,preserveScroll=false,play=false}={}){
-  if(resultLoadingMore||!resultHasMore||!resultVector?.length||!results.length)return false;
+  if(resultLoadingMore||!resultHasMore||!resultQuery||!results.length)return false;
 
   const generation=resultPageGeneration;
   const offset=resultOffset;
-  const vector=resultVector.slice();
+  const text=resultQuery;
   const oldLength=results.length;
   resultLoadingMore=true;
 
@@ -2642,7 +2636,7 @@ async function loadMoreResults({advance=false,preserveScroll=false,play=false}={
       mode:'cors',
       cache:'no-store',
       headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body:JSON.stringify({vector,k:RESULT_PAGE_SIZE,offset})
+      body:JSON.stringify({text,k:RESULT_PAGE_SIZE,offset})
     });
     const raw=await res.text();
     if(!res.ok)throw new Error(`live field ${res.status} - ${raw.slice(0,180)}`);
