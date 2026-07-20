@@ -3990,5 +3990,126 @@ if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{
   }
 })();
 </script>
+
+<script id="summon-nested-music-url-v48-1">
+(function(){
+  const tmdbPrefix=
+    /^https?:\/\/image\.tmdb\.org\/t\/p\/[^/]+\//i;
+
+  function repairArtworkUrl(value){
+    let raw=String(value||'')
+      .trim()
+      .replace(/&amp;/g,'&')
+      .replace(/\\\//g,'/');
+
+    if(!raw)return raw;
+
+    if(raw.startsWith('//')){
+      raw='https:'+raw;
+    }
+
+    if(tmdbPrefix.test(raw)){
+      let tail=raw.replace(tmdbPrefix,'');
+
+      if(/^https?:\/\//i.test(tail)){
+        raw=tail;
+      }else if(/^https?%3A%2F%2F/i.test(tail)){
+        try{
+          raw=decodeURIComponent(tail);
+        }catch(_){}
+      }
+    }
+
+    return raw.replace(/^http:/i,'https:');
+  }
+
+  function repairSrcset(value){
+    return String(value||'')
+      .split(',')
+      .map(part=>{
+        const clean=part.trim();
+        const match=clean.match(/^(\S+)(\s+.+)?$/);
+
+        if(!match)return clean;
+
+        const repaired=repairArtworkUrl(match[1]);
+        return repaired+(match[2]||'');
+      })
+      .join(', ');
+  }
+
+  function repairElement(element){
+    if(!(element instanceof Element))return;
+
+    if(element.hasAttribute('src')){
+      const current=element.getAttribute('src')||'';
+      const repaired=repairArtworkUrl(current);
+
+      if(repaired&&repaired!==current){
+        element.setAttribute('src',repaired);
+      }
+    }
+
+    if(element.hasAttribute('srcset')){
+      const current=element.getAttribute('srcset')||'';
+      const repaired=repairSrcset(current);
+
+      if(repaired&&repaired!==current){
+        element.setAttribute('srcset',repaired);
+      }
+    }
+  }
+
+  function repairTree(root){
+    if(root instanceof Element){
+      repairElement(root);
+    }
+
+    root.querySelectorAll?.(
+      'img[src],img[srcset],source[src],source[srcset]'
+    ).forEach(repairElement);
+  }
+
+  repairTree(document);
+
+  const observer=new MutationObserver(mutations=>{
+    for(const mutation of mutations){
+      if(mutation.type==='attributes'){
+        repairElement(mutation.target);
+        continue;
+      }
+
+      for(const node of mutation.addedNodes){
+        if(node instanceof Element){
+          repairTree(node);
+        }
+      }
+    }
+  });
+
+  observer.observe(document.documentElement,{
+    subtree:true,
+    childList:true,
+    attributes:true,
+    attributeFilter:['src','srcset']
+  });
+
+  document.addEventListener('error',event=>{
+    const target=event.target;
+
+    if(
+      target instanceof HTMLImageElement||
+      target instanceof HTMLSourceElement
+    ){
+      repairElement(target);
+      target.alt='';
+    }
+  },true);
+
+  window.summonRepairArtworkUrl=repairArtworkUrl;
+})();
+</script>
+
+<!-- SUMMON_NESTED_MUSIC_URL_V48_1_20260720T224701Z · unwrap-tmdb-plus-absolute-artwork -->
 </body>
 </html>
