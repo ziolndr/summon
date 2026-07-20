@@ -770,7 +770,7 @@ class LiveFieldIndex:
         if not math.isfinite(q_norm) or q_norm <= 0:
             raise ValueError("Query vector has zero or invalid norm")
 
-        k = max(1, min(int(k), 100))
+        k = max(1, min(int(k), 10_000))
         chunk_rows = max(10_000, int(chunk_rows))
 
         vectors = np.memmap(self.vectors_path, mode="r", dtype="<f4", shape=(count, dim))
