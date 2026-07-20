@@ -1,10 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- SUMMON_GRAND_FULL_BLEED_HERO_20260720T051322Z · cinematic-full-bleed · landscape-first · no-contained-film-card -->
-<!-- SUMMON_UNIVERSAL_ART_GEOMETRY_20260720T045523Z · native-media-geometry · retry-all-art-aliases · nonblocking -->
-<!-- SUMMON_STACKED_ROWS_HERO_RESTORE_20260720T043547Z · stacked-ranked-rows · reveal-frame-scroller · fixed-hero -->
-<!-- SUMMON_PRODUCTION_BUILD SUMMON-HERO-RESTORE-V26_2-20260718T084037Z · stacked-ranked-rows · reveal-frame-scroller · tile-selection-restores-hero · continuous-same-vector-pagination -->
+<!-- SUMMON_PRODUCTION_BUILD SUMMON_CLEAN_V26_FAST_20260720T061702Z · uploaded-v26-visuals · direct-local-text-search · immediate-reveal · backend-runtime-untouched -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0A0A09">
@@ -815,322 +812,55 @@ body.playing #projector{display:block}
 }
 
 
-/* SUMMON_STACKED_ROWS_HERO_RESTORE
-   Ranked pages append downward. The reveal frame owns vertical movement;
-   the document and hero never pan horizontally. */
-html,body,#reveal,#revealFrame{
-  max-width:100%;
-  overflow-x:hidden!important;
-}
-#revealFrame{
-  overflow-y:auto!important;
-  overflow-x:hidden!important;
-  overscroll-behavior-y:contain;
-  -webkit-overflow-scrolling:touch;
-}
-#deck,.deck-strip{
-  width:100%!important;
-  max-width:100%!important;
-  min-width:0!important;
-  overflow:visible!important;
-}
-
-</style>
-
-<style id="summon-grand-full-bleed-hero">
-#reveal .stage{
-  position:relative!important;
-  isolation:isolate;
-  overflow:hidden!important;
-  min-height:clamp(500px,66vh,860px)!important;
-  background:#050607!important;
-}
-#revealCanvas{
-  position:absolute!important;
-  inset:0!important;
-  width:100%!important;
-  height:100%!important;
-  max-width:none!important;
-  max-height:none!important;
-  margin:0!important;
-  z-index:0!important;
-  overflow:hidden!important;
-  background:#050607!important;
-}
-#revealCanvas #still,
-#revealCanvas #stillBg{
-  position:absolute!important;
-  inset:0!important;
-  width:100%!important;
-  height:100%!important;
-  max-width:none!important;
-  max-height:none!important;
-  margin:0!important;
-}
-#reveal .stage>*:not(#revealCanvas){
-  position:relative;
-  z-index:3;
-}
-#reveal[data-summon-kind="film"] #still,
-#reveal[data-summon-kind="movie"] #still,
-#reveal[data-summon-kind="series"] #still,
-#reveal[data-summon-kind="tv"] #still,
-#reveal[data-summon-kind="show"] #still,
-#reveal[data-summon-kind="video"] #still,
-#reveal[data-summon-kind="game"] #still{
-  object-fit:cover!important;
-  object-position:center 38%!important;
-  padding:0!important;
-  filter:none!important;
-  transform:none!important;
+/* SUMMON_CLEAR_MUSIC_HERO_V26_4 */
+#revealCanvas.music{background:#080807}
+#revealCanvas.music #still{
   opacity:1!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  filter:saturate(1.04) contrast(1.03)!important;
+  transform:none!important;
+  animation:none!important;
 }
-#reveal[data-summon-kind="film"] #stillBg,
-#reveal[data-summon-kind="movie"] #stillBg,
-#reveal[data-summon-kind="series"] #stillBg,
-#reveal[data-summon-kind="tv"] #stillBg,
-#reveal[data-summon-kind="show"] #stillBg,
-#reveal[data-summon-kind="video"] #stillBg,
-#reveal[data-summon-kind="game"] #stillBg{
+#revealCanvas.music #stillBg{
   opacity:0!important;
   filter:none!important;
   transform:none!important;
 }
-#reveal .stage::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:1;
-  pointer-events:none;
-  background:
-    linear-gradient(90deg,
-      rgba(2,3,4,.92) 0%,
-      rgba(2,3,4,.74) 21%,
-      rgba(2,3,4,.22) 50%,
-      rgba(2,3,4,.06) 73%,
-      rgba(2,3,4,.28) 100%),
-    linear-gradient(0deg,
-      rgba(2,3,4,.74) 0%,
-      transparent 38%,
-      rgba(2,3,4,.12) 100%);
-}
-#reveal[data-summon-kind="book"] #still,
-#reveal[data-summon-kind="paper"] #still,
-#reveal[data-summon-kind="document"] #still,
-#reveal[data-summon-kind="publication"] #still,
-#reveal[data-summon-kind="patent"] #still,
-#reveal[data-summon-kind="legal"] #still,
-#reveal[data-summon-kind="case"] #still,
-#reveal[data-summon-kind="scripture"] #still,
-#reveal[data-summon-kind="music"] #still,
-#reveal[data-summon-kind="album"] #still,
-#reveal[data-summon-kind="track"] #still,
-#reveal[data-summon-kind="audio"] #still,
-#reveal[data-summon-kind="podcast"] #still,
-#reveal[data-summon-kind="radio"] #still{
-  object-fit:contain!important;
-  object-position:center!important;
-  width:min(78vw,1040px)!important;
-  height:92%!important;
-  inset:4% 4% 4% auto!important;
-  padding:0!important;
-  filter:none!important;
-  transform:none!important;
+#revealCanvas.music ~ #revealFrame #card{display:none!important}
+
+
+/* SUMMON_MUSIC_FULL_HERO_V26_5
+   Music bypasses generic square-art mode completely. */
+#reveal.music-hero #revealCanvas{background:#080807}
+#reveal.music-hero #revealCanvas #still{
   opacity:1!important;
-}
-#reveal[data-summon-kind="book"] #stillBg,
-#reveal[data-summon-kind="paper"] #stillBg,
-#reveal[data-summon-kind="document"] #stillBg,
-#reveal[data-summon-kind="publication"] #stillBg,
-#reveal[data-summon-kind="patent"] #stillBg,
-#reveal[data-summon-kind="legal"] #stillBg,
-#reveal[data-summon-kind="case"] #stillBg,
-#reveal[data-summon-kind="scripture"] #stillBg,
-#reveal[data-summon-kind="music"] #stillBg,
-#reveal[data-summon-kind="album"] #stillBg,
-#reveal[data-summon-kind="track"] #stillBg,
-#reveal[data-summon-kind="audio"] #stillBg,
-#reveal[data-summon-kind="podcast"] #stillBg,
-#reveal[data-summon-kind="radio"] #stillBg{
-  object-fit:cover!important;
-  opacity:.30!important;
-  filter:blur(24px) brightness(.42) saturate(.8)!important;
-  transform:scale(1.04)!important;
-}
-#reveal[data-summon-kind="film"] #card,
-#reveal[data-summon-kind="movie"] #card,
-#reveal[data-summon-kind="series"] #card,
-#reveal[data-summon-kind="tv"] #card,
-#reveal[data-summon-kind="show"] #card,
-#reveal[data-summon-kind="video"] #card,
-#reveal[data-summon-kind="game"] #card{
-  display:none!important;
-}
-#revealQuery,
-#reveal .copy,
-#reveal .meta,
-#reveal .result-copy,
-#reveal .hero-copy{
-  position:relative!important;
-  z-index:4!important;
-}
-@media(max-width:1000px){
-  #reveal .stage{
-    min-height:clamp(460px,70vh,760px)!important;
-  }
-  #reveal .stage::before{
-    background:
-      linear-gradient(0deg,
-        rgba(2,3,4,.92) 0%,
-        rgba(2,3,4,.66) 45%,
-        rgba(2,3,4,.14) 100%);
-  }
-  #reveal[data-summon-kind="book"] #still,
-  #reveal[data-summon-kind="paper"] #still,
-  #reveal[data-summon-kind="document"] #still,
-  #reveal[data-summon-kind="music"] #still,
-  #reveal[data-summon-kind="podcast"] #still{
-    width:92%!important;
-    height:84%!important;
-    inset:5% 4% auto 4%!important;
-  }
-}
-</style>
-
-
-<style id="summon-universal-art-geometry">
-/* Every artwork surface preserves its intended geometry. */
-.summon-art-frame{
-  position:relative!important;
-  display:grid!important;
-  place-items:center!important;
-  overflow:hidden!important;
-  background:
-    radial-gradient(circle at 50% 38%,rgba(255,255,255,.035),transparent 62%),
-    linear-gradient(145deg,#121925,#090d13 70%)!important;
-  isolation:isolate;
-}
-.summon-art-frame[data-summon-geometry="portrait"]{aspect-ratio:2/3}
-.summon-art-frame[data-summon-geometry="person"]{aspect-ratio:4/5}
-.summon-art-frame[data-summon-geometry="square"]{aspect-ratio:1/1}
-.summon-art-frame[data-summon-geometry="landscape"]{aspect-ratio:16/9}
-.summon-art-frame>img{
-  display:block!important;
   width:100%!important;
   height:100%!important;
-  max-width:100%!important;
-  max-height:100%!important;
-  object-position:center center!important;
-  transform:none!important;
-}
-.summon-art-frame>img[data-summon-fit="contain"]{
-  object-fit:contain!important;
-  padding:clamp(2px,.35vw,6px)!important;
-}
-.summon-art-frame>img[data-summon-fit="cover"]{
   object-fit:cover!important;
-  padding:0!important;
-}
-.summon-art-fallback{
-  position:absolute;
-  inset:0;
-  z-index:-1;
-  display:grid;
-  place-content:center;
-  gap:7px;
-  padding:12%;
-  text-align:center;
-  pointer-events:none;
-  background:
-    linear-gradient(180deg,rgba(255,255,255,.025),transparent 45%),
-    radial-gradient(circle at 50% 38%,rgba(255,255,255,.045),transparent 60%);
-}
-.summon-art-fallback strong{
-  display:block;
-  font:600 clamp(8px,.58vw,11px)/1.25 ui-monospace,SFMono-Regular,Menlo,monospace;
-  letter-spacing:.17em;
-  text-transform:uppercase;
-  color:rgba(235,239,245,.54);
-}
-.summon-art-fallback span{
-  display:-webkit-box;
-  overflow:hidden;
-  -webkit-box-orient:vertical;
-  -webkit-line-clamp:4;
-  font:500 clamp(8px,.62vw,12px)/1.25 Georgia,serif;
-  color:rgba(235,239,245,.26);
-}
-.summon-art-frame[data-summon-ready="1"] .summon-art-fallback{
-  opacity:0;
-}
-
-/* Foreground hero: complete artwork, never arbitrary enlargement. */
-#still{
   object-position:center center!important;
+  filter:none!important;
   transform:none!important;
-  max-width:100%!important;
-  max-height:100%!important;
+  animation:none!important;
 }
-#still[data-summon-fit="contain"]{
-  object-fit:contain!important;
-  padding:clamp(10px,2.2vw,42px)!important;
+#reveal.music-hero #revealCanvas #stillBg{
+  opacity:0!important;
+  filter:none!important;
+  transform:none!important;
+}
+#reveal.music-hero #card{display:none!important}
+
+
+/* SUMMON_GAME_ART_FALLBACK_V26_7_1 */
+#reveal.game-has-art #revealCanvas #still{
+  opacity:1!important;
   filter:none!important;
 }
-#still[data-summon-fit="cover"]{
-  object-fit:cover!important;
-  padding:0!important;
+#reveal.game-has-art #revealCanvas #stillBg{
+  opacity:.22!important;
 }
 
-/* Background is atmospheric only. It never substitutes for the foreground. */
-#stillBg{
-  object-position:center center!important;
-  opacity:.17!important;
-  filter:blur(22px) brightness(.42) saturate(.82)!important;
-  transform:scale(1.035)!important;
-}
-#reveal[data-summon-shape="portrait"] #stillBg,
-#reveal[data-summon-shape="square"] #stillBg{
-  object-fit:contain!important;
-  opacity:.13!important;
-  filter:blur(28px) brightness(.38) saturate(.78)!important;
-  transform:scale(1.02)!important;
-}
-#reveal[data-summon-shape="landscape"] #stillBg{
-  object-fit:cover!important;
-}
-#reveal[data-summon-kind="paper"] #still,
-#reveal[data-summon-kind="book"] #still,
-#reveal[data-summon-kind="document"] #still,
-#reveal[data-summon-kind="patent"] #still,
-#reveal[data-summon-kind="legal"] #still,
-#reveal[data-summon-kind="music"] #still,
-#reveal[data-summon-kind="podcast"] #still{
-  object-fit:contain!important;
-  padding:clamp(16px,3vw,56px)!important;
-}
-
-/* Card image follows its own media geometry. */
-#cardImg[data-summon-fit="contain"]{
-  object-fit:contain!important;
-  object-position:center!important;
-  padding:4px!important;
-  background:#090d13!important;
-}
-#cardImg[data-summon-fit="cover"]{
-  object-fit:cover!important;
-  object-position:center!important;
-  padding:0!important;
-}
-
-/* Broken and empty images never leave a black hole. */
-img[data-summon-ready="0"]{
-  opacity:0!important;
-}
-img[data-summon-ready="1"]{
-  opacity:1;
-}
 </style>
-
 </head>
 <body>
 
@@ -1272,7 +1002,7 @@ const ARBITER_URL='https://api.arbiter.traut.ai/public/embed';
 // every finalized ARBITER field shard without changing the core ARBITER server.
 const LIVE_FIELD_URL=new URLSearchParams(location.search).get('field')||'https://standard-philadelphia-lime-lib.trycloudflare.com/field/v1/search';
 const LIVE_FIELD_MANIFEST_URL=LIVE_FIELD_URL.replace(/\/v1\/search(?:\?.*)?$/,'/v1/manifest');
-const FORMAT_LABELS={film:'film',series:'series',game:'game',book:'book',music:'music',podcast:'podcast',short:'short',live:'live',paper:'paper',patent:'patent',business:'business',place:'place',law:'law',record:'record'};
+const FORMAT_LABELS={film:'film',series:'series',game:'game',book:'book',music:'music',podcast:'podcast',short:'short',live:'live',paper:'paper',patent:'patent',business:'business',place:'place',law:'law',record:'record',real_estate_listing:'real estate',real_estate:'real estate',property:'real estate',stock:'stock',etf:'etf',fund:'fund',etn:'etn',trade_signal:'market signal',market_signal:'market signal',news:'news',web:'web',person:'person'};
 
 const CURATED_ENTERTAINMENT_FIELD=[{"title":"The Bill Simmons Podcast","year":"2026","type":"podcast","publisher":"The Ringer / Spotify","availability":"now on Netflix","genres":["Sports","Culture","Conversation"],"overview":"Long-form sports and culture conversations, arguments, predictions, and deep dives with athletes, celebrities, and voices from The Ringer universe."},{"title":"Pardon My Take","year":"2026","type":"podcast","publisher":"Barstool Sports","availability":"now on Netflix","genres":["Sports","Comedy","Conversation"],"overview":"Irreverent sports talk built around fan culture, sharp commentary, recurring bits, big personalities, and the absurdity surrounding the games."},{"title":"Spittin' Chiclets","year":"2026","type":"podcast","publisher":"Barstool Sports","availability":"now on Netflix","genres":["Hockey","Sports","Storytelling"],"overview":"NHL analysis, hockey culture, locker-room stories, pop culture, and candid conversation with players and personalities."},{"title":"The Ryen Russillo Podcast","year":"2026","type":"podcast","publisher":"Barstool Sports","availability":"now on Netflix","genres":["Sports","Analysis","Interviews"],"overview":"Long-form sports analysis and conversations with athletes, media figures, and people shaping modern sports culture."},{"title":"The Zach Lowe Show","year":"2026","type":"podcast","publisher":"The Ringer / Spotify","availability":"on Netflix","genres":["Basketball","NBA","Analysis"],"overview":"Detailed NBA analysis focused on strategy, roster construction, player fit, league trends, and the small tactical decisions that change games."},{"title":"The Rewatchables","year":"2026","type":"podcast","publisher":"The Ringer / Spotify","availability":"on Netflix","genres":["Film","Culture","Conversation"],"overview":"A joyful, obsessive return to beloved movies: best scenes, performances, casting what-ifs, legacy, quotability, and why certain films stay alive in memory."},{"title":"The Big Picture","year":"2026","type":"podcast","publisher":"The Ringer / Spotify","availability":"on Netflix","genres":["Film","Industry","Criticism"],"overview":"Movies, filmmakers, awards, the business of cinema, and wide-ranging conversations about how films are made, received, and remembered."},{"title":"Dissect","year":"2026","type":"podcast","publisher":"Spotify","availability":"on Netflix","genres":["Music","Analysis","Storytelling"],"overview":"Long-form analysis of major albums and songs, tracing lyrics, themes, production choices, symbolism, and cultural context piece by piece."},{"title":"Conspiracy Theories","year":"2026","type":"podcast","publisher":"Spotify","availability":"on Netflix","genres":["Mystery","History","Psychology"],"overview":"A guided investigation of famous conspiracy theories, separating documented history, plausible questions, hidden incentives, and mythology."},{"title":"Serial Killers","year":"2026","type":"podcast","publisher":"Spotify","availability":"on Netflix","genres":["True Crime","Psychology","History"],"overview":"True-crime stories examining notorious killers, investigative failures, psychology, victims, and the systems surrounding major cases."},{"title":"My Favorite Murder","year":"2026","type":"podcast","publisher":"iHeartMedia","availability":"on Netflix","genres":["True Crime","Comedy","Conversation"],"overview":"True crime told through candid conversation, dark humor, personal reactions, and the strange details that make cases impossible to forget."},{"title":"The Breakfast Club","year":"2026","type":"podcast","publisher":"iHeartMedia","availability":"on Netflix","genres":["Music","Culture","Interviews"],"overview":"Unfiltered interviews and conversation spanning music, celebrity, politics, internet culture, controversy, and the personalities driving the moment."},{"title":"The Pete Davidson Show","year":"2026","type":"podcast","publisher":"Netflix","availability":"now on Netflix","genres":["Comedy","Conversation","Celebrity"],"overview":"Candid, no-holds-barred conversations with Pete Davidson and friends, mostly from his garage, with the looseness of hanging out after midnight."},{"title":"BEEF: The Official Podcast","year":"2026","type":"podcast","publisher":"Netflix","availability":"now on Netflix","genres":["Behind the Scenes","Drama","Creative Process"],"overview":"Creator Lee Sung Jin and the cast unpack BEEF Season 2, creative decisions, performance, rivalry, music, and how the story was built."},{"title":"Bridgerton: The Official Podcast","year":"2026","type":"podcast","publisher":"Netflix / Shondaland","availability":"now on Netflix","genres":["Romance","Behind the Scenes","Drama"],"overview":"A companion journey through Bridgerton Season 4 with cast and creators discussing love, heartbreak, friendship, performance, and the world behind the ton."},{"title":"The Rest Is Football","year":"2026","type":"podcast","publisher":"Goalhanger","availability":"daily during the 2026 tournament","genres":["Football","World Cup","Analysis"],"overview":"Gary Lineker, Alan Shearer, and Micah Richards deliver daily world football analysis, big-match reactions, interviews, honesty, and humor."},{"title":"On Purpose with Jay Shetty","year":"2026","type":"podcast","publisher":"Netflix / Spotify","availability":"2026 on Netflix","genres":["Personal Growth","Relationships","Conversation"],"overview":"Deep conversations about grief, anxiety, love, identity, healing, purpose, and the hardest truths people carry into their lives."},{"title":"We're Back! with Brian Williams","year":"2026","type":"podcast","publisher":"Netflix","availability":"announced for 2026","genres":["Culture","Interviews","Ideas"],"overview":"Unhurried conversations with actors, writers, musicians, athletes, journalists, scientists, and consequential people shaping culture."},{"title":"FIFA World Cup: Launch Edition","year":"2026","type":"game","publisher":"Netflix Games / Delphi Interactive","availability":"play now","genres":["Football","Sports","Multiplayer"],"overview":"A reimagined football simulation built for instant play on TV, with the phone as controller, featuring the drama and emotion of the 2026 World Cup."},{"title":"Boggle Party","year":"2026","type":"game","publisher":"Netflix Games","availability":"play now","genres":["Words","Party","Puzzle"],"overview":"A fast social word game for one to eight players where phones become controllers and everyone races to find the best words on the shared TV grid."},{"title":"LEGO Party!","year":"2026","type":"game","publisher":"Netflix Games","availability":"play now","genres":["Party","Family","Minigames"],"overview":"A competitive collection of playful LEGO minigames, board-game chaos, customization, and living-room rivalry for friends and families."},{"title":"Party Crashers: Fool Your Friends","year":"2026","type":"game","publisher":"Netflix Games","availability":"play now","genres":["Social Deduction","Party","Comedy"],"overview":"A bluffing game where one player does not know the secret word and must fake their way through clues without being exposed as the party crasher."},{"title":"Pictionary: Game Night","year":"2026","type":"game","publisher":"Netflix Games","availability":"play now","genres":["Drawing","Party","Family"],"overview":"Draw on a phone, watch the image appear on the TV, and race against the clock as friends try to decipher increasingly questionable masterpieces."},{"title":"Tetris Time Warp","year":"2026","type":"game","publisher":"Netflix Games","availability":"play now","genres":["Puzzle","Arcade","Multiplayer"],"overview":"Classic Tetris with time-warps into historic versions of the game, each with altered rules, retro constraints, and competitive living-room play."},{"title":"Overcooked! All You Can Eat","year":"2026","type":"game","publisher":"Netflix Games","availability":"play on TV","genres":["Co-op","Party","Chaos"],"overview":"A frantic cooperative cooking game where communication collapses, kitchens move, orders pile up, and friendship is tested under ridiculous pressure."},{"title":"Jackbox Party Pack","year":"2026","type":"game","publisher":"Netflix Games","availability":"play on TV","genres":["Party","Comedy","Trivia"],"overview":"A living-room collection of social games built around jokes, drawing, trivia, bluffing, and group chemistry, with phones used as controllers."},{"title":"Red Dead Redemption","year":"2026","type":"game","publisher":"Netflix Games","availability":"on mobile","genres":["Western","Open World","Story"],"overview":"A sprawling western about violence, loyalty, fading myths, and a man trying to survive as the frontier world that made him begins to disappear."},{"title":"Netflix Puzzled: Scattergories Daily","year":"2026","type":"game","publisher":"Netflix Puzzled","availability":"play daily","genres":["Word Game","Daily","Puzzle"],"overview":"A quick daily word challenge built around categories, speed, originality, and the pressure to find answers nobody else would think of."},{"title":"Unhinged","year":"2026","type":"game","publisher":"Netflix Games","availability":"play on TV","genres":["Horror","Interactive","Motion"],"overview":"A motion-controlled horror experience where real-world phone movements guide a character's flashlight through darkness, uncertainty, and whatever is waiting there."},{"title":"Dead Man's Party: A Knives Out Game","year":"2026","type":"game","publisher":"Netflix Games","availability":"announced","genres":["Mystery","Social Deduction","Party"],"overview":"A social murder mystery inspired by Knives Out, where Benoit Blanc is investigating and the room itself becomes part of the case."},{"title":"Architectural Digest: Open Door","year":"2026","type":"short","publisher":"Condé Nast","availability":"arriving Aug 3","genres":["Design","Architecture","Homes"],"overview":"Short-form access inside remarkable celebrity homes, with architecture, objects, taste, memory, and the private worlds people build around themselves."},{"title":"Vanity Fair: Lie Detector Test","year":"2026","type":"short","publisher":"Condé Nast","availability":"arriving Aug 3","genres":["Celebrity","Interviews","Comedy"],"overview":"Celebrities answer uncomfortable, playful, and revealing questions while wired to a lie detector, turning tension into confession and comedy."},{"title":"Vogue: Fashion and Culture Shorts","year":"2026","type":"short","publisher":"Condé Nast","availability":"arriving Aug 3","genres":["Fashion","Celebrity","Lifestyle"],"overview":"Fast-moving interviews through personal spaces, revealing taste, routine, ambition, style, memories, and unexpected details in a single continuous encounter."},{"title":"WIRED: Tech and Internet Culture Shorts","year":"2026","type":"short","publisher":"Condé Nast","availability":"arriving Aug 3","genres":["Technology","Celebrity","Internet Culture"],"overview":"Public figures answer the internet's most searched questions about themselves, moving from curiosity and myth to strange facts and self-explanation."},{"title":"Bon Appétit: Kitchen and Food Stories","year":"2026","type":"short","publisher":"Condé Nast","availability":"arriving Aug 3","genres":["Food","Cooking","Craft"],"overview":"Short culinary stories about technique, obsession, ingredients, restaurant culture, experimentation, and the craft behind food people cannot stop thinking about."},{"title":"BuzzFeed Studios: Internet Culture Shorts","year":"2026","type":"short","publisher":"BuzzFeed Studios","availability":"arriving Aug 3","genres":["Internet Culture","Comedy","Food"],"overview":"Short-form internet-native entertainment spanning food, identity, experiments, comedy, social behavior, and the cultural questions people share and argue about."},{"title":"Eater: Food, Restaurants and Obsession","year":"2026","type":"short","publisher":"Penske Media","availability":"arriving Aug 3","genres":["Food","Restaurants","Travel"],"overview":"Short documentaries and field pieces about restaurants, hidden kitchens, culinary craft, regional obsession, and the people behind unforgettable food."},{"title":"Rolling Stone: Music and Culture","year":"2026","type":"short","publisher":"Penske Media","availability":"arriving Aug 3","genres":["Music","Culture","Artists"],"overview":"Artists, songs, scenes, performances, and cultural moments explored through short-form music journalism and direct conversations."},{"title":"Billboard: Music Interviews and Performances","year":"2026","type":"short","publisher":"Penske Media","availability":"arriving Aug 3","genres":["Music","Performance","Pop Culture"],"overview":"Short-form interviews, performances, chart stories, and conversations with artists driving the sound and mood of the current moment."},{"title":"The Hollywood Reporter: Creative Roundtables","year":"2026","type":"short","publisher":"Penske Media","availability":"arriving Aug 3","genres":["Film","Television","Creative Process"],"overview":"Actors, directors, writers, and craftspeople discuss performance, ambition, failure, process, pressure, and what actually happens behind finished work."},{"title":"Variety: Actors, Filmmakers and Industry Conversations","year":"2026","type":"short","publisher":"Penske Media","availability":"arriving Aug 3","genres":["Film","Television","Interviews"],"overview":"Direct conversations across cinema and television about craft, careers, collaboration, difficult choices, and the business around storytelling."},{"title":"People: Human Stories and Celebrity Profiles","year":"2026","type":"short","publisher":"People Inc.","availability":"arriving Aug 3","genres":["People","Celebrity","Human Interest"],"overview":"Short human-interest stories and profiles centered on relationships, transformation, celebrity, resilience, and the personal lives behind public figures."},{"title":"Tastemade: Food, Travel and Beautiful Places","year":"2026","type":"short","publisher":"Tastemade","availability":"arriving Aug 3","genres":["Travel","Food","Lifestyle"],"overview":"Visually driven short-form stories about where to go, what to eat, how places feel, and the small details that make travel worth remembering."},{"title":"WWE Raw","year":"2026","type":"live","publisher":"WWE / Netflix","availability":"live weekly","genres":["Wrestling","Sports Entertainment","Drama"],"overview":"A weekly live collision of athleticism, rivalry, spectacle, betrayal, crowd energy, and serialized drama where the outcome still unfolds in real time."},{"title":"2026 T-Mobile Home Run Derby","year":"2026","type":"live","publisher":"MLB / Netflix","availability":"live July 13","genres":["Baseball","Competition","Live Sports"],"overview":"Baseball's top sluggers attack the fences in Philadelphia in a live skills competition built around pressure, power, rhythm, and one swing changing everything."},{"title":"MLB at Field of Dreams 2026","year":"2026","type":"live","publisher":"MLB / Netflix","availability":"live Aug 13","genres":["Baseball","Nostalgia","Live Sports"],"overview":"The Minnesota Twins and Philadelphia Phillies play live from the iconic Field of Dreams site in Iowa, blending major-league competition with cinematic mythology."},{"title":"NFL on Netflix: Rams vs. 49ers in Australia","year":"2026","type":"live","publisher":"NFL / Netflix","availability":"live Sept 10","genres":["Football","Rivalry","Live Sports"],"overview":"The NFL's first regular-season game in Australia: divisional rivals Los Angeles and San Francisco meet live at the Melbourne Cricket Ground."},{"title":"NFL Thanksgiving Eve on Netflix","year":"2026","type":"live","publisher":"NFL / Netflix","availability":"live Nov 25","genres":["Football","Holiday","Live Sports"],"overview":"The NFL's first Thanksgiving Eve game brings the Packers and Rams together live under holiday pressure with an audience gathering in real time."},{"title":"NFL Christmas Day on Netflix","year":"2026","type":"live","publisher":"NFL / Netflix","availability":"live Dec 25","genres":["Football","Holiday","Live Sports"],"overview":"Christmas Day football becomes a global live event, with major matchups, family rituals, rivalry, and the unpredictability of games that have not been written yet."},{"title":"FIFA Women's World Cup 2027","year":"2027","type":"live","publisher":"FIFA / Netflix","availability":"announced","genres":["Football","World Cup","Live Sports"],"overview":"The world's biggest women's football tournament, live on Netflix in the United States and Canada, where national identity, pressure, and history collide."}];
 
@@ -1394,7 +1124,7 @@ window.addEventListener('load',()=>{
 let cache=null, results=[], active=0, currentQuery='', corpusLock=null, silentLoad=false;
 let universalFieldInfo={count:0,dim:72,use_freq:true,units:0,sources:{},updated_at:null};
 /* SUMMON_CONTINUOUS_RESULTS_V26 */
-let resultVector=null,resultOffset=0,resultHasMore=false,resultLoadingMore=false;
+let resultQuery='',resultOffset=0,resultHasMore=false,resultLoadingMore=false;
 let resultPageGeneration=0,resultPreserveDeckScroll=false,deckScrollTimer=null;
 let deckScrollIntent=false,deckScrollIntentTimer=null;
 
@@ -2668,19 +2398,11 @@ function topKField(q,corpus,count,k=RETURN_COUNT){
 }
 
 async function measure(q,corpus,count){
-  const visibleCount=universalFieldInfo.count||count;
+  const visibleCount=Number(universalFieldInfo.count)||Number(count)||0;
   setState(`measuring ${visibleCount.toLocaleString()} objects`);
 
-  const useFreq=universalFieldInfo.use_freq!==false;
-  const embedded=await arbiter({texts:[q],use_freq:useFreq});
-  const qVector=embedRows(embedded)[0];
-  const expectedDim=Number(universalFieldInfo.dim)||72;
-  if(!qVector||qVector.length!==expectedDim){
-    throw new Error(`query embedding dimension ${qVector?.length||0} != ${expectedDim}`);
-  }
-
   const generation=++resultPageGeneration;
-  resultVector=Array.from(qVector);
+  resultQuery=q;
   resultOffset=0;
   resultHasMore=false;
   resultLoadingMore=false;
@@ -2690,15 +2412,16 @@ async function measure(q,corpus,count){
     mode:'cors',
     cache:'no-store',
     headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify({vector:resultVector,k:RESULT_PAGE_SIZE,offset:0})
+    body:JSON.stringify({text:q,k:RESULT_PAGE_SIZE,offset:0})
   });
   const raw=await res.text();
   if(!res.ok)throw new Error(`live field ${res.status} - ${raw.slice(0,180)}`);
 
   const data=JSON.parse(raw);
   if(generation!==resultPageGeneration)throw new Error('stale result page');
+
   universalFieldInfo={
-    count:Number(data.count)||universalFieldInfo.count||count,
+    count:Number(data.count)||universalFieldInfo.count||visibleCount,
     dim:Number(data.dim)||universalFieldInfo.dim||72,
     use_freq:data.use_freq!==false,
     units:Number(data.units)||universalFieldInfo.units||0,
@@ -2708,6 +2431,7 @@ async function measure(q,corpus,count){
 
   const next=Array.isArray(data.results)?data.results:[];
   if(!next.length)throw new Error('live field returned no ranked results');
+
   resultOffset=next.length;
   resultHasMore=next.length===RESULT_PAGE_SIZE;
   setStatus(statusLine('ready'));
@@ -2718,53 +2442,69 @@ async function measure(q,corpus,count){
 async function search(text){
   const q=(text||'').trim();
   if(!q)return;
+
   cancelLiveResonance();
   rollStop();
   currentQuery=q;
-  $('#query').value=q;$('#revealQuery').value=q;
+  $('#query').value=q;
+  $('#revealQuery').value=q;
   requestAnimationFrame(()=>autoResize($('#revealQuery')));
   closeProjector();
   startLeader(q);
+
   try{
-    let corpus;
-    try{corpus=await loadCorpus()}
-    catch(e){console.error(e);setState('the field would not open');await pause(900);toast('field unavailable — reload');show('landing');return}
-
-    const count=fieldCount(corpus);
+    const count=Number(universalFieldInfo.count)||0;
     $('#workLabel').textContent='summoning';
-    setState(`measuring ${(universalFieldInfo.count||count).toLocaleString()} objects`);
+    setState(`measuring ${count.toLocaleString()} objects`);
 
-    try{results=await measure(q,corpus,count)}
-    catch(e){console.error(e);setState('the engine did not answer');await pause(900);toast('engine unreachable');show('landing');return}
+    try{
+      results=await measure(q,null,count);
+    }catch(e){
+      console.error(e);
+      setState('the engine did not answer');
+      toast('engine unreachable');
+      show('landing');
+      return;
+    }
 
-    if(!results.length){setState('nothing came close');await pause(1000);show('landing');return}
+    if(!results.length){
+      setState('nothing came close');
+      show('landing');
+      return;
+    }
 
-    active=initialSharedResultIndex==null?0:Math.max(0,Math.min(results.length-1,initialSharedResultIndex));
+    active=initialSharedResultIndex==null
+      ?0
+      :Math.max(0,Math.min(results.length-1,initialSharedResultIndex));
     initialSharedResultIndex=null;
-    results.forEach(m=>{
-      if(!m.posterPath&&!m.backdropPath&&!m.imageUrl){
-        resolveArt(m).then(ok=>{if(ok&&$('#reveal').classList.contains('on'))render()}).catch(()=>{});
-      }
-    });
+
     render();
-    Promise.all(results.map(hydrateProviders)).then(()=>{
-      if($('#reveal').classList.contains('on'))render();
-    }).catch(()=>{});
-    // preload the hero so the reveal appears fully formed, then cross-fade
-    const first=results[active];
-    const heroArt=isSquare(first)?first.imageUrl:backdrop(first,'original');
-    if(heroArt){const im=new Image();im.src=heroArt;}
     $('#reveal').classList.add('on');
+    $('#landing').classList.remove('on');
+    $('#leader').classList.remove('on');
+
     requestAnimationFrame(()=>{
       autoResize($('#revealQuery'));
       fitRevealContent();
     });
-    $('#landing').classList.remove('on');
-    $('#leader').classList.remove('on');
-    history.replaceState(null,'','#'+encodeURIComponent(q));
-  }finally{stopLeader()}
-}
 
+    history.replaceState(null,'','#'+encodeURIComponent(q));
+
+    results.forEach(m=>{
+      if(!m.posterPath&&!m.backdropPath&&!m.imageUrl){
+        resolveArt(m).then(ok=>{
+          if(ok&&$('#reveal').classList.contains('on'))render();
+        }).catch(()=>{});
+      }
+    });
+
+    Promise.all(results.map(hydrateProviders)).then(()=>{
+      if($('#reveal').classList.contains('on'))render();
+    }).catch(()=>{});
+  }finally{
+    stopLeader();
+  }
+}
 
 const providerCache=new Map();
 async function hydrateProviders(m){
@@ -2893,11 +2633,11 @@ function fitRevealContent(){
 }
 
 async function loadMoreResults({advance=false,preserveScroll=false,play=false}={}){
-  if(resultLoadingMore||!resultHasMore||!resultVector?.length||!results.length)return false;
+  if(resultLoadingMore||!resultHasMore||!resultQuery||!results.length)return false;
 
   const generation=resultPageGeneration;
   const offset=resultOffset;
-  const vector=resultVector.slice();
+  const text=resultQuery;
   const oldLength=results.length;
   resultLoadingMore=true;
 
@@ -2910,7 +2650,7 @@ async function loadMoreResults({advance=false,preserveScroll=false,play=false}={
       mode:'cors',
       cache:'no-store',
       headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body:JSON.stringify({vector,k:RESULT_PAGE_SIZE,offset})
+      body:JSON.stringify({text,k:RESULT_PAGE_SIZE,offset})
     });
     const raw=await res.text();
     if(!res.ok)throw new Error(`live field ${res.status} - ${raw.slice(0,180)}`);
@@ -2955,12 +2695,21 @@ async function loadMoreResults({advance=false,preserveScroll=false,play=false}={
     added.forEach(m=>{
       if(!m.posterPath&&!m.backdropPath&&!m.imageUrl){
         resolveArt(m).then(ok=>{
-          if(ok&&generation===resultPageGeneration&&results.includes(m)&&$('#reveal').classList.contains('on'))render();
+          if(
+            ok&&
+            generation===resultPageGeneration&&
+            results.includes(m)&&
+            $('#reveal').classList.contains('on')
+          )render();
         }).catch(()=>{});
       }
     });
+
     Promise.all(added.map(hydrateProviders)).then(()=>{
-      if(generation===resultPageGeneration&&$('#reveal').classList.contains('on'))render();
+      if(
+        generation===resultPageGeneration&&
+        $('#reveal').classList.contains('on')
+      )render();
     }).catch(()=>{});
 
     if(play&&advance)openProjector();
@@ -2991,17 +2740,142 @@ function selectRankedResult(index,{play=false}={}){
   if(play)openProjector();
 }
 
+/* SUMMON_GAME_ART_FALLBACK_V26_7_1
+   RAWG stores absolute image URLs. Film helpers expect TMDB-relative paths. */
+let gameArtworkRenderToken=0;
+
+function absoluteContentImage(value,size='original'){
+  const raw=String(value||'').trim();
+  if(!raw)return '';
+  if(/^(https?:|data:|blob:)/i.test(raw))return raw;
+  return img(raw,size);
+}
+
+function gameScreenshotValues(m){
+  const values=[];
+  const groups=[m?.short_screenshots,m?.shortScreenshots,m?.screenshots];
+  groups.forEach(group=>{
+    if(!Array.isArray(group))return;
+    group.forEach(item=>{
+      if(typeof item==='string')values.push(item);
+      else if(item&&typeof item==='object')values.push(item.image||item.url||item.src||'');
+    });
+  });
+  return values;
+}
+
+function gameArtworkCandidates(m,mode='hero'){
+  if(!m||m.type!=='game')return [];
+  const hero=[
+    m.imageUrl,m.image_url,m.image,
+    m.backdropPath,m.backdrop_path,m.background_image,m.backgroundImage,
+    m.posterPath,m.poster_path,m.cover,m.src,
+    ...gameScreenshotValues(m)
+  ];
+  const tile=[
+    m.imageUrl,m.image_url,m.image,
+    m.posterPath,m.poster_path,m.cover,
+    m.backdropPath,m.backdrop_path,m.background_image,m.backgroundImage,
+    m.src,
+    ...gameScreenshotValues(m)
+  ];
+  return [...new Set(
+    (mode==='tile'?tile:hero)
+      .map(value=>absoluteContentImage(value,mode==='tile'?'w500':'original'))
+      .filter(Boolean)
+  )];
+}
+
+function setImageCandidates(el,candidates,onSuccess,onFailure){
+  if(!el)return;
+  const token=String((Number(el.dataset.imageToken)||0)+1);
+  el.dataset.imageToken=token;
+  el.alt='';
+  el.onload=null;
+  el.onerror=null;
+
+  const sources=[...new Set((candidates||[]).filter(Boolean))];
+  let cursor=0;
+
+  const tryNext=()=>{
+    if(el.dataset.imageToken!==token)return;
+    if(cursor>=sources.length){
+      el.onload=null;
+      el.onerror=null;
+      el.removeAttribute('src');
+      if(typeof onFailure==='function')onFailure();
+      return;
+    }
+
+    const source=sources[cursor++];
+    el.onload=()=>{
+      if(el.dataset.imageToken!==token)return;
+      el.onload=null;
+      el.onerror=null;
+      if(typeof onSuccess==='function')onSuccess(source);
+    };
+    el.onerror=tryNext;
+    el.src=source;
+  };
+
+  tryNext();
+}
+
+function renderGameArtwork(m){
+  const token=++gameArtworkRenderToken;
+  const reveal=$('#reveal');
+  const still=$('#still');
+  const stillBg=$('#stillBg');
+  const cardImg=$('#cardImg');
+  const candidates=gameArtworkCandidates(m,'hero');
+
+  reveal.classList.remove('game-has-art');
+  still.alt='';
+  stillBg.alt='';
+  cardImg.alt=m?.title||'Game artwork';
+  stillBg.removeAttribute('src');
+  cardImg.removeAttribute('src');
+
+  setImageCandidates(
+    still,
+    candidates,
+    source=>{
+      if(token!==gameArtworkRenderToken)return;
+      reveal.classList.add('game-has-art');
+      stillBg.src=source;
+      cardImg.src=source;
+    },
+    ()=>{
+      if(token!==gameArtworkRenderToken)return;
+      reveal.classList.remove('game-has-art');
+      stillBg.removeAttribute('src');
+      cardImg.removeAttribute('src');
+    }
+  );
+}
+
 function render(){
   const m=results[active];
   if(!m)return;
   const square=isSquare(m);
+  const music=m?.type==='music';
+  const game=m?.type==='game';
   const art=backdrop(m,'original');
 
-  $('#revealCanvas').classList.toggle('square',square);
-  $('#stillBg').src=art;
-  $('#still').src=art;$('#still').alt=m.title;
-  $('#cardImg').src=square?m.imageUrl:art;
-  $('#cardImg').alt=m.title;
+  $('#revealCanvas').classList.toggle('square',square&&!music);
+  $('#revealCanvas').classList.toggle('music',music);
+  $('#reveal').classList.toggle('music-hero',music);
+  $('#revealCanvas').classList.toggle('music',music);
+  if(game){
+    renderGameArtwork(m);
+  }else{
+    gameArtworkRenderToken++;
+    $('#reveal').classList.remove('game-has-art');
+    $('#stillBg').src=art;
+    $('#still').src=art;$('#still').alt=m.title;
+    $('#cardImg').src=square?m.imageUrl:art;
+    $('#cardImg').alt=m.title;
+  }
 
   $('#title').textContent=m.title;
   $('#format').textContent=fmt(m);
@@ -3062,8 +2936,21 @@ function renderDeck(){
     }
 
     const im=tile.querySelector('img');
-    const src=poster(r,'w342');
-    if(im&&im.src!==src)im.src=src;
+    if(im){
+      if(r?.type==='game'){
+        setImageCandidates(im,gameArtworkCandidates(r,'tile'));
+      }else{
+        im.dataset.imageToken=String((Number(im.dataset.imageToken)||0)+1);
+        im.onload=null;
+        im.onerror=null;
+        const src=poster(r,'w342');
+        if(src){
+          if(im.src!==src)im.src=src;
+        }else{
+          im.removeAttribute('src');
+        }
+      }
+    }
     const n=tile.querySelector('.n');if(n)n.textContent=String(i+1).padStart(2,'0');
     const cap=tile.querySelector('.cap');if(cap)cap.textContent=r.title||'';
     const sc=tile.querySelector('.sc');if(sc)sc.textContent=Number(r.score).toFixed(3);
@@ -3223,16 +3110,23 @@ function commitLiveResults(next,q,raw,source,generation,commit){
 
 async function pumpLiveResonance(){
   if(liveInFlight||!livePending)return;
+
   const job=livePending;
   livePending=null;
   liveInFlight=true;
 
   try{
-    const corpus=cache||await loadCorpus();
     if(job.generation!==liveGeneration)return;
-    const count=fieldCount(corpus);
-    const next=await measure(job.q,corpus,count);
-    commitLiveResults(next,job.q,job.raw,job.source,job.generation,job.commit);
+    const count=Number(universalFieldInfo.count)||0;
+    const next=await measure(job.q,null,count);
+    commitLiveResults(
+      next,
+      job.q,
+      job.raw,
+      job.source,
+      job.generation,
+      job.commit
+    );
   }catch(e){
     console.error('live resonance failed',e);
   }finally{
@@ -3531,503 +3425,5 @@ if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{
   }
 })();
 </script>
-
-<script id="summon-universal-art-director">
-(()=>{
-  'use strict';
-
-  const ART_KEYS=[
-    'imageUrl','image_url','image',
-    'artworkUrl','artwork_url','artwork',
-    'coverUrl','cover_url','cover',
-    'thumbnailUrl','thumbnail_url','thumbnail',
-    'posterPath','poster_path','poster',
-    'backdropPath','backdrop_path','backdrop',
-    'ogImage','og_image','primaryImage','primary_image',
-    'screenshot','screenshots','images','media','src','logo','icon'
-  ];
-
-  const PORTRAIT_TYPES=new Set([
-    'film','movie','series','tv','show','book','paper','document',
-    'publication','patent','legal','case','scripture'
-  ]);
-  const SQUARE_TYPES=new Set([
-    'music','album','track','song','audio','podcast','radio'
-  ]);
-  const LANDSCAPE_TYPES=new Set([
-    'video','game','news','article','web','website','webpage','blog',
-    'post','signal','commerce','event'
-  ]);
-  const CINEMATIC_TYPES=new Set([
-    'film','movie','series','tv','show','video','game'
-  ]);
-  const PERSON_TYPES=new Set(['person','people','profile','biography']);
-
-  let scheduled=false;
-  let artGeneration=0;
-  const resolving=new WeakSet();
-
-  function clean(value){
-    return typeof value==='string'?value.trim():'';
-  }
-
-  function flatten(value,out=[]){
-    if(!value)return out;
-    if(typeof value==='string'){
-      const v=value.trim();
-      if(v)out.push(v);
-      return out;
-    }
-    if(Array.isArray(value)){
-      value.forEach(item=>flatten(item,out));
-      return out;
-    }
-    if(typeof value==='object'){
-      for(const key of ART_KEYS){
-        if(key in value)flatten(value[key],out);
-      }
-      for(const key of ['url','src','original','large','medium','small']){
-        if(key in value)flatten(value[key],out);
-      }
-    }
-    return out;
-  }
-
-  function absoluteUrl(value,role='tile'){
-    let url=clean(value);
-    if(!url)return '';
-    if(/^(?:data|blob|javascript):/i.test(url))return '';
-    if(url.startsWith('//'))url='https:'+url;
-    if(/^https?:\/\//i.test(url))return url;
-    if(url.startsWith('/')){
-      const size=role==='tile'?'w500':'original';
-      return `https://image.tmdb.org/t/p/${size}${url}`;
-    }
-    return '';
-  }
-
-  function itemType(item){
-    const raw=[
-      item?.type,item?.format,item?.kind,item?.mediaType,item?.media_type,
-      item?.sourceType,item?.source_type,item?.category
-    ].map(clean).join(' ').toLowerCase();
-
-    for(const type of PERSON_TYPES)if(raw.includes(type))return 'person';
-    for(const type of SQUARE_TYPES)if(raw.includes(type))return type==='album'||type==='track'||type==='song'?'music':type;
-    for(const type of LANDSCAPE_TYPES)if(raw.includes(type))return type;
-    for(const type of PORTRAIT_TYPES)if(raw.includes(type))return type;
-    return raw.split(/\s+/)[0]||'result';
-  }
-
-  function expectedGeometry(item){
-    const type=itemType(item);
-    if(PERSON_TYPES.has(type))return 'person';
-    if(SQUARE_TYPES.has(type)||type==='music')return 'square';
-    if(LANDSCAPE_TYPES.has(type))return 'landscape';
-    if(PORTRAIT_TYPES.has(type))return 'portrait';
-    return 'portrait';
-  }
-
-  function actualShape(width,height){
-    if(!width||!height)return 'unknown';
-    const ratio=width/height;
-    if(ratio<.82)return 'portrait';
-    if(ratio<=1.18)return 'square';
-    return 'landscape';
-  }
-
-  function displayFit(item,role,shape){
-    const type=itemType(item);
-    if(role==='background')return shape==='landscape'?'cover':'contain';
-    if(role==='hero'){
-      if(CINEMATIC_TYPES.has(type))return 'cover';
-      if(
-        type==='news'||type==='article'||type==='web'||
-        type==='website'||type==='webpage'
-      ){
-        return shape==='landscape'?'cover':'contain';
-      }
-      return 'contain';
-    }
-    if(role==='card'){
-      return (
-        type==='film'||type==='movie'||type==='series'||type==='tv'||
-        type==='show'||type==='person'
-      )?'cover':'contain';
-    }
-    if(
-      type==='book'||type==='paper'||type==='document'||type==='publication'||
-      type==='patent'||type==='legal'||type==='case'||type==='scripture'||
-      type==='music'||type==='album'||type==='track'||type==='audio'||
-      type==='podcast'||type==='radio'
-    )return 'contain';
-    return 'cover';
-  }
-
-  function candidateValues(item,role){
-    const metadata=item?.metadata&&typeof item.metadata==='object'?item.metadata:{};
-    const type=itemType(item);
-
-    const portraitOrder=[
-      item?.cover,item?.coverUrl,item?.cover_url,
-      item?.posterPath,item?.poster_path,item?.poster,
-      item?.imageUrl,item?.image_url,item?.image,
-      item?.thumbnail,item?.thumbnailUrl,item?.thumbnail_url,
-      metadata.cover,metadata.coverUrl,metadata.cover_url,
-      metadata.posterPath,metadata.poster_path,metadata.poster,
-      metadata.imageUrl,metadata.image_url,metadata.image,
-      metadata.thumbnail,metadata.thumbnailUrl,metadata.thumbnail_url
-    ];
-    const landscapeOrder=[
-      item?.backdropPath,item?.backdrop_path,item?.backdrop,
-      item?.screenshots,item?.screenshot,
-      item?.imageUrl,item?.image_url,item?.image,
-      item?.artwork,item?.artworkUrl,item?.artwork_url,
-      item?.thumbnail,item?.thumbnailUrl,item?.thumbnail_url,
-      item?.posterPath,item?.poster_path,item?.poster,
-      item?.cover,item?.coverUrl,item?.cover_url,
-      metadata.backdropPath,metadata.backdrop_path,metadata.backdrop,
-      metadata.screenshots,metadata.screenshot,
-      metadata.imageUrl,metadata.image_url,metadata.image,
-      metadata.artwork,metadata.artworkUrl,metadata.artwork_url,
-      metadata.thumbnail,metadata.thumbnailUrl,metadata.thumbnail_url
-    ];
-    const squareOrder=[
-      item?.imageUrl,item?.image_url,item?.image,
-      item?.artwork,item?.artworkUrl,item?.artwork_url,
-      item?.cover,item?.coverUrl,item?.cover_url,
-      item?.thumbnail,item?.thumbnailUrl,item?.thumbnail_url,
-      metadata.imageUrl,metadata.image_url,metadata.image,
-      metadata.artwork,metadata.artworkUrl,metadata.artwork_url,
-      metadata.cover,metadata.coverUrl,metadata.cover_url
-    ];
-
-    const ordered=(
-      role==='background'||
-      LANDSCAPE_TYPES.has(type)||
-      (role==='hero'&&CINEMATIC_TYPES.has(type))
-        ?landscapeOrder
-        :(SQUARE_TYPES.has(type)||type==='music')
-          ?squareOrder
-          :portraitOrder
-    );
-
-    const raw=[];
-    ordered.forEach(value=>flatten(value,raw));
-    ART_KEYS.forEach(key=>{
-      flatten(item?.[key],raw);
-      flatten(metadata?.[key],raw);
-    });
-
-    if(typeof poster==='function'){
-      try{
-        const existing=poster(item,role==='tile'?'w500':'original');
-        if(existing)raw.push(existing);
-      }catch(_){}
-    }
-
-    const seen=new Set();
-    const urls=[];
-    for(const value of raw){
-      const url=absoluteUrl(value,role);
-      if(!url||seen.has(url))continue;
-      seen.add(url);
-      urls.push(url);
-    }
-
-    const isIcon=url=>/(?:favicon|apple-touch-icon|\/icon(?:s)?\/|logo(?:[._-]|$))/i.test(url);
-    urls.sort((a,b)=>{
-      const iconPenalty=(isIcon(a)?1:0)-(isIcon(b)?1:0);
-      if(iconPenalty)return iconPenalty;
-      const backdropScore=url=>/(?:backdrop|screenshot|hero|banner|og:image)/i.test(url)?-1:0;
-      if(role==='background')return backdropScore(a)-backdropScore(b);
-      return 0;
-    });
-    return urls;
-  }
-
-  function keyFor(item,role){
-    return [
-      role,item?.rowId,item?.id,item?.title,item?.year,
-      candidateValues(item,role).slice(0,3).join('|')
-    ].join('::');
-  }
-
-  function ensureFrame(img,item){
-    let frame=img.parentElement;
-    const tile=img.closest?.('.tile');
-    if(tile&&frame===tile){
-      const wrapper=document.createElement('div');
-      wrapper.className='summon-art-frame';
-      img.before(wrapper);
-      wrapper.appendChild(img);
-      frame=wrapper;
-    }
-    if(!frame)return null;
-    frame.classList.add('summon-art-frame');
-    frame.dataset.summonGeometry=expectedGeometry(item);
-
-    let fallback=frame.querySelector(':scope > .summon-art-fallback');
-    if(!fallback){
-      fallback=document.createElement('span');
-      fallback.className='summon-art-fallback';
-
-      const kind=document.createElement('strong');
-      const title=document.createElement('span');
-      fallback.append(kind,title);
-      frame.appendChild(fallback);
-    }
-    const parts=fallback.children;
-    if(parts[0])parts[0].textContent=itemType(item).toUpperCase();
-    if(parts[1])parts[1].textContent=clean(item?.title)||'Artwork unavailable';
-    return frame;
-  }
-
-  function acceptable(img,item,role,url){
-    const width=img.naturalWidth||0;
-    const height=img.naturalHeight||0;
-    if(!width||!height)return false;
-    const ratio=width/height;
-    if(ratio<.16||ratio>6.2)return false;
-
-    const iconLike=/(?:favicon|apple-touch-icon|\/icon(?:s)?\/|logo(?:[._-]|$))/i.test(url);
-    if(role==='background'&&iconLike)return false;
-
-    if(role==='background'){
-      if(width>=520&&height>=260)return true;
-      if(height>=420&&width>=260)return true;
-      return false;
-    }
-    if(role==='hero'){
-      if(width>=320&&height>=180)return true;
-      if(height>=360&&width>=220)return true;
-      return false;
-    }
-    return width>=110&&height>=90;
-  }
-
-  function tryResolve(item){
-    if(!item||resolving.has(item)||typeof resolveArt!=='function')return;
-    resolving.add(item);
-    Promise.resolve(resolveArt(item))
-      .catch(()=>false)
-      .finally(()=>{
-        resolving.delete(item);
-        schedule();
-      });
-  }
-
-  function applyImage(img,item,role='tile'){
-    if(!img||!item)return;
-    const generation=artGeneration;
-    const key=keyFor(item,role);
-    if(
-      img.dataset.summonArtKey===key&&
-      img.dataset.summonReady==='1'&&
-      img.complete&&img.naturalWidth
-    )return;
-
-    img.dataset.summonArtKey=key;
-    img.dataset.summonReady='0';
-    img.decoding='async';
-    img.loading=role==='tile'?'lazy':'eager';
-
-    const frame=role==='tile'?ensureFrame(img,item):img.parentElement;
-    if(frame){
-      frame.dataset.summonReady='0';
-      frame.dataset.summonGeometry=expectedGeometry(item);
-    }
-
-    const candidates=candidateValues(item,role);
-    let index=0;
-
-    const failAll=()=>{
-      if(generation!==artGeneration)return;
-      img.removeAttribute('src');
-      img.dataset.summonReady='0';
-      if(frame)frame.dataset.summonReady='0';
-      tryResolve(item);
-    };
-
-    const next=()=>{
-      if(generation!==artGeneration)return;
-      if(index>=candidates.length){
-        failAll();
-        return;
-      }
-
-      const url=candidates[index++];
-      const probe=new Image();
-      probe.decoding='async';
-
-      probe.onload=()=>{
-        if(generation!==artGeneration)return;
-        if(!acceptable(probe,item,role,url)){
-          next();
-          return;
-        }
-
-        const shape=actualShape(probe.naturalWidth,probe.naturalHeight);
-        const fit=displayFit(item,role,shape);
-
-        img.onload=()=>{
-          if(generation!==artGeneration)return;
-          img.dataset.summonReady='1';
-          img.dataset.summonFit=fit;
-          img.dataset.summonShape=shape;
-          if(frame){
-            frame.dataset.summonReady='1';
-            frame.dataset.summonGeometry=(
-              role==='tile'?expectedGeometry(item):shape
-            );
-          }
-          if(role==='hero'){
-            const reveal=document.querySelector('#reveal');
-            if(reveal){
-              reveal.dataset.summonShape=shape;
-              reveal.dataset.summonKind=itemType(item);
-            }
-          }
-        };
-        img.onerror=next;
-        img.src=url;
-      };
-      probe.onerror=next;
-      probe.src=url;
-    };
-    next();
-  }
-
-  function applyBackground(element,item){
-    if(!element||!item)return;
-    if(element.tagName==='IMG'){
-      applyImage(element,item,'background');
-      return;
-    }
-
-    const generation=artGeneration;
-    const candidates=candidateValues(item,'background');
-    let index=0;
-
-    const next=()=>{
-      if(generation!==artGeneration)return;
-      if(index>=candidates.length){
-        element.style.backgroundImage='none';
-        return;
-      }
-      const url=candidates[index++];
-      const probe=new Image();
-      probe.onload=()=>{
-        if(generation!==artGeneration)return;
-        if(!acceptable(probe,item,'background',url)){
-          next();
-          return;
-        }
-        const shape=actualShape(probe.naturalWidth,probe.naturalHeight);
-        element.style.backgroundImage=`url("${url.replace(/"/g,'\\"')}")`;
-        element.style.backgroundSize=shape==='landscape'?'cover':'contain';
-        element.style.backgroundPosition='center';
-        element.style.backgroundRepeat='no-repeat';
-
-        const reveal=document.querySelector('#reveal');
-        if(reveal){
-          reveal.dataset.summonShape=shape;
-          reveal.dataset.summonKind=itemType(item);
-        }
-      };
-      probe.onerror=next;
-      probe.src=url;
-    };
-    next();
-  }
-
-  function currentResults(){
-    try{
-      return Array.isArray(results)?results:[];
-    }catch(_){
-      return [];
-    }
-  }
-
-  function currentActive(){
-    try{
-      return Number(active)||0;
-    }catch(_){
-      return 0;
-    }
-  }
-
-  function syncTiles(rows){
-    document.querySelectorAll('#deck .tile').forEach((tile,position)=>{
-      const index=Number(tile.dataset.i);
-      const item=rows[Number.isFinite(index)?index:position];
-      if(!item)return;
-
-      tile.dataset.summonKind=itemType(item);
-      tile.dataset.summonGeometry=expectedGeometry(item);
-
-      const image=tile.querySelector('img');
-      if(image)applyImage(image,item,'tile');
-      else tryResolve(item);
-    });
-  }
-
-  function syncHero(rows){
-    const item=rows[currentActive()]||rows[0];
-    if(!item)return;
-
-    const reveal=document.querySelector('#reveal');
-    if(reveal){
-      reveal.dataset.summonKind=itemType(item);
-      reveal.dataset.summonShape=expectedGeometry(item);
-    }
-
-    const still=document.querySelector('#still');
-    const stillBg=document.querySelector('#stillBg');
-    const card=document.querySelector('#cardImg');
-
-    if(still)applyImage(still,item,'hero');
-    if(stillBg)applyBackground(stillBg,item);
-    if(card)applyImage(card,item,'card');
-  }
-
-  function sync(){
-    scheduled=false;
-    artGeneration++;
-    const rows=currentResults();
-    if(!rows.length)return;
-    syncTiles(rows);
-    syncHero(rows);
-  }
-
-  function schedule(){
-    if(scheduled)return;
-    scheduled=true;
-    requestAnimationFrame(sync);
-  }
-
-  const observer=new MutationObserver(schedule);
-  const start=()=>{
-    observer.observe(document.documentElement,{
-      subtree:true,
-      childList:true,
-      attributes:true,
-      attributeFilter:['src','style','class']
-    });
-    schedule();
-  };
-
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',start,{once:true});
-  }else{
-    start();
-  }
-  window.addEventListener('load',schedule,{once:true});
-  document.addEventListener('click',event=>{
-    if(event.target.closest?.('#deck .tile'))setTimeout(schedule,0);
-  });
-})();
-</script>
-
 </body>
 </html>
