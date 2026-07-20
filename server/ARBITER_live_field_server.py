@@ -755,13 +755,8 @@ class LiveFieldIndex:
             }
 
     # SUMMON_CONTINUOUS_RESULT_PAGING_V26
-    def search_vector(
-        self,
-        vector: Iterable[float],
-        k: int,
-        chunk_rows: int,
-        offset: int = 0,
-    ) -> list[dict[str, Any]]:
+    # SUMMON_HAPPY_58MS_RUNTIME_0c4e3c93f5
+    def _search_vector_happy(self, vector: Iterable[float], k: int, chunk_rows: int) -> list[dict[str, Any]]:
         info = self.manifest()
         count = int(info["count"])
         dim = int(info["dim"])
@@ -774,17 +769,9 @@ class LiveFieldIndex:
         q_norm = float(np.linalg.norm(q))
         if not math.isfinite(q_norm) or q_norm <= 0:
             raise ValueError("Query vector has zero or invalid norm")
-        # SUMMON_REAL_SNAPPY_SCAN_V29
-        q = q / np.float32(q_norm)
 
-        page_k = max(1, min(int(k), 100))
-        offset = max(0, min(int(offset), 9_990))
-        k = min(count, offset + page_k)
-        if k <= 0:
-            return []
+        k = max(1, min(int(k), 100))
         chunk_rows = max(10_000, int(chunk_rows))
-        # Present field fits one bounded BLAS pass; larger fields use 2M-row blocks.
-        chunk_rows = max(chunk_rows, min(count, 2_000_000))
 
         vectors = np.memmap(self.vectors_path, mode="r", dtype="<f4", shape=(count, dim))
         norms = np.memmap(self.norms_path, mode="r", dtype="<f4", shape=(count,))
@@ -797,9 +784,13 @@ class LiveFieldIndex:
             block = vectors[start:end]
             block_norms = norms[start:end]
             dots = block @ q
-            valid = block_norms > 0
-            scores = np.divide(dots, block_norms, out=dots, where=valid)
-            scores[~valid] = -np.inf
+            denom = block_norms * q_norm
+            scores = np.divide(
+                dots,
+                denom,
+                out=np.full_like(dots, -np.inf, dtype=np.float32),
+                where=denom > 0,
+            )
 
             local_k = min(k, scores.shape[0])
             if local_k <= 0:
@@ -827,9 +818,6 @@ class LiveFieldIndex:
             best_scores = merged_scores[order]
             best_ids = merged_ids[order]
 
-        page_end = min(best_ids.shape[0], offset + page_k)
-        best_ids = best_ids[offset:page_end]
-        best_scores = best_scores[offset:page_end]
         row_ids = [int(x) for x in best_ids.tolist()]
         if not row_ids:
             return []
@@ -880,6 +868,20 @@ class LiveFieldIndex:
             item.update(extra)
             results.append({k: v for k, v in item.items() if v not in (None, "", [], {})})
         return results
+
+    def search_vector(
+        self,
+        vector: Iterable[float],
+        k: int,
+        chunk_rows: int,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        # Thin compatibility wrapper around the proven July 16 runtime.
+        page_k = max(1, min(int(k), 100))
+        offset = max(0, min(int(offset), 9_990))
+        target_k = offset + page_k
+        rows = self._search_vector_happy(vector, k=target_k, chunk_rows=chunk_rows)
+        return rows[offset:offset + page_k]
 
 
 class LiveFieldApplication:
@@ -970,6 +972,11 @@ class Handler(BaseHTTPRequestHandler):
             offset = int(payload.get("offset") or 0)
             vector = payload.get("vector")
             text = clean_text(payload.get("text"))
+
+            try:
+                (self.app.index.live_dir / ".last_search").touch()
+            except OSError:
+                pass
 
             if vector is None:
                 if not text:
@@ -1130,7 +1137,8 @@ def cmd_serve(args: argparse.Namespace) -> int:
     server = ThreadingHTTPServer((args.host, args.port), Handler)
     server.daemon_threads = True
     server.app = app  # type: ignore[attr-defined]
-    app.start_sync_thread()
+    # SUMMON_SEARCH_SYNC_SEPARATION_20260720T035235Z
+    # Search stays isolated from shard ingestion. External live-sync owns writes.
 
     info = index.manifest()
     print(
