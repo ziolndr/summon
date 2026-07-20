@@ -899,6 +899,62 @@ body.playing #projector{display:block}
 }
 
 </style>
+
+<style id="summon-stable-winner-vertical-fit-v38">
+@media(min-width:1001px){
+  #revealFrame{
+    grid-template-rows:
+      auto
+      clamp(420px,58vh,720px)
+      auto!important;
+  }
+
+  #reveal .stage{
+    height:clamp(420px,58vh,720px)!important;
+    min-height:0!important;
+    max-height:clamp(420px,58vh,720px)!important;
+    align-self:stretch!important;
+    align-items:stretch!important;
+    overflow:hidden!important;
+  }
+
+  #reveal .info{
+    width:100%;
+    height:100%;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:hidden!important;
+    display:flex!important;
+    flex-direction:column!important;
+    justify-content:flex-end!important;
+  }
+
+  #reveal .stage.reveal-content-expanded{
+    height:auto!important;
+    max-height:none!important;
+    min-height:clamp(420px,58vh,720px)!important;
+    overflow:visible!important;
+  }
+
+  #reveal .stage.reveal-content-expanded .info{
+    height:auto!important;
+    min-height:clamp(420px,58vh,720px)!important;
+    overflow:visible!important;
+    justify-content:flex-start!important;
+    padding-top:18px;
+  }
+
+  #reveal .eyebrow,
+  #reveal #title,
+  #reveal .meta,
+  #reveal .synopsis,
+  #reveal .actions{
+    flex:0 0 auto;
+  }
+}
+</style>
+
+<!-- SUMMON_STABLE_WINNER_VERTICAL_FIT_V38_20260720T170443Z · fixed-stage-measurement · shrink-before-expand · never-clip-upward -->
 </head>
 <body>
 
@@ -2517,60 +2573,101 @@ async function openProjector(){
    Long paper titles shrink; synopsis lines yield only when necessary.
    Buttons never get pushed into the deck. */
 let revealFitRAF=0;
+let revealFitSecondRAF=0;
+
 function fitRevealContent(){
   cancelAnimationFrame(revealFitRAF);
+  cancelAnimationFrame(revealFitSecondRAF);
+
   revealFitRAF=requestAnimationFrame(()=>{
-    const stage=$('#reveal .stage');
-    const info=$('#reveal .info');
-    const title=$('#title');
-    const synopsis=$('#synopsis');
-    if(!stage||!info||!title||!synopsis)return;
+    revealFitSecondRAF=requestAnimationFrame(()=>{
+      const stage=$('#reveal .stage');
+      const info=$('#reveal .info');
+      const title=$('#title');
+      const synopsis=$('#synopsis');
+      if(!stage||!info||!title||!synopsis)return;
 
-    title.style.removeProperty('font-size');
-    synopsis.style.removeProperty('-webkit-line-clamp');
-    synopsis.style.removeProperty('display');
+      stage.classList.remove('reveal-content-expanded');
+      title.style.removeProperty('font-size');
+      synopsis.style.removeProperty('-webkit-line-clamp');
+      synopsis.style.removeProperty('display');
+      info.style.removeProperty('height');
+      info.style.removeProperty('min-height');
 
-    if(window.innerWidth<=1000)return;
-    const available=Math.floor(stage.clientHeight);
-    if(available<80)return;
+      if(window.innerWidth<=1000)return;
 
-    const maxSize=Math.min(92,Math.max(40,window.innerWidth*.052));
-    const minSize=24;
-    const fits=()=>info.scrollHeight<=available-2;
+      const stageStyle=getComputedStyle(stage);
+      const paddingTop=parseFloat(stageStyle.paddingTop)||0;
+      const paddingBottom=parseFloat(stageStyle.paddingBottom)||0;
+      const available=Math.max(
+        180,
+        Math.floor(stage.clientHeight-paddingTop-paddingBottom)
+      );
 
-    const fitAtLines=lines=>{
-      synopsis.style.display=synopsis.textContent.trim()?' -webkit-box':'none';
-      synopsis.style.setProperty('-webkit-line-clamp',String(lines));
-      let lo=minSize,hi=maxSize,best=minSize;
-      title.style.fontSize=`${minSize}px`;
-      if(!fits())return false;
-      for(let i=0;i<12;i++){
-        const mid=(lo+hi)/2;
-        title.style.fontSize=`${mid}px`;
-        if(fits()){best=mid;lo=mid}else hi=mid;
+      const hasSynopsis=Boolean(synopsis.textContent.trim());
+      const maxSize=Math.min(92,Math.max(40,window.innerWidth*.052));
+      const minimumTitleSize=15;
+
+      const usedHeight=()=>Math.ceil(info.scrollHeight);
+      const fits=()=>usedHeight()<=available;
+
+      const configureSynopsis=lines=>{
+        if(!hasSynopsis||lines===0){
+          synopsis.style.display='none';
+          synopsis.style.removeProperty('-webkit-line-clamp');
+          return;
+        }
+
+        synopsis.style.display='-webkit-box';
+        synopsis.style.setProperty('-webkit-line-clamp',String(lines));
+      };
+
+      const fitTitleAtSynopsisLines=lines=>{
+        configureSynopsis(lines);
+
+        let low=minimumTitleSize;
+        let high=maxSize;
+        let best=minimumTitleSize;
+
+        title.style.fontSize=`${minimumTitleSize}px`;
+        if(!fits())return false;
+
+        for(let attempt=0;attempt<14;attempt++){
+          const middle=(low+high)/2;
+          title.style.fontSize=`${middle}px`;
+
+          if(fits()){
+            best=middle;
+            low=middle;
+          }else{
+            high=middle;
+          }
+        }
+
+        title.style.fontSize=`${Math.floor(best*10)/10}px`;
+        return true;
+      };
+
+      for(const lines of [4,3,2,1,0]){
+        if(fitTitleAtSynopsisLines(lines))return;
       }
-      title.style.fontSize=`${Math.floor(best*10)/10}px`;
-      return true;
-    };
 
-    for(const lines of [4,3,2,1]){
-      if(fitAtLines(lines))return;
-    }
+      synopsis.style.display='none';
+      title.style.fontSize=`${minimumTitleSize}px`;
 
-    /* Pathological records can carry exceptionally long titles. Keep every
-       control visible and use the remaining space for the title itself. */
-    synopsis.style.display='none';
-    let lo=18,hi=maxSize,best=18;
-    title.style.fontSize='18px';
-    for(let i=0;i<12;i++){
-      const mid=(lo+hi)/2;
-      title.style.fontSize=`${mid}px`;
-      if(fits()){best=mid;lo=mid}else hi=mid;
-    }
-    title.style.fontSize=`${Math.floor(best*10)/10}px`;
+      if(!fits()){
+        stage.classList.add('reveal-content-expanded');
+
+        requestAnimationFrame(()=>{
+          const frame=$('#revealFrame');
+          if(frame&&frame.scrollTop<4){
+            frame.scrollTo({top:0,behavior:'auto'});
+          }
+        });
+      }
+    });
   });
 }
-
 async function loadMoreResults({advance=false,preserveScroll=false,play=false}={}){
   if(resultLoadingMore||!resultHasMore||!resultQuery||!results.length)return false;
   const generation=resultPageGeneration;
@@ -3254,6 +3351,21 @@ document.addEventListener('keydown',e=>{
   el.dispatchEvent(new Event('input',{bubbles:true}));
 });
 
+
+
+/* SUMMON_STABLE_WINNER_VERTICAL_FIT_OBSERVER_V38 */
+if(typeof ResizeObserver!=='undefined'){
+  const revealWinnerFitObserver=new ResizeObserver(()=>{
+    if($('#reveal')?.classList.contains('on'))fitRevealContent();
+  });
+
+  window.addEventListener('DOMContentLoaded',()=>{
+    const info=$('#reveal .info');
+    const stage=$('#reveal .stage');
+    if(info)revealWinnerFitObserver.observe(info);
+    if(stage)revealWinnerFitObserver.observe(stage);
+  },{once:true});
+}
 
 window.addEventListener('resize',fitRevealContent,{passive:true});
 if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{});
