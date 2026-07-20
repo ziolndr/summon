@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- SUMMON_GRAND_FULL_BLEED_HERO_20260720T051322Z · cinematic-full-bleed · landscape-first · no-contained-film-card -->
 <!-- SUMMON_UNIVERSAL_ART_GEOMETRY_20260720T045523Z · native-media-geometry · retry-all-art-aliases · nonblocking -->
 <!-- SUMMON_STACKED_ROWS_HERO_RESTORE_20260720T043547Z · stacked-ranked-rows · reveal-frame-scroller · fixed-hero -->
 <!-- SUMMON_PRODUCTION_BUILD SUMMON-HERO-RESTORE-V26_2-20260718T084037Z · stacked-ranked-rows · reveal-frame-scroller · tile-selection-restores-hero · continuous-same-vector-pagination -->
@@ -835,6 +836,167 @@ html,body,#reveal,#revealFrame{
 }
 
 </style>
+
+<style id="summon-grand-full-bleed-hero">
+#reveal .stage{
+  position:relative!important;
+  isolation:isolate;
+  overflow:hidden!important;
+  min-height:clamp(500px,66vh,860px)!important;
+  background:#050607!important;
+}
+#revealCanvas{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:0!important;
+  z-index:0!important;
+  overflow:hidden!important;
+  background:#050607!important;
+}
+#revealCanvas #still,
+#revealCanvas #stillBg{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:0!important;
+}
+#reveal .stage>*:not(#revealCanvas){
+  position:relative;
+  z-index:3;
+}
+#reveal[data-summon-kind="film"] #still,
+#reveal[data-summon-kind="movie"] #still,
+#reveal[data-summon-kind="series"] #still,
+#reveal[data-summon-kind="tv"] #still,
+#reveal[data-summon-kind="show"] #still,
+#reveal[data-summon-kind="video"] #still,
+#reveal[data-summon-kind="game"] #still{
+  object-fit:cover!important;
+  object-position:center 38%!important;
+  padding:0!important;
+  filter:none!important;
+  transform:none!important;
+  opacity:1!important;
+}
+#reveal[data-summon-kind="film"] #stillBg,
+#reveal[data-summon-kind="movie"] #stillBg,
+#reveal[data-summon-kind="series"] #stillBg,
+#reveal[data-summon-kind="tv"] #stillBg,
+#reveal[data-summon-kind="show"] #stillBg,
+#reveal[data-summon-kind="video"] #stillBg,
+#reveal[data-summon-kind="game"] #stillBg{
+  opacity:0!important;
+  filter:none!important;
+  transform:none!important;
+}
+#reveal .stage::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:
+    linear-gradient(90deg,
+      rgba(2,3,4,.92) 0%,
+      rgba(2,3,4,.74) 21%,
+      rgba(2,3,4,.22) 50%,
+      rgba(2,3,4,.06) 73%,
+      rgba(2,3,4,.28) 100%),
+    linear-gradient(0deg,
+      rgba(2,3,4,.74) 0%,
+      transparent 38%,
+      rgba(2,3,4,.12) 100%);
+}
+#reveal[data-summon-kind="book"] #still,
+#reveal[data-summon-kind="paper"] #still,
+#reveal[data-summon-kind="document"] #still,
+#reveal[data-summon-kind="publication"] #still,
+#reveal[data-summon-kind="patent"] #still,
+#reveal[data-summon-kind="legal"] #still,
+#reveal[data-summon-kind="case"] #still,
+#reveal[data-summon-kind="scripture"] #still,
+#reveal[data-summon-kind="music"] #still,
+#reveal[data-summon-kind="album"] #still,
+#reveal[data-summon-kind="track"] #still,
+#reveal[data-summon-kind="audio"] #still,
+#reveal[data-summon-kind="podcast"] #still,
+#reveal[data-summon-kind="radio"] #still{
+  object-fit:contain!important;
+  object-position:center!important;
+  width:min(78vw,1040px)!important;
+  height:92%!important;
+  inset:4% 4% 4% auto!important;
+  padding:0!important;
+  filter:none!important;
+  transform:none!important;
+  opacity:1!important;
+}
+#reveal[data-summon-kind="book"] #stillBg,
+#reveal[data-summon-kind="paper"] #stillBg,
+#reveal[data-summon-kind="document"] #stillBg,
+#reveal[data-summon-kind="publication"] #stillBg,
+#reveal[data-summon-kind="patent"] #stillBg,
+#reveal[data-summon-kind="legal"] #stillBg,
+#reveal[data-summon-kind="case"] #stillBg,
+#reveal[data-summon-kind="scripture"] #stillBg,
+#reveal[data-summon-kind="music"] #stillBg,
+#reveal[data-summon-kind="album"] #stillBg,
+#reveal[data-summon-kind="track"] #stillBg,
+#reveal[data-summon-kind="audio"] #stillBg,
+#reveal[data-summon-kind="podcast"] #stillBg,
+#reveal[data-summon-kind="radio"] #stillBg{
+  object-fit:cover!important;
+  opacity:.30!important;
+  filter:blur(24px) brightness(.42) saturate(.8)!important;
+  transform:scale(1.04)!important;
+}
+#reveal[data-summon-kind="film"] #card,
+#reveal[data-summon-kind="movie"] #card,
+#reveal[data-summon-kind="series"] #card,
+#reveal[data-summon-kind="tv"] #card,
+#reveal[data-summon-kind="show"] #card,
+#reveal[data-summon-kind="video"] #card,
+#reveal[data-summon-kind="game"] #card{
+  display:none!important;
+}
+#revealQuery,
+#reveal .copy,
+#reveal .meta,
+#reveal .result-copy,
+#reveal .hero-copy{
+  position:relative!important;
+  z-index:4!important;
+}
+@media(max-width:1000px){
+  #reveal .stage{
+    min-height:clamp(460px,70vh,760px)!important;
+  }
+  #reveal .stage::before{
+    background:
+      linear-gradient(0deg,
+        rgba(2,3,4,.92) 0%,
+        rgba(2,3,4,.66) 45%,
+        rgba(2,3,4,.14) 100%);
+  }
+  #reveal[data-summon-kind="book"] #still,
+  #reveal[data-summon-kind="paper"] #still,
+  #reveal[data-summon-kind="document"] #still,
+  #reveal[data-summon-kind="music"] #still,
+  #reveal[data-summon-kind="podcast"] #still{
+    width:92%!important;
+    height:84%!important;
+    inset:5% 4% auto 4%!important;
+  }
+}
+</style>
+
 
 <style id="summon-universal-art-geometry">
 /* Every artwork surface preserves its intended geometry. */
@@ -3396,6 +3558,9 @@ if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{
     'video','game','news','article','web','website','webpage','blog',
     'post','signal','commerce','event'
   ]);
+  const CINEMATIC_TYPES=new Set([
+    'film','movie','series','tv','show','video','game'
+  ]);
   const PERSON_TYPES=new Set(['person','people','profile','biography']);
 
   let scheduled=false;
@@ -3475,10 +3640,10 @@ if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{
     const type=itemType(item);
     if(role==='background')return shape==='landscape'?'cover':'contain';
     if(role==='hero'){
+      if(CINEMATIC_TYPES.has(type))return 'cover';
       if(
-        type==='film'||type==='movie'||type==='series'||type==='tv'||
-        type==='show'||type==='video'||type==='game'||type==='news'||
-        type==='article'||type==='web'||type==='website'||type==='webpage'
+        type==='news'||type==='article'||type==='web'||
+        type==='website'||type==='webpage'
       ){
         return shape==='landscape'?'cover':'contain';
       }
@@ -3538,7 +3703,9 @@ if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{
     ];
 
     const ordered=(
-      role==='background'||LANDSCAPE_TYPES.has(type)
+      role==='background'||
+      LANDSCAPE_TYPES.has(type)||
+      (role==='hero'&&CINEMATIC_TYPES.has(type))
         ?landscapeOrder
         :(SQUARE_TYPES.has(type)||type==='music')
           ?squareOrder
