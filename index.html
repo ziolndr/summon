@@ -900,61 +900,77 @@ body.playing #projector{display:block}
 
 </style>
 
-<style id="summon-stable-winner-vertical-fit-v38">
+
+
+<style id="summon-natural-winner-fit-v39">
 @media(min-width:1001px){
   #revealFrame{
-    grid-template-rows:
-      auto
-      clamp(420px,58vh,720px)
-      auto!important;
+    grid-template-rows:auto minmax(0,1fr) auto!important;
   }
 
   #reveal .stage{
-    height:clamp(420px,58vh,720px)!important;
+    height:auto!important;
     min-height:0!important;
-    max-height:clamp(420px,58vh,720px)!important;
-    align-self:stretch!important;
-    align-items:stretch!important;
+    max-height:none!important;
+    align-items:end!important;
     overflow:hidden!important;
+    padding-bottom:34px!important;
   }
 
   #reveal .info{
-    width:100%;
-    height:100%;
+    width:auto!important;
+    height:auto!important;
     min-height:0!important;
     max-height:none!important;
-    overflow:hidden!important;
-    display:flex!important;
-    flex-direction:column!important;
-    justify-content:flex-end!important;
-  }
-
-  #reveal .stage.reveal-content-expanded{
-    height:auto!important;
-    max-height:none!important;
-    min-height:clamp(420px,58vh,720px)!important;
     overflow:visible!important;
+    display:block!important;
+    align-self:end!important;
+    justify-content:initial!important;
+    padding-top:0!important;
   }
 
-  #reveal .stage.reveal-content-expanded .info{
-    height:auto!important;
+  #reveal .info.reveal-fit-measuring{
+    align-self:start!important;
+  }
+
+  #revealFrame.reveal-content-expanded-v39{
+    grid-template-rows:auto auto auto!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+  }
+
+  #revealFrame.reveal-content-expanded-v39 .stage{
     min-height:clamp(420px,58vh,720px)!important;
+    height:auto!important;
     overflow:visible!important;
-    justify-content:flex-start!important;
-    padding-top:18px;
+    align-items:start!important;
   }
 
-  #reveal .eyebrow,
-  #reveal #title,
-  #reveal .meta,
-  #reveal .synopsis,
-  #reveal .actions{
-    flex:0 0 auto;
+  #revealFrame.reveal-content-expanded-v39 .info{
+    align-self:start!important;
+    padding-top:12px!important;
+  }
+
+  #reveal .info.reveal-fit-compact .eyebrow{
+    margin-bottom:8px!important;
+  }
+
+  #reveal .info.reveal-fit-compact .meta{
+    margin-top:10px!important;
+  }
+
+  #reveal .info.reveal-fit-compact .synopsis{
+    margin-top:11px!important;
+    line-height:1.30!important;
+  }
+
+  #reveal .info.reveal-fit-compact .actions{
+    margin-top:13px!important;
   }
 }
 </style>
 
-<!-- SUMMON_STABLE_WINNER_VERTICAL_FIT_V38_20260720T170443Z · fixed-stage-measurement · shrink-before-expand · never-clip-upward -->
+<!-- SUMMON_NATURAL_WINNER_FIT_V39_20260720T172040Z · natural-height-measurement · fit-then-bottom-align · no-upward-clipping -->
 </head>
 <body>
 
@@ -2574,42 +2590,52 @@ async function openProjector(){
    Buttons never get pushed into the deck. */
 let revealFitRAF=0;
 let revealFitSecondRAF=0;
+let revealFitSettleTimer=0;
 
 function fitRevealContent(){
   cancelAnimationFrame(revealFitRAF);
   cancelAnimationFrame(revealFitSecondRAF);
+  clearTimeout(revealFitSettleTimer);
 
   revealFitRAF=requestAnimationFrame(()=>{
     revealFitSecondRAF=requestAnimationFrame(()=>{
+      const frame=$('#revealFrame');
       const stage=$('#reveal .stage');
       const info=$('#reveal .info');
       const title=$('#title');
       const synopsis=$('#synopsis');
-      if(!stage||!info||!title||!synopsis)return;
 
-      stage.classList.remove('reveal-content-expanded');
+      if(!frame||!stage||!info||!title||!synopsis)return;
+
+      frame.classList.remove('reveal-content-expanded-v39');
+      info.classList.remove('reveal-fit-compact');
+      info.classList.add('reveal-fit-measuring');
+
       title.style.removeProperty('font-size');
       synopsis.style.removeProperty('-webkit-line-clamp');
       synopsis.style.removeProperty('display');
-      info.style.removeProperty('height');
-      info.style.removeProperty('min-height');
 
-      if(window.innerWidth<=1000)return;
+      if(window.innerWidth<=1000){
+        info.classList.remove('reveal-fit-measuring');
+        return;
+      }
 
       const stageStyle=getComputedStyle(stage);
       const paddingTop=parseFloat(stageStyle.paddingTop)||0;
       const paddingBottom=parseFloat(stageStyle.paddingBottom)||0;
       const available=Math.max(
-        180,
-        Math.floor(stage.clientHeight-paddingTop-paddingBottom)
+        160,
+        Math.floor(stage.clientHeight-paddingTop-paddingBottom-2)
       );
 
       const hasSynopsis=Boolean(synopsis.textContent.trim());
-      const maxSize=Math.min(92,Math.max(40,window.innerWidth*.052));
-      const minimumTitleSize=15;
+      const maximumTitleSize=Math.min(
+        92,
+        Math.max(40,window.innerWidth*.052)
+      );
 
-      const usedHeight=()=>Math.ceil(info.scrollHeight);
-      const fits=()=>usedHeight()<=available;
+      const naturalHeight=()=>Math.ceil(info.getBoundingClientRect().height);
+      const fits=()=>naturalHeight()<=available;
 
       const configureSynopsis=lines=>{
         if(!hasSynopsis||lines===0){
@@ -2622,17 +2648,17 @@ function fitRevealContent(){
         synopsis.style.setProperty('-webkit-line-clamp',String(lines));
       };
 
-      const fitTitleAtSynopsisLines=lines=>{
+      const maximizeTitle=(minimum,lines)=>{
         configureSynopsis(lines);
+        title.style.fontSize=`${minimum}px`;
 
-        let low=minimumTitleSize;
-        let high=maxSize;
-        let best=minimumTitleSize;
-
-        title.style.fontSize=`${minimumTitleSize}px`;
         if(!fits())return false;
 
-        for(let attempt=0;attempt<14;attempt++){
+        let low=minimum;
+        let high=maximumTitleSize;
+        let best=minimum;
+
+        for(let attempt=0;attempt<15;attempt++){
           const middle=(low+high)/2;
           title.style.fontSize=`${middle}px`;
 
@@ -2648,23 +2674,46 @@ function fitRevealContent(){
         return true;
       };
 
+      let fitted=false;
+
       for(const lines of [4,3,2,1,0]){
-        if(fitTitleAtSynopsisLines(lines))return;
+        if(maximizeTitle(20,lines)){
+          fitted=true;
+          break;
+        }
       }
 
-      synopsis.style.display='none';
-      title.style.fontSize=`${minimumTitleSize}px`;
+      if(!fitted){
+        info.classList.add('reveal-fit-compact');
 
-      if(!fits()){
-        stage.classList.add('reveal-content-expanded');
-
-        requestAnimationFrame(()=>{
-          const frame=$('#revealFrame');
-          if(frame&&frame.scrollTop<4){
-            frame.scrollTo({top:0,behavior:'auto'});
+        for(const lines of [2,1,0]){
+          if(maximizeTitle(14,lines)){
+            fitted=true;
+            break;
           }
-        });
+        }
       }
+
+      info.classList.remove('reveal-fit-measuring');
+
+      if(!fitted){
+        synopsis.style.display='none';
+        title.style.fontSize='14px';
+        frame.classList.add('reveal-content-expanded-v39');
+        info.style.alignSelf='start';
+        frame.scrollTo({top:0,behavior:'auto'});
+      }else{
+        info.style.removeProperty('align-self');
+      }
+
+      /* Web fonts and late metadata can change line wrapping after render. */
+      revealFitSettleTimer=setTimeout(()=>{
+        if($('#reveal')?.classList.contains('on')){
+          const top=info.getBoundingClientRect().top;
+          const stageTop=stage.getBoundingClientRect().top;
+          if(top<stageTop-1)fitRevealContent();
+        }
+      },220);
     });
   });
 }
@@ -3353,18 +3402,12 @@ document.addEventListener('keydown',e=>{
 
 
 
-/* SUMMON_STABLE_WINNER_VERTICAL_FIT_OBSERVER_V38 */
-if(typeof ResizeObserver!=='undefined'){
-  const revealWinnerFitObserver=new ResizeObserver(()=>{
-    if($('#reveal')?.classList.contains('on'))fitRevealContent();
-  });
 
-  window.addEventListener('DOMContentLoaded',()=>{
-    const info=$('#reveal .info');
-    const stage=$('#reveal .stage');
-    if(info)revealWinnerFitObserver.observe(info);
-    if(stage)revealWinnerFitObserver.observe(stage);
-  },{once:true});
+/* SUMMON_NATURAL_WINNER_FONT_SETTLE_V39 */
+if(document.fonts&&document.fonts.ready){
+  document.fonts.ready.then(()=>{
+    if($('#reveal')?.classList.contains('on'))fitRevealContent();
+  }).catch(()=>{});
 }
 
 window.addEventListener('resize',fitRevealContent,{passive:true});
