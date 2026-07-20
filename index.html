@@ -1029,6 +1029,108 @@ body.playing #projector{display:block}
 </style>
 
 <!-- SUMMON_HERO_SINGLE_ROW_DECK_V41_20260720T181229Z · invariant-hero · one-horizontal-ranked-row · no-page-scroll -->
+
+<style id="summon-raw-field-filters-v43">
+#reveal .deck-head{
+  display:grid!important;
+  grid-template-columns:auto minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:clamp(10px,1.4vw,24px)!important;
+}
+
+#reveal .field-filters{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  min-width:0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+  mask-image:linear-gradient(
+    90deg,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent 100%
+  );
+  padding:2px 12px;
+}
+
+#reveal .field-filters::-webkit-scrollbar{
+  display:none;
+}
+
+#reveal .field-filter{
+  appearance:none;
+  flex:0 0 auto;
+  border:1px solid rgba(246,244,239,.16);
+  background:rgba(8,8,7,.22);
+  color:rgba(246,244,239,.48);
+  font:500 9px/1 "DM Mono",monospace;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  padding:7px 9px 6px;
+  cursor:pointer;
+  transition:
+    border-color .18s ease,
+    color .18s ease,
+    background .18s ease;
+}
+
+#reveal .field-filter:hover,
+#reveal .field-filter:focus-visible{
+  border-color:rgba(246,244,239,.52);
+  color:#F6F4EF;
+  outline:none;
+}
+
+#reveal .field-filter[aria-selected="true"]{
+  border-color:#E50914;
+  background:#E50914;
+  color:#F6F4EF;
+}
+
+#reveal .field-filter .filter-count{
+  margin-left:5px;
+  opacity:.66;
+}
+
+#reveal.filter-filling .field-filter[aria-selected="true"]::after{
+  content:" ·";
+  animation:summonFilterPulse .8s steps(2,end) infinite;
+}
+
+@keyframes summonFilterPulse{
+  50%{opacity:.18}
+}
+
+@media(max-width:1000px){
+  #reveal .deck-head{
+    grid-template-columns:1fr auto!important;
+    gap:8px 12px!important;
+  }
+
+  #reveal .field-filters{
+    grid-column:1/-1;
+    grid-row:2;
+    justify-content:flex-start;
+    margin:0 -2px 2px;
+    padding:3px 2px;
+    mask-image:none;
+  }
+
+  #reveal .field-filter{
+    font-size:8px;
+    padding:6px 8px 5px;
+  }
+}
+</style>
+
+<!-- SUMMON_RAW_FIELD_FILTERS_V43_20260720T192357Z · raw-ranks · client-view-filter · auto-fill · shareable -->
 </head>
 <body>
 
@@ -1143,6 +1245,7 @@ body.playing #projector{display:block}
     <div class="deck">
       <div class="deck-head">
         <span class="lbl">ranked resonance field</span>
+        <div class="field-filters" id="fieldFilters" role="tablist" aria-label="Filter ranked resonance field"></div>
         <span class="lbl" id="deckCount"></span>
       </div>
       <div class="deck-strip" id="deck"></div>
@@ -1294,6 +1397,11 @@ let universalFieldInfo={count:0,dim:72,use_freq:true,units:0,sources:{},updated_
 /* SUMMON_CONTINUOUS_RESULTS_V26 */
 let resultQuery='',resultOffset=0,resultHasMore=false,resultLoadingMore=false;
 let resultPageGeneration=0,resultPreserveDeckScroll=false,deckScrollTimer=null;
+let resultFilter='all';
+let initialSharedResultFilter=null;
+let resultFilterFillGeneration=0;
+let resultFilterFilling=false;
+
 let deckScrollIntent=false,deckScrollIntentTimer=null;
 
 /* live resonance state: debounce input, serialize /v1/embed calls, discard stale answers */
@@ -1580,6 +1688,13 @@ let initialSharedResultIndex=null;
 function resultShareUrl(index=active){
   const url=new URL(location.href.split('#')[0]);
   url.searchParams.set('result',String(Math.max(0,index)+1));
+
+  if(resultFilter==='all'){
+    url.searchParams.delete('filter');
+  }else{
+    url.searchParams.set('filter',resultFilter);
+  }
+
   url.hash=encodeURIComponent(currentQuery||'');
   return url.toString();
 }
@@ -1804,10 +1919,26 @@ async function makeResultShareBlob(){
   ctx.fillText(`${new Set(results.map(r=>r.type)).size} FORMATS`,SHARE_W-32,deckLabelY);
   ctx.textAlign='left';
 
-  const deckResults=results.slice(0,10);
+  const deckIndices=filteredResultIndices().slice(0,10);
+  const deckResults=deckIndices.map(index=>results[index]);
   const tileW=72,tileH=84,gap=8,startY=505;
-  const posterImages=await Promise.all(deckResults.map(r=>loadShareImage(poster(r,'w342'),5000)));
-  deckResults.forEach((r,i)=>drawShareDeckTile(ctx,r,i,left+i*(tileW+gap),startY,tileW,tileH,posterImages[i],i===active));
+  const posterImages=await Promise.all(
+    deckResults.map(r=>loadShareImage(poster(r,'w342'),5000))
+  );
+  deckResults.forEach((r,i)=>{
+    const globalIndex=deckIndices[i];
+    drawShareDeckTile(
+      ctx,
+      r,
+      globalIndex,
+      left+i*(tileW+gap),
+      startY,
+      tileW,
+      tileH,
+      posterImages[i],
+      globalIndex===active
+    );
+  });
 
   return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('image encode failed')),'image/png',.96));
 }
@@ -2563,7 +2694,17 @@ async function search(text){
     if(!results.length){setState('nothing came close');show('landing');return}
     active=initialSharedResultIndex==null?0:Math.max(0,Math.min(results.length-1,initialSharedResultIndex));
     initialSharedResultIndex=null;
+    resultFilter=initialSharedResultFilter||'all';
+    initialSharedResultFilter=null;
+    resultFilterFillGeneration++;
+
     render();
+
+    if(resultFilter!=='all'){
+      ensureResultFilterFilled(10).catch(error=>{
+        console.error('filter fill failed',error);
+      });
+    }
     $('#reveal').classList.add('on');
     $('#landing').classList.remove('on');
     $('#leader').classList.remove('on');
@@ -2890,7 +3031,273 @@ function renderGameArtwork(m){
   );
 }
 
+/* SUMMON_RAW_FIELD_FILTERS_V43_BEGIN */
+const RESULT_FILTER_DEFINITIONS=[
+  {key:'all',label:'all',types:null},
+  {key:'films',label:'films',types:['film','movie','short','video']},
+  {key:'series',label:'series',types:['series','tv','show']},
+  {key:'music',label:'music',types:['music','record']},
+  {key:'podcasts',label:'podcasts',types:['podcast']},
+  {key:'papers',label:'papers',types:['paper']},
+  {key:'books',label:'books',types:['book']},
+  {key:'games',label:'games',types:['game']},
+  {key:'news',label:'news',types:['news','article']},
+  {key:'markets',label:'markets',types:[
+    'stock','etf','fund','etn','preferred_stock','warrant',
+    'stock_quote','etf_quote','fund_quote','index_quote',
+    'crypto_quote','commodity_quote','trade_signal','market_signal'
+  ]},
+  {key:'property',label:'property',types:[
+    'real_estate_listing','real_estate','property'
+  ]},
+  {key:'law',label:'law',types:['law','case','legal']},
+  {key:'patents',label:'patents',types:['patent']},
+  {key:'people',label:'people',types:['person','people']},
+  {key:'scripture',label:'scripture',types:['scripture']},
+  {key:'web',label:'web',types:[
+    'web','business','place','commerce','post','event'
+  ]},
+  {key:'other',label:'other',types:['__other__']}
+];
+
+const RESULT_FILTER_KNOWN_TYPES=new Set(
+  RESULT_FILTER_DEFINITIONS
+    .filter(definition=>definition.types&&definition.key!=='other')
+    .flatMap(definition=>definition.types)
+);
+
+function resultFilterDefinition(key=resultFilter){
+  return (
+    RESULT_FILTER_DEFINITIONS.find(definition=>definition.key===key)||
+    RESULT_FILTER_DEFINITIONS[0]
+  );
+}
+
+function resultFilterKeyForType(type){
+  const normalized=String(type||'').trim().toLowerCase();
+
+  for(const definition of RESULT_FILTER_DEFINITIONS){
+    if(
+      definition.key!=='all'&&
+      definition.key!=='other'&&
+      definition.types?.includes(normalized)
+    ){
+      return definition.key;
+    }
+  }
+
+  return 'other';
+}
+
+function resultMatchesFilter(result,key=resultFilter){
+  if(key==='all')return true;
+
+  const normalized=String(result?.type||'').trim().toLowerCase();
+  const definition=resultFilterDefinition(key);
+
+  if(key==='other'){
+    return !RESULT_FILTER_KNOWN_TYPES.has(normalized);
+  }
+
+  return Boolean(definition.types?.includes(normalized));
+}
+
+function filteredResultIndices(key=resultFilter){
+  const indices=[];
+
+  for(let index=0;index<results.length;index++){
+    if(resultMatchesFilter(results[index],key))indices.push(index);
+  }
+
+  return indices;
+}
+
+function resultFilterCounts(){
+  const counts=new Map(
+    RESULT_FILTER_DEFINITIONS.map(definition=>[definition.key,0])
+  );
+
+  counts.set('all',results.length);
+
+  results.forEach(result=>{
+    const key=resultFilterKeyForType(result?.type);
+    counts.set(key,(counts.get(key)||0)+1);
+  });
+
+  return counts;
+}
+
+function availableResultFilters(){
+  const counts=resultFilterCounts();
+
+  return RESULT_FILTER_DEFINITIONS.filter(definition=>{
+    if(definition.key==='all'||definition.key===resultFilter)return true;
+    return (counts.get(definition.key)||0)>0;
+  });
+}
+
+function updateResultFilterUrl(){
+  const url=new URL(location.href);
+
+  if(resultFilter==='all'){
+    url.searchParams.delete('filter');
+  }else{
+    url.searchParams.set('filter',resultFilter);
+  }
+
+  if(results.length){
+    url.searchParams.set('result',String(Math.max(0,active)+1));
+  }
+
+  url.hash=encodeURIComponent(currentQuery||'');
+  history.replaceState(null,'',url);
+}
+
+function renderResultFilters(){
+  const container=$('#fieldFilters');
+  if(!container)return;
+
+  const counts=resultFilterCounts();
+  const definitions=availableResultFilters();
+  const priorLeft=container.scrollLeft||0;
+  const fragment=document.createDocumentFragment();
+
+  definitions.forEach(definition=>{
+    const button=document.createElement('button');
+    const count=counts.get(definition.key)||0;
+
+    button.type='button';
+    button.className='field-filter';
+    button.dataset.filter=definition.key;
+    button.setAttribute('role','tab');
+    button.setAttribute(
+      'aria-selected',
+      String(definition.key===resultFilter)
+    );
+    button.innerHTML=(
+      `<span>${esc(definition.label)}</span>`+
+      `<span class="filter-count">${count}</span>`
+    );
+
+    button.onclick=()=>setResultFilter(definition.key);
+    fragment.appendChild(button);
+  });
+
+  container.replaceChildren(fragment);
+
+  requestAnimationFrame(()=>{
+    container.scrollLeft=priorLeft;
+
+    const selected=container.querySelector(
+      '.field-filter[aria-selected="true"]'
+    );
+    if(!selected)return;
+
+    const left=selected.offsetLeft;
+    const right=left+selected.offsetWidth;
+    const viewLeft=container.scrollLeft;
+    const viewRight=viewLeft+container.clientWidth;
+
+    if(left<viewLeft){
+      container.scrollTo({
+        left:Math.max(0,left-8),
+        behavior:'smooth'
+      });
+    }else if(right>viewRight){
+      container.scrollTo({
+        left:Math.max(0,right-container.clientWidth+8),
+        behavior:'smooth'
+      });
+    }
+  });
+}
+
+async function ensureResultFilterFilled(target=10){
+  const key=resultFilter;
+  if(key==='all'||resultFilterFilling)return;
+
+  const generation=++resultFilterFillGeneration;
+  resultFilterFilling=true;
+  $('#reveal')?.classList.add('filter-filling');
+  renderResultFilters();
+
+  let pages=0;
+
+  try{
+    while(
+      generation===resultFilterFillGeneration&&
+      resultFilter===key&&
+      filteredResultIndices(key).length<target&&
+      resultHasMore&&
+      pages<60
+    ){
+      const before=results.length;
+      await loadMoreResults({preserveScroll:true});
+      pages++;
+
+      if(results.length<=before)break;
+      await new Promise(resolve=>requestAnimationFrame(resolve));
+    }
+
+    if(
+      generation===resultFilterFillGeneration&&
+      resultFilter===key
+    ){
+      const visible=filteredResultIndices(key);
+      if(visible.length&&!visible.includes(active))active=visible[0];
+      render();
+    }
+  }finally{
+    if(generation===resultFilterFillGeneration){
+      resultFilterFilling=false;
+      $('#reveal')?.classList.remove('filter-filling');
+      renderResultFilters();
+    }
+  }
+}
+
+async function setResultFilter(
+  key,
+  {
+    updateHistory=true,
+    fill=true,
+    selectFirst=true
+  }={}
+){
+  if(!RESULT_FILTER_DEFINITIONS.some(definition=>definition.key===key)){
+    key='all';
+  }
+
+  resultFilter=key;
+  resultFilterFillGeneration++;
+  resultFilterFilling=false;
+  $('#reveal')?.classList.remove('filter-filling');
+
+  const visible=filteredResultIndices(key);
+
+  if(selectFirst&&visible.length){
+    active=visible[0];
+  }
+
+  render();
+
+  if(updateHistory)updateResultFilterUrl();
+
+  if(fill&&key!=='all'&&visible.length<10&&resultHasMore){
+    await ensureResultFilterFilled(10);
+  }
+}
+/* SUMMON_RAW_FIELD_FILTERS_V43_END */
+
 function render(){
+  if(!results.length)return;
+
+  const visibleIndices=filteredResultIndices();
+
+  if(visibleIndices.length&&!visibleIndices.includes(active)){
+    active=visibleIndices[0];
+  }
+
   const m=results[active];
   if(!m)return;
   const square=isSquare(m);
@@ -2920,10 +3327,28 @@ function render(){
   const ov=(m.overview||'').trim();
   $('#synopsis').textContent=ov.length>280?ov.slice(0,279).trimEnd()+'…':ov;
 
-  $('#pos').textContent=String(active+1).padStart(2,'0');
-  $('#total').textContent=String(results.length).padStart(2,'0');
-  const formatCount=new Set(results.map(r=>r.type)).size;
-  $('#deckCount').textContent=`${results.length} ranked · ${formatCount} formats`;
+  const visibleForNavigation=filteredResultIndices();
+  const visiblePosition=Math.max(
+    0,
+    visibleForNavigation.indexOf(active)
+  );
+  $('#pos').textContent=String(
+    visibleForNavigation.length?visiblePosition+1:active+1
+  ).padStart(2,'0');
+  $('#total').textContent=String(
+    visibleForNavigation.length||results.length
+  ).padStart(2,'0');
+
+  const visibleFormatCount=new Set(
+    visibleForNavigation.map(index=>results[index]?.type)
+  ).size;
+  const selectedFilter=resultFilterDefinition();
+
+  $('#deckCount').textContent=(
+    resultFilter==='all'
+      ?`${results.length} ranked · ${visibleFormatCount} formats`
+      :`${visibleForNavigation.length} ${selectedFilter.label} · ${results.length} ranked`
+  );
 
   $('#play').disabled=!m.tmdbId;
   $('#play').textContent=m.tmdbId?'watch trailer':'no trailer';
@@ -2932,6 +3357,7 @@ function render(){
   $('#share').onclick=shareCurrentResult;
   $('#copy').onclick=()=>navigator.clipboard?.writeText(resultShareUrl(active)).then(()=>toast('link copied'));
 
+  renderResultFilters();
   renderDeck();
   autoResize($('#revealQuery'));
   fitRevealContent();
@@ -2942,6 +3368,7 @@ function resultKey(r){
 function renderDeck(){
   const deck=$('#deck');
   if(!deck)return;
+  const visibleIndices=filteredResultIndices();
 
   const preserveScroll=resultPreserveDeckScroll;
   const priorScrollLeft=deck.scrollLeft||0;
@@ -2954,7 +3381,9 @@ function renderDeck(){
   });
 
   const frag=document.createDocumentFragment();
-  results.forEach((r,i)=>{
+  visibleIndices.forEach((globalIndex,visibleIndex)=>{
+    const r=results[globalIndex];
+    const i=globalIndex;
     const key=resultKey(r);
     const prior=old.get(key);
     const tile=prior?.tile||document.createElement('button');
@@ -3027,7 +3456,7 @@ function renderDeck(){
       deck.scrollTo({left:priorScrollLeft,behavior:'auto'});
     }
 
-    const selected=deck.children[active];
+    const selected=deck.querySelector(`.tile[data-i="${active}"]`);
     if(!selected)return;
 
     const tileLeft=selected.offsetLeft;
@@ -3047,14 +3476,43 @@ function renderDeck(){
 }
 async function step(d,{play=false}={}){
   if(!results.length)return;
-  if(d>0&&active>=results.length-1&&resultHasMore){
-    await loadMoreResults({advance:true,play});
-    return;
-  }
-  const next=(active+d+results.length)%results.length;
-  selectRankedResult(next,{play});
-}
 
+  let visible=filteredResultIndices();
+
+  if(!visible.length){
+    if(resultFilter!=='all'&&resultHasMore){
+      await ensureResultFilterFilled(1);
+      visible=filteredResultIndices();
+    }
+    if(!visible.length)return;
+  }
+
+  let position=visible.indexOf(active);
+  if(position<0)position=0;
+
+  if(d>0&&position>=visible.length-1&&resultHasMore){
+    const before=visible.length;
+
+    if(resultFilter==='all'){
+      await loadMoreResults({preserveScroll:true});
+    }else{
+      await ensureResultFilterFilled(before+1);
+    }
+
+    visible=filteredResultIndices();
+
+    if(visible.length>before){
+      selectRankedResult(visible[before],{play});
+      return;
+    }
+  }
+
+  const nextPosition=(
+    position+d+visible.length
+  )%visible.length;
+
+  selectRankedResult(visible[nextPosition],{play});
+}
 
 /* ═══════ LIVE RESONANCE ═══════
    The precomputed field re-ranks while the user is still typing.
@@ -3125,6 +3583,13 @@ function commitLiveResults(next,q,raw,source,generation,commit){
   currentQuery=q;
   results=next;
   active=0;
+
+  if(commit){
+    resultFilter='all';
+    resultFilterFillGeneration++;
+    resultFilterFilling=false;
+    $('#reveal')?.classList.remove('filter-filling');
+  }
   closeProjector();
 
   const landingInput=$('#query');
@@ -3306,6 +3771,9 @@ $('#revealForm').addEventListener('submit',e=>{
 });
 
 function goHomeAndReplay(){
+  resultFilter='all';
+  resultFilterFillGeneration++;
+  resultFilterFilling=false;
   cancelLiveResonance();
   closeProjector();
   rollStop();
@@ -3479,8 +3947,22 @@ if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{
     setStatus(statusLine('ready'));
 
     const h=decodeURIComponent(location.hash.replace(/^#/,''));
-    const sharedResult=Number(new URLSearchParams(location.search).get('result'));
-    if(Number.isFinite(sharedResult)&&sharedResult>0)initialSharedResultIndex=sharedResult-1;
+    const sharedParams=new URLSearchParams(location.search);
+    const sharedResult=Number(sharedParams.get('result'));
+    const sharedFilter=String(sharedParams.get('filter')||'').toLowerCase();
+
+    if(Number.isFinite(sharedResult)&&sharedResult>0){
+      initialSharedResultIndex=sharedResult-1;
+    }
+
+    if(
+      sharedFilter&&
+      RESULT_FILTER_DEFINITIONS.some(
+        definition=>definition.key===sharedFilter
+      )
+    ){
+      initialSharedResultFilter=sharedFilter;
+    }
     if(h){
       await whenBarFull();
       await pause(260);
