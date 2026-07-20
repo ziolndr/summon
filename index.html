@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- SUMMON_PRODUCTION_BUILD SUMMON_CLEAN_V26_FAST_20260720T061702Z · uploaded-v26-visuals · direct-local-text-search · immediate-reveal · backend-runtime-untouched -->
+<!-- SUMMON_PRODUCTION_BUILD SUMMON_CLEAN_V26_FAST_V36 · uploaded-v26-visuals · hard-transparent-winner · buttons-cleared · direct-local-text-search -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0A0A09">
@@ -858,6 +858,43 @@ body.playing #projector{display:block}
 }
 #reveal.game-has-art #revealCanvas #stillBg{
   opacity:.22!important;
+}
+
+
+/* SUMMON_HARD_TRANSPARENT_WINNER_V36
+   Absolute guard against the black winner panel and action/deck collision. */
+#revealFrame,
+#reveal .stage,
+#reveal .info{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+#revealFrame::before,#revealFrame::after,
+#reveal .stage::before,#reveal .stage::after,
+#reveal .info::before,#reveal .info::after{
+  content:none!important;
+  display:none!important;
+  background:none!important;
+}
+#reveal .actions{
+  position:relative!important;
+  z-index:20!important;
+}
+@media(min-width:1001px){
+  #reveal .stage{
+    padding-bottom:34px!important;
+  }
+  #reveal .info{
+    overflow:visible!important;
+  }
+  #reveal .deck{
+    position:relative!important;
+    z-index:8!important;
+  }
 }
 
 </style>
@@ -2408,15 +2445,12 @@ async function measure(q,corpus,count){
   resultLoadingMore=false;
 
   const res=await fetch(LIVE_FIELD_URL,{
-    method:'POST',
-    mode:'cors',
-    cache:'no-store',
+    method:'POST',mode:'cors',cache:'no-store',
     headers:{'Content-Type':'application/json','Accept':'application/json'},
     body:JSON.stringify({text:q,k:RESULT_PAGE_SIZE,offset:0})
   });
   const raw=await res.text();
   if(!res.ok)throw new Error(`live field ${res.status} - ${raw.slice(0,180)}`);
-
   const data=JSON.parse(raw);
   if(generation!==resultPageGeneration)throw new Error('stale result page');
 
@@ -2428,10 +2462,8 @@ async function measure(q,corpus,count){
     sources:data.sources||universalFieldInfo.sources||{},
     updated_at:data.updated_at||universalFieldInfo.updated_at||null
   };
-
   const next=Array.isArray(data.results)?data.results:[];
   if(!next.length)throw new Error('live field returned no ranked results');
-
   resultOffset=next.length;
   resultHasMore=next.length===RESULT_PAGE_SIZE;
   setStatus(statusLine('ready'));
@@ -2442,69 +2474,33 @@ async function measure(q,corpus,count){
 async function search(text){
   const q=(text||'').trim();
   if(!q)return;
-
   cancelLiveResonance();
   rollStop();
   currentQuery=q;
-  $('#query').value=q;
-  $('#revealQuery').value=q;
+  $('#query').value=q;$('#revealQuery').value=q;
   requestAnimationFrame(()=>autoResize($('#revealQuery')));
   closeProjector();
   startLeader(q);
-
   try{
     const count=Number(universalFieldInfo.count)||0;
     $('#workLabel').textContent='summoning';
     setState(`measuring ${count.toLocaleString()} objects`);
-
-    try{
-      results=await measure(q,null,count);
-    }catch(e){
-      console.error(e);
-      setState('the engine did not answer');
-      toast('engine unreachable');
-      show('landing');
-      return;
-    }
-
-    if(!results.length){
-      setState('nothing came close');
-      show('landing');
-      return;
-    }
-
-    active=initialSharedResultIndex==null
-      ?0
-      :Math.max(0,Math.min(results.length-1,initialSharedResultIndex));
+    try{results=await measure(q,null,count)}
+    catch(e){console.error(e);setState('the engine did not answer');toast('engine unreachable');show('landing');return}
+    if(!results.length){setState('nothing came close');show('landing');return}
+    active=initialSharedResultIndex==null?0:Math.max(0,Math.min(results.length-1,initialSharedResultIndex));
     initialSharedResultIndex=null;
-
     render();
     $('#reveal').classList.add('on');
     $('#landing').classList.remove('on');
     $('#leader').classList.remove('on');
-
-    requestAnimationFrame(()=>{
-      autoResize($('#revealQuery'));
-      fitRevealContent();
-    });
-
+    requestAnimationFrame(()=>{autoResize($('#revealQuery'));fitRevealContent()});
     history.replaceState(null,'','#'+encodeURIComponent(q));
-
-    results.forEach(m=>{
-      if(!m.posterPath&&!m.backdropPath&&!m.imageUrl){
-        resolveArt(m).then(ok=>{
-          if(ok&&$('#reveal').classList.contains('on'))render();
-        }).catch(()=>{});
-      }
-    });
-
-    Promise.all(results.map(hydrateProviders)).then(()=>{
-      if($('#reveal').classList.contains('on'))render();
-    }).catch(()=>{});
-  }finally{
-    stopLeader();
-  }
+    results.forEach(m=>{if(!m.posterPath&&!m.backdropPath&&!m.imageUrl){resolveArt(m).then(ok=>{if(ok&&$('#reveal').classList.contains('on'))render()}).catch(()=>{})}});
+    Promise.all(results.map(hydrateProviders)).then(()=>{if($('#reveal').classList.contains('on'))render()}).catch(()=>{});
+  }finally{stopLeader()}
 }
+
 
 const providerCache=new Map();
 async function hydrateProviders(m){
@@ -2634,93 +2630,41 @@ function fitRevealContent(){
 
 async function loadMoreResults({advance=false,preserveScroll=false,play=false}={}){
   if(resultLoadingMore||!resultHasMore||!resultQuery||!results.length)return false;
-
   const generation=resultPageGeneration;
   const offset=resultOffset;
   const text=resultQuery;
   const oldLength=results.length;
   resultLoadingMore=true;
-
   const countLabel=$('#deckCount');
   if(countLabel)countLabel.textContent='opening next 10';
-
   try{
     const res=await fetch(LIVE_FIELD_URL,{
-      method:'POST',
-      mode:'cors',
-      cache:'no-store',
+      method:'POST',mode:'cors',cache:'no-store',
       headers:{'Content-Type':'application/json','Accept':'application/json'},
       body:JSON.stringify({text,k:RESULT_PAGE_SIZE,offset})
     });
     const raw=await res.text();
     if(!res.ok)throw new Error(`live field ${res.status} - ${raw.slice(0,180)}`);
-
     const data=JSON.parse(raw);
     if(generation!==resultPageGeneration)return false;
-
-    universalFieldInfo={
-      count:Number(data.count)||universalFieldInfo.count,
-      dim:Number(data.dim)||universalFieldInfo.dim||72,
-      use_freq:data.use_freq!==false,
-      units:Number(data.units)||universalFieldInfo.units||0,
-      sources:data.sources||universalFieldInfo.sources||{},
-      updated_at:data.updated_at||universalFieldInfo.updated_at||null
-    };
-
+    universalFieldInfo={count:Number(data.count)||universalFieldInfo.count,dim:Number(data.dim)||universalFieldInfo.dim||72,use_freq:data.use_freq!==false,units:Number(data.units)||universalFieldInfo.units||0,sources:data.sources||universalFieldInfo.sources||{},updated_at:data.updated_at||universalFieldInfo.updated_at||null};
     const page=Array.isArray(data.results)?data.results:[];
     resultOffset=offset+page.length;
     resultHasMore=page.length===RESULT_PAGE_SIZE;
-
     const seen=new Set(results.map(resultKey));
-    const added=page.filter(row=>{
-      const key=resultKey(row);
-      if(seen.has(key))return false;
-      seen.add(key);
-      return true;
-    });
-
-    if(!added.length){
-      if(!page.length)resultHasMore=false;
-      render();
-      return false;
-    }
-
+    const added=page.filter(row=>{const key=resultKey(row);if(seen.has(key))return false;seen.add(key);return true});
+    if(!added.length){if(!page.length)resultHasMore=false;render();return false}
     results.push(...added);
     if(advance)active=oldLength;
     if(preserveScroll&&!advance)resultPreserveDeckScroll=true;
-    closeProjector();
-    render();
+    closeProjector();render();
     if(advance)restoreHeroView({smooth:true});
-
-    added.forEach(m=>{
-      if(!m.posterPath&&!m.backdropPath&&!m.imageUrl){
-        resolveArt(m).then(ok=>{
-          if(
-            ok&&
-            generation===resultPageGeneration&&
-            results.includes(m)&&
-            $('#reveal').classList.contains('on')
-          )render();
-        }).catch(()=>{});
-      }
-    });
-
-    Promise.all(added.map(hydrateProviders)).then(()=>{
-      if(
-        generation===resultPageGeneration&&
-        $('#reveal').classList.contains('on')
-      )render();
-    }).catch(()=>{});
-
+    added.forEach(m=>{if(!m.posterPath&&!m.backdropPath&&!m.imageUrl){resolveArt(m).then(ok=>{if(ok&&generation===resultPageGeneration&&results.includes(m)&&$('#reveal').classList.contains('on'))render()}).catch(()=>{})}});
+    Promise.all(added.map(hydrateProviders)).then(()=>{if(generation===resultPageGeneration&&$('#reveal').classList.contains('on'))render()}).catch(()=>{});
     if(play&&advance)openProjector();
     return true;
-  }catch(e){
-    console.error('next ranked page failed',e);
-    toast('could not open more results');
-    return false;
-  }finally{
-    if(generation===resultPageGeneration)resultLoadingMore=false;
-  }
+  }catch(e){console.error('next ranked page failed',e);toast('could not open more results');return false}
+  finally{if(generation===resultPageGeneration)resultLoadingMore=false}
 }
 
 /* SUMMON_HERO_RESTORE_V26_2 */
@@ -3110,32 +3054,14 @@ function commitLiveResults(next,q,raw,source,generation,commit){
 
 async function pumpLiveResonance(){
   if(liveInFlight||!livePending)return;
-
-  const job=livePending;
-  livePending=null;
-  liveInFlight=true;
-
+  const job=livePending;livePending=null;liveInFlight=true;
   try{
     if(job.generation!==liveGeneration)return;
     const count=Number(universalFieldInfo.count)||0;
     const next=await measure(job.q,null,count);
-    commitLiveResults(
-      next,
-      job.q,
-      job.raw,
-      job.source,
-      job.generation,
-      job.commit
-    );
-  }catch(e){
-    console.error('live resonance failed',e);
-  }finally{
-    liveInFlight=false;
-    if(livePending){
-      clearTimeout(liveTimer);
-      liveTimer=setTimeout(pumpLiveResonance,0);
-    }
-  }
+    commitLiveResults(next,job.q,job.raw,job.source,job.generation,job.commit);
+  }catch(e){console.error('live resonance failed',e)}
+  finally{liveInFlight=false;if(livePending){clearTimeout(liveTimer);liveTimer=setTimeout(pumpLiveResonance,0)}}
 }
 
 function scheduleLiveFrom(el,source){
