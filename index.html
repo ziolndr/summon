@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- SUMMON_REAL_SNAPPY_RESUME_20260720T030417Z · accelerated exact scan · immediate result reveal -->
 <!-- SUMMON_ZERO_LATENCY_CONFIG_20260720T022034Z · browser → tunnel text search → local field → local ARBITER -->
 <!-- SUMMON_PRODUCTION_BUILD SUMMON-GAME-ART-FALLBACK-V26_7_1-20260719T182114Z · rawg-absolute-images · hero-and-tile-fallbacks · game-image-load-race-guard -->
 <meta charset="UTF-8">
@@ -2457,8 +2458,6 @@ async function search(text){
     const count=fieldCount(corpus);
     $('#workLabel').textContent='summoning';
     setState(`measuring ${(universalFieldInfo.count||count).toLocaleString()} objects`);
-    await pause(120);
-
     try{results=await measure(q,corpus,count)}
     catch(e){console.error(e);setState('the engine did not answer');await pause(900);toast('engine unreachable');show('landing');return}
 
@@ -2478,13 +2477,12 @@ async function search(text){
     // preload the hero so the reveal appears fully formed, then cross-fade
     const first=results[active];
     const heroArt=isSquare(first)?first.imageUrl:backdrop(first,'original');
-    await new Promise(res=>{if(!heroArt)return res();const im=new Image();im.onload=res;im.onerror=res;im.src=heroArt;setTimeout(res,1200)});
+    if(heroArt){const im=new Image();im.src=heroArt;}
     $('#reveal').classList.add('on');
     requestAnimationFrame(()=>{
       autoResize($('#revealQuery'));
       fitRevealContent();
     });
-    await pause(480);
     $('#landing').classList.remove('on');
     $('#leader').classList.remove('on');
     history.replaceState(null,'','#'+encodeURIComponent(q));
