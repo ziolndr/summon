@@ -1132,6 +1132,7 @@ body.playing #projector{display:block}
 
 <!-- SUMMON_RAW_FIELD_FILTERS_V43_20260720T192357Z · raw-ranks · client-view-filter · auto-fill · shareable -->
 <!-- SUMMON_DEFAULT_FIELD_DEPTH_100_V45_20260720T194534Z · raw-100 · page-100 · viewport-10 · filtered-fill-10 -->
+<!-- SUMMON_FILTER_GROWTH_STOP_V46_20260720T195902Z · stop-after-first-dry-selected-format-page · raw-page-remains-100 -->
 </head>
 <body>
 
@@ -3233,10 +3234,15 @@ async function ensureResultFilterFilled(target=10){
       pages<60
     ){
       const before=results.length;
+      const beforeMatches=filteredResultIndices(key).length;
       await loadMoreResults({preserveScroll:true});
       pages++;
 
       if(results.length<=before)break;
+
+      const afterMatches=filteredResultIndices(key).length;
+      if(afterMatches<=beforeMatches)break;
+
       await new Promise(resolve=>requestAnimationFrame(resolve));
     }
 
