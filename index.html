@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- SUMMON_STACKED_ROWS_HERO_RESTORE_20260720T043547Z · stacked-ranked-rows · reveal-frame-scroller · fixed-hero -->
 <!-- SUMMON_PRODUCTION_BUILD SUMMON-HERO-RESTORE-V26_2-20260718T084037Z · stacked-ranked-rows · reveal-frame-scroller · tile-selection-restores-hero · continuous-same-vector-pagination -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -809,6 +810,27 @@ body.playing #projector{display:block}
     min-height:clamp(420px,58vh,720px);
     align-self:stretch;
   }
+}
+
+
+/* SUMMON_STACKED_ROWS_HERO_RESTORE
+   Ranked pages append downward. The reveal frame owns vertical movement;
+   the document and hero never pan horizontally. */
+html,body,#reveal,#revealFrame{
+  max-width:100%;
+  overflow-x:hidden!important;
+}
+#revealFrame{
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+}
+#deck,.deck-strip{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  overflow:visible!important;
 }
 
 </style>
