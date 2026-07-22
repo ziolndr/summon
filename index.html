@@ -1139,6 +1139,133 @@ body.playing #projector{display:block}
 <!-- SUMMON_DEFAULT_FIELD_DEPTH_100_V45_20260720T194534Z · raw-100 · page-100 · viewport-10 · filtered-fill-10 -->
 <!-- SUMMON_FILTER_GROWTH_STOP_V46_20260720T195902Z · stop-after-first-dry-selected-format-page · raw-page-remains-100 -->
     <link rel="preconnect" href="https://api.arbiter.traut.ai" crossorigin>
+    <!-- SUMMON_FULL_THOUGHT_SURFACE_20260722T154301Z -->
+
+<style id="summon-full-thought-surface">
+/* The thought is the interface. Never crop it or put a panel behind it. */
+#landing .head,
+#landing #searchForm,
+#landing .line,
+#reveal .bar,
+#reveal .summon-bar,
+#reveal .summon-bar form,
+#reveal .stage,
+#reveal .info {
+    overflow: visible !important;
+}
+
+#landing .head {
+    width: min(92vw, 1500px) !important;
+    max-width: none !important;
+}
+
+#landing #query,
+#reveal #revealQuery,
+#reveal #title {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    border-radius: 0 !important;
+    -webkit-appearance: none !important;
+}
+
+#landing #query {
+    display: block !important;
+    width: 100% !important;
+    height: auto;
+    min-height: 1.18em !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: .04em .02em .20em !important;
+    line-height: 1.08 !important;
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+}
+
+#reveal .bar {
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    column-gap: clamp(20px, 3vw, 54px) !important;
+}
+
+#reveal .summon-bar {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    justify-self: stretch !important;
+}
+
+#reveal #revealQuery {
+    display: block !important;
+    width: 100% !important;
+    height: auto;
+    min-height: 1.22em !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: .02em .02em .22em !important;
+    line-height: 1.14 !important;
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+}
+
+#reveal #title {
+    display: block !important;
+    overflow: visible !important;
+    max-height: none !important;
+    padding: .02em .03em .18em 0 !important;
+    line-height: 1.02 !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+}
+
+#landing #query::selection,
+#reveal #revealQuery::selection,
+#reveal #title::selection {
+    color: #fff !important;
+    background: rgba(255, 20, 34, .38) !important;
+}
+
+#landing #query::-moz-selection,
+#reveal #revealQuery::-moz-selection,
+#reveal #title::-moz-selection {
+    color: #fff !important;
+    background: rgba(255, 20, 34, .38) !important;
+}
+
+@media (min-width: 1001px) {
+    #revealFrame {
+        grid-template-rows: auto minmax(300px, 1fr) clamp(280px, 32vh, 320px) !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+    }
+
+    #reveal .summon-bar,
+    #reveal #revealQuery,
+    #reveal .stage,
+    #reveal .info,
+    #reveal #title {
+        overflow: visible !important;
+    }
+}
+
+@media (max-width: 1000px) {
+    #landing .head {
+        width: auto !important;
+    }
+
+    #reveal .bar {
+        grid-template-columns: auto 1fr !important;
+        grid-template-areas: 'mark nav' 'q q' !important;
+    }
+}
+</style>
+
 </head>
 <body>
 
@@ -3907,40 +4034,89 @@ function commitLiveExact(el,source){
 }
 
 /* ═══════ INPUT ═══════ */
-function autoResize(el){
-  if(!el)return;
-  if(el.offsetParent===null&&el.offsetHeight===0)return;
-  el.style.height='auto';
+function autoResize(el) {
+        if (!el)
+            return;
+        if (el.offsetParent === null && el.offsetHeight === 0)
+            return;
 
-  if(el.id==='revealQuery'&&window.innerWidth>1000){
-    el.style.removeProperty('font-size');
-    let low=18;
-    let high=Math.min(42,Math.max(22,window.innerWidth*.0255));
-    let best=18;
+        const isLanding = el.id === 'query';
+        const isReveal = el.id === 'revealQuery';
 
-    for(let attempt=0;attempt<13;attempt++){
-      const middle=(low+high)/2;
-      el.style.fontSize=`${middle}px`;
-      const style=getComputedStyle(el);
-      const lineHeight=parseFloat(style.lineHeight)||middle*1.03;
-      if(el.scrollHeight<=lineHeight*2.12){
-        best=middle;
-        low=middle;
-      }else{
-        high=middle;
-      }
+        el.style.setProperty('height', 'auto', 'important');
+        el.style.setProperty('max-height', 'none', 'important');
+        el.style.setProperty('overflow', 'visible', 'important');
+
+        if (!isLanding && !isReveal) {
+            el.style.setProperty(
+                'height',
+                `${Math.ceil(el.scrollHeight + 4)}px`,
+                'important'
+            );
+            return;
+        }
+
+        el.style.removeProperty('font-size');
+
+        const computed = getComputedStyle(el);
+        const naturalSize = parseFloat(computed.fontSize) ||
+            (isLanding ? 64 : 34);
+        const minimumSize = isLanding ? 28 : 18;
+
+        const container = isLanding
+            ? el.closest('.head')
+            : el.closest('.bar');
+
+        const bottomGap = isLanding && container
+            ? Math.max(
+                72,
+                window.innerHeight - container.getBoundingClientRect().bottom
+            )
+            : 0;
+
+        const availableHeight = isLanding
+            ? Math.max(180, window.innerHeight - bottomGap - 110)
+            : Math.max(120, window.innerHeight * .34);
+
+        let low = minimumSize;
+        let high = Math.max(minimumSize, naturalSize);
+        let best = minimumSize;
+
+        for (let attempt = 0; attempt < 14; attempt++) {
+            const middle = (low + high) / 2;
+            el.style.setProperty(
+                'font-size',
+                `${middle}px`,
+                'important'
+            );
+            el.style.setProperty('height', 'auto', 'important');
+
+            const needed = el.scrollHeight + Math.ceil(middle * .24);
+
+            if (needed <= availableHeight) {
+                best = middle;
+                low = middle;
+            } else {
+                high = middle;
+            }
+        }
+
+        el.style.setProperty(
+            'font-size',
+            `${Math.floor(best * 10) / 10}px`,
+            'important'
+        );
+        el.style.setProperty('height', 'auto', 'important');
+        el.style.setProperty(
+            'height',
+            `${Math.ceil(el.scrollHeight + best * .24)}px`,
+            'important'
+        );
+
+        if (isReveal)
+            requestAnimationFrame(fitRevealContent);
     }
 
-    el.style.fontSize=`${Math.floor(best*10)/10}px`;
-    const style=getComputedStyle(el);
-    const lineHeight=parseFloat(style.lineHeight)||best*1.03;
-    el.style.height=`${Math.ceil(Math.min(el.scrollHeight,lineHeight*2.08))}px`;
-    return;
-  }
-
-  const max=parseFloat(getComputedStyle(el).maxHeight)||Infinity;
-  el.style.height=Math.min(max,el.scrollHeight)+'px';
-}
 function bindInput(el,source){
   el.addEventListener('input',()=>scheduleLiveFrom(el,source));
   el.addEventListener('keydown',e=>{
@@ -4355,5 +4531,25 @@ if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{
 </script>
 
 <!-- SUMMON_NESTED_MUSIC_URL_V48_1_20260720T224701Z · unwrap-tmdb-plus-absolute-artwork -->
+
+<script id="summon-full-thought-resize-hook">
+(() => {
+    let thoughtResizeRAF = 0;
+    const resizeThoughts = () => {
+        cancelAnimationFrame(thoughtResizeRAF);
+        thoughtResizeRAF = requestAnimationFrame(() => {
+            const landing = document.getElementById('query');
+            const reveal = document.getElementById('revealQuery');
+            if (landing) autoResize(landing);
+            if (reveal) autoResize(reveal);
+        });
+    };
+    window.addEventListener('resize', resizeThoughts, {passive:true});
+    window.addEventListener('orientationchange', resizeThoughts, {passive:true});
+    document.fonts?.ready?.then(resizeThoughts).catch(() => {});
+    requestAnimationFrame(resizeThoughts);
+})();
+</script>
+
 </body>
 </html>
