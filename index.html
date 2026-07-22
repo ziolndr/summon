@@ -1405,7 +1405,7 @@ const RETURN_COUNT=10, RESULT_PAGE_SIZE=50, TMDB_MAX_PAGE=500;
 const ARBITER_URL='https://api.arbiter.traut.ai/public/embed';
 // The sidecar is served from the same origin as this page. It continuously adds
 // every finalized ARBITER field shard without changing the core ARBITER server.
-const LIVE_FIELD_URL = new URLSearchParams(location.search).get('field') || '/field/v1/search';
+const LIVE_FIELD_URL=new URLSearchParams(location.search).get('field')||'/field/v1/search';
 const LIVE_FIELD_MANIFEST_URL = 'https://summon-joel-ded59863.shares.zrok.io/field/v1/manifest';
 const FORMAT_LABELS={film:'film',series:'series',game:'game',book:'book',music:'music',podcast:'podcast',short:'short',live:'live',paper:'paper',patent:'patent',business:'business',place:'place',law:'law',record:'record',real_estate_listing:'real estate',real_estate:'real estate',property:'real estate',stock:'stock',etf:'etf',fund:'fund',etn:'etn',trade_signal:'market signal',market_signal:'market signal',news:'news',web:'web',person:'person',stock_quote:'stock',etf_quote:'etf',fund_quote:'fund',index_quote:'index',crypto_quote:'crypto',commodity_quote:'commodity'};
 

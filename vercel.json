@@ -1,0 +1,13 @@
+{
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/field/v1/:path*",
+      "destination": "https://summon-api.actualgeneralintelligence.com/field/v1/:path*"
+    },
+    {
+      "source": "/field/health",
+      "destination": "https://summon-api.actualgeneralintelligence.com/field/health"
+    }
+  ]
+}
