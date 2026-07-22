@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- SUMMON_BROWSER_FIELD_20260722T135003Z · https://summon-joel-ded59863.shares.zrok.io/field/v1/search · browser-cors-verified -->
 <!-- SUMMON_LIVE_COUNT_20260722T134057Z · https://summon-joel-ded59863.shares.zrok.io/field/v1/search · live manifest count -->
 <!-- SUMMON_PROPERTY_MARKETS_PROMPTS_V37_20260720T164148Z · real-estate · actual-market-snapshots · new-opening-and-loaded-prompts -->
 <!-- SUMMON_PRODUCTION_BUILD SUMMON_HERO_SINGLE_ROW_DECK_V41_20260720T181229Z · fixed-hero · one-horizontal-ranked-row · fast-search-runtime-untouched -->
@@ -4112,5 +4113,62 @@ if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{
 </script>
 
 <!-- SUMMON_NESTED_MUSIC_URL_V48_1_20260720T224701Z · unwrap-tmdb-plus-absolute-artwork -->
+
+<script id="summon-browser-live-field-v4">
+(() => {
+  const manifestUrl = 'https://summon-joel-ded59863.shares.zrok.io/field/v1/manifest';
+  const searchUrl = 'https://summon-joel-ded59863.shares.zrok.io/field/v1/search';
+
+  window.SUMMON_LIVE_FIELD_URL = searchUrl;
+
+  async function syncLiveField() {
+    const response = await fetch(manifestUrl, {
+      method: 'GET',
+      mode: 'cors',
+      cache: 'no-store',
+      headers: {'Accept': 'application/json'}
+    });
+
+    if (!response.ok) {
+      throw new Error(`live manifest ${response.status}`);
+    }
+
+    const data = await response.json();
+    const count = Number(data.count) || 0;
+
+    if (count < 2300000) {
+      throw new Error(`live manifest reported ${count}`);
+    }
+
+    if (typeof setFieldOpening === 'function') {
+      setFieldOpening(count);
+    }
+
+    const countNodes = document.querySelectorAll(
+      '#count, #fieldCount, [data-field-count]'
+    );
+
+    for (const node of countNodes) {
+      node.textContent = `${count.toLocaleString()} objects`;
+    }
+
+    document.documentElement.dataset.liveFieldCount = String(count);
+    document.documentElement.dataset.liveFieldBackend = searchUrl;
+  }
+
+  const run = () => syncLiveField().catch(error => {
+    console.error('SUMMON live field attachment failed', error);
+    document.documentElement.dataset.liveFieldError = String(error);
+  });
+
+  run();
+  window.addEventListener('load', run, {once: true});
+  setTimeout(run, 500);
+  setTimeout(run, 1500);
+  setTimeout(run, 4000);
+  setInterval(run, 30000);
+})();
+</script>
+
 </body>
 </html>
