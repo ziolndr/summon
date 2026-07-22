@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
     <!-- SUMMON_HYBRID_INSTANT_LIVE_20260722T150944Z · instant browser field → exact 2.3M refinement on commit -->
-    <!-- SUMMON_PROXY_SNAPPY_20260722T145138Z · /api/field-search · abort-stale-live-queries -->
-<!-- SUMMON_SAME_ORIGIN_SEARCH_20260722T142844Z · /api/field-search · no-browser-zrok-post -->
-    <!-- SUMMON_DYNAMIC_LIVE_COUNT_20260722T141550Z · /api/field-manifest · no-hardcode -->
+    <!-- SUMMON_PROXY_SNAPPY_20260722T145138Z · /field/v1/search · abort-stale-live-queries -->
+<!-- SUMMON_DYNAMIC_LIVE_COUNT_20260722T141550Z · https://summon-joel-ded59863.shares.zrok.io/field/v1/manifest · no-hardcode -->
 
 <!-- SUMMON_PROPERTY_MARKETS_PROMPTS_V37_20260720T164148Z · real-estate · actual-market-snapshots · new-opening-and-loaded-prompts -->
 <!-- SUMMON_PRODUCTION_BUILD SUMMON_HERO_SINGLE_ROW_DECK_V41_20260720T181229Z · fixed-hero · one-horizontal-ranked-row · fast-search-runtime-untouched -->
@@ -1406,8 +1405,8 @@ const RETURN_COUNT=10, RESULT_PAGE_SIZE=50, TMDB_MAX_PAGE=500;
 const ARBITER_URL='https://api.arbiter.traut.ai/public/embed';
 // The sidecar is served from the same origin as this page. It continuously adds
 // every finalized ARBITER field shard without changing the core ARBITER server.
-const LIVE_FIELD_URL = new URLSearchParams(location.search).get('field') || '/api/field-search';
-const LIVE_FIELD_MANIFEST_URL = '/api/field-manifest';
+const LIVE_FIELD_URL = new URLSearchParams(location.search).get('field') || '/field/v1/search';
+const LIVE_FIELD_MANIFEST_URL = 'https://summon-joel-ded59863.shares.zrok.io/field/v1/manifest';
 const FORMAT_LABELS={film:'film',series:'series',game:'game',book:'book',music:'music',podcast:'podcast',short:'short',live:'live',paper:'paper',patent:'patent',business:'business',place:'place',law:'law',record:'record',real_estate_listing:'real estate',real_estate:'real estate',property:'real estate',stock:'stock',etf:'etf',fund:'fund',etn:'etn',trade_signal:'market signal',market_signal:'market signal',news:'news',web:'web',person:'person',stock_quote:'stock',etf_quote:'etf',fund_quote:'fund',index_quote:'index',crypto_quote:'crypto',commodity_quote:'commodity'};
 
 const CURATED_ENTERTAINMENT_FIELD=[{"title":"The Bill Simmons Podcast","year":"2026","type":"podcast","publisher":"The Ringer / Spotify","availability":"now on Netflix","genres":["Sports","Culture","Conversation"],"overview":"Long-form sports and culture conversations, arguments, predictions, and deep dives with athletes, celebrities, and voices from The Ringer universe."},{"title":"Pardon My Take","year":"2026","type":"podcast","publisher":"Barstool Sports","availability":"now on Netflix","genres":["Sports","Comedy","Conversation"],"overview":"Irreverent sports talk built around fan culture, sharp commentary, recurring bits, big personalities, and the absurdity surrounding the games."},{"title":"Spittin' Chiclets","year":"2026","type":"podcast","publisher":"Barstool Sports","availability":"now on Netflix","genres":["Hockey","Sports","Storytelling"],"overview":"NHL analysis, hockey culture, locker-room stories, pop culture, and candid conversation with players and personalities."},{"title":"The Ryen Russillo Podcast","year":"2026","type":"podcast","publisher":"Barstool Sports","availability":"now on Netflix","genres":["Sports","Analysis","Interviews"],"overview":"Long-form sports analysis and conversations with athletes, media figures, and people shaping modern sports culture."},{"title":"The Zach Lowe Show","year":"2026","type":"podcast","publisher":"The Ringer / Spotify","availability":"on Netflix","genres":["Basketball","NBA","Analysis"],"overview":"Detailed NBA analysis focused on strategy, roster construction, player fit, league trends, and the small tactical decisions that change games."},{"title":"The Rewatchables","year":"2026","type":"podcast","publisher":"The Ringer / Spotify","availability":"on Netflix","genres":["Film","Culture","Conversation"],"overview":"A joyful, obsessive return to beloved movies: best scenes, performances, casting what-ifs, legacy, quotability, and why certain films stay alive in memory."},{"title":"The Big Picture","year":"2026","type":"podcast","publisher":"The Ringer / Spotify","availability":"on Netflix","genres":["Film","Industry","Criticism"],"overview":"Movies, filmmakers, awards, the business of cinema, and wide-ranging conversations about how films are made, received, and remembered."},{"title":"Dissect","year":"2026","type":"podcast","publisher":"Spotify","availability":"on Netflix","genres":["Music","Analysis","Storytelling"],"overview":"Long-form analysis of major albums and songs, tracing lyrics, themes, production choices, symbolism, and cultural context piece by piece."},{"title":"Conspiracy Theories","year":"2026","type":"podcast","publisher":"Spotify","availability":"on Netflix","genres":["Mystery","History","Psychology"],"overview":"A guided investigation of famous conspiracy theories, separating documented history, plausible questions, hidden incentives, and mythology."},{"title":"Serial Killers","year":"2026","type":"podcast","publisher":"Spotify","availability":"on Netflix","genres":["True Crime","Psychology","History"],"overview":"True-crime stories examining notorious killers, investigative failures, psychology, victims, and the systems surrounding major cases."},{"title":"My Favorite Murder","year":"2026","type":"podcast","publisher":"iHeartMedia","availability":"on Netflix","genres":["True Crime","Comedy","Conversation"],"overview":"True crime told through candid conversation, dark humor, personal reactions, and the strange details that make cases impossible to forget."},{"title":"The Breakfast Club","year":"2026","type":"podcast","publisher":"iHeartMedia","availability":"on Netflix","genres":["Music","Culture","Interviews"],"overview":"Unfiltered interviews and conversation spanning music, celebrity, politics, internet culture, controversy, and the personalities driving the moment."},{"title":"The Pete Davidson Show","year":"2026","type":"podcast","publisher":"Netflix","availability":"now on Netflix","genres":["Comedy","Conversation","Celebrity"],"overview":"Candid, no-holds-barred conversations with Pete Davidson and friends, mostly from his garage, with the looseness of hanging out after midnight."},{"title":"BEEF: The Official Podcast","year":"2026","type":"podcast","publisher":"Netflix","availability":"now on Netflix","genres":["Behind the Scenes","Drama","Creative Process"],"overview":"Creator Lee Sung Jin and the cast unpack BEEF Season 2, creative decisions, performance, rivalry, music, and how the story was built."},{"title":"Bridgerton: The Official Podcast","year":"2026","type":"podcast","publisher":"Netflix / Shondaland","availability":"now on Netflix","genres":["Romance","Behind the Scenes","Drama"],"overview":"A companion journey through Bridgerton Season 4 with cast and creators discussing love, heartbreak, friendship, performance, and the world behind the ton."},{"title":"The Rest Is Football","year":"2026","type":"podcast","publisher":"Goalhanger","availability":"daily during the 2026 tournament","genres":["Football","World Cup","Analysis"],"overview":"Gary Lineker, Alan Shearer, and Micah Richards deliver daily world football analysis, big-match reactions, interviews, honesty, and humor."},{"title":"On Purpose with Jay Shetty","year":"2026","type":"podcast","publisher":"Netflix / Spotify","availability":"2026 on Netflix","genres":["Personal Growth","Relationships","Conversation"],"overview":"Deep conversations about grief, anxiety, love, identity, healing, purpose, and the hardest truths people carry into their lives."},{"title":"We're Back! with Brian Williams","year":"2026","type":"podcast","publisher":"Netflix","availability":"announced for 2026","genres":["Culture","Interviews","Ideas"],"overview":"Unhurried conversations with actors, writers, musicians, athletes, journalists, scientists, and consequential people shaping culture."},{"title":"FIFA World Cup: Launch Edition","year":"2026","type":"game","publisher":"Netflix Games / Delphi Interactive","availability":"play now","genres":["Football","Sports","Multiplayer"],"overview":"A reimagined football simulation built for instant play on TV, with the phone as controller, featuring the drama and emotion of the 2026 World Cup."},{"title":"Boggle Party","year":"2026","type":"game","publisher":"Netflix Games","availability":"play now","genres":["Words","Party","Puzzle"],"overview":"A fast social word game for one to eight players where phones become controllers and everyone races to find the best words on the shared TV grid."},{"title":"LEGO Party!","year":"2026","type":"game","publisher":"Netflix Games","availability":"play now","genres":["Party","Family","Minigames"],"overview":"A competitive collection of playful LEGO minigames, board-game chaos, customization, and living-room rivalry for friends and families."},{"title":"Party Crashers: Fool Your Friends","year":"2026","type":"game","publisher":"Netflix Games","availability":"play now","genres":["Social Deduction","Party","Comedy"],"overview":"A bluffing game where one player does not know the secret word and must fake their way through clues without being exposed as the party crasher."},{"title":"Pictionary: Game Night","year":"2026","type":"game","publisher":"Netflix Games","availability":"play now","genres":["Drawing","Party","Family"],"overview":"Draw on a phone, watch the image appear on the TV, and race against the clock as friends try to decipher increasingly questionable masterpieces."},{"title":"Tetris Time Warp","year":"2026","type":"game","publisher":"Netflix Games","availability":"play now","genres":["Puzzle","Arcade","Multiplayer"],"overview":"Classic Tetris with time-warps into historic versions of the game, each with altered rules, retro constraints, and competitive living-room play."},{"title":"Overcooked! All You Can Eat","year":"2026","type":"game","publisher":"Netflix Games","availability":"play on TV","genres":["Co-op","Party","Chaos"],"overview":"A frantic cooperative cooking game where communication collapses, kitchens move, orders pile up, and friendship is tested under ridiculous pressure."},{"title":"Jackbox Party Pack","year":"2026","type":"game","publisher":"Netflix Games","availability":"play on TV","genres":["Party","Comedy","Trivia"],"overview":"A living-room collection of social games built around jokes, drawing, trivia, bluffing, and group chemistry, with phones used as controllers."},{"title":"Red Dead Redemption","year":"2026","type":"game","publisher":"Netflix Games","availability":"on mobile","genres":["Western","Open World","Story"],"overview":"A sprawling western about violence, loyalty, fading myths, and a man trying to survive as the frontier world that made him begins to disappear."},{"title":"Netflix Puzzled: Scattergories Daily","year":"2026","type":"game","publisher":"Netflix Puzzled","availability":"play daily","genres":["Word Game","Daily","Puzzle"],"overview":"A quick daily word challenge built around categories, speed, originality, and the pressure to find answers nobody else would think of."},{"title":"Unhinged","year":"2026","type":"game","publisher":"Netflix Games","availability":"play on TV","genres":["Horror","Interactive","Motion"],"overview":"A motion-controlled horror experience where real-world phone movements guide a character's flashlight through darkness, uncertainty, and whatever is waiting there."},{"title":"Dead Man's Party: A Knives Out Game","year":"2026","type":"game","publisher":"Netflix Games","availability":"announced","genres":["Mystery","Social Deduction","Party"],"overview":"A social murder mystery inspired by Knives Out, where Benoit Blanc is investigating and the room itself becomes part of the case."},{"title":"Architectural Digest: Open Door","year":"2026","type":"short","publisher":"Condé Nast","availability":"arriving Aug 3","genres":["Design","Architecture","Homes"],"overview":"Short-form access inside remarkable celebrity homes, with architecture, objects, taste, memory, and the private worlds people build around themselves."},{"title":"Vanity Fair: Lie Detector Test","year":"2026","type":"short","publisher":"Condé Nast","availability":"arriving Aug 3","genres":["Celebrity","Interviews","Comedy"],"overview":"Celebrities answer uncomfortable, playful, and revealing questions while wired to a lie detector, turning tension into confession and comedy."},{"title":"Vogue: Fashion and Culture Shorts","year":"2026","type":"short","publisher":"Condé Nast","availability":"arriving Aug 3","genres":["Fashion","Celebrity","Lifestyle"],"overview":"Fast-moving interviews through personal spaces, revealing taste, routine, ambition, style, memories, and unexpected details in a single continuous encounter."},{"title":"WIRED: Tech and Internet Culture Shorts","year":"2026","type":"short","publisher":"Condé Nast","availability":"arriving Aug 3","genres":["Technology","Celebrity","Internet Culture"],"overview":"Public figures answer the internet's most searched questions about themselves, moving from curiosity and myth to strange facts and self-explanation."},{"title":"Bon Appétit: Kitchen and Food Stories","year":"2026","type":"short","publisher":"Condé Nast","availability":"arriving Aug 3","genres":["Food","Cooking","Craft"],"overview":"Short culinary stories about technique, obsession, ingredients, restaurant culture, experimentation, and the craft behind food people cannot stop thinking about."},{"title":"BuzzFeed Studios: Internet Culture Shorts","year":"2026","type":"short","publisher":"BuzzFeed Studios","availability":"arriving Aug 3","genres":["Internet Culture","Comedy","Food"],"overview":"Short-form internet-native entertainment spanning food, identity, experiments, comedy, social behavior, and the cultural questions people share and argue about."},{"title":"Eater: Food, Restaurants and Obsession","year":"2026","type":"short","publisher":"Penske Media","availability":"arriving Aug 3","genres":["Food","Restaurants","Travel"],"overview":"Short documentaries and field pieces about restaurants, hidden kitchens, culinary craft, regional obsession, and the people behind unforgettable food."},{"title":"Rolling Stone: Music and Culture","year":"2026","type":"short","publisher":"Penske Media","availability":"arriving Aug 3","genres":["Music","Culture","Artists"],"overview":"Artists, songs, scenes, performances, and cultural moments explored through short-form music journalism and direct conversations."},{"title":"Billboard: Music Interviews and Performances","year":"2026","type":"short","publisher":"Penske Media","availability":"arriving Aug 3","genres":["Music","Performance","Pop Culture"],"overview":"Short-form interviews, performances, chart stories, and conversations with artists driving the sound and mood of the current moment."},{"title":"The Hollywood Reporter: Creative Roundtables","year":"2026","type":"short","publisher":"Penske Media","availability":"arriving Aug 3","genres":["Film","Television","Creative Process"],"overview":"Actors, directors, writers, and craftspeople discuss performance, ambition, failure, process, pressure, and what actually happens behind finished work."},{"title":"Variety: Actors, Filmmakers and Industry Conversations","year":"2026","type":"short","publisher":"Penske Media","availability":"arriving Aug 3","genres":["Film","Television","Interviews"],"overview":"Direct conversations across cinema and television about craft, careers, collaboration, difficult choices, and the business around storytelling."},{"title":"People: Human Stories and Celebrity Profiles","year":"2026","type":"short","publisher":"People Inc.","availability":"arriving Aug 3","genres":["People","Celebrity","Human Interest"],"overview":"Short human-interest stories and profiles centered on relationships, transformation, celebrity, resilience, and the personal lives behind public figures."},{"title":"Tastemade: Food, Travel and Beautiful Places","year":"2026","type":"short","publisher":"Tastemade","availability":"arriving Aug 3","genres":["Travel","Food","Lifestyle"],"overview":"Visually driven short-form stories about where to go, what to eat, how places feel, and the small details that make travel worth remembering."},{"title":"WWE Raw","year":"2026","type":"live","publisher":"WWE / Netflix","availability":"live weekly","genres":["Wrestling","Sports Entertainment","Drama"],"overview":"A weekly live collision of athleticism, rivalry, spectacle, betrayal, crowd energy, and serialized drama where the outcome still unfolds in real time."},{"title":"2026 T-Mobile Home Run Derby","year":"2026","type":"live","publisher":"MLB / Netflix","availability":"live July 13","genres":["Baseball","Competition","Live Sports"],"overview":"Baseball's top sluggers attack the fences in Philadelphia in a live skills competition built around pressure, power, rhythm, and one swing changing everything."},{"title":"MLB at Field of Dreams 2026","year":"2026","type":"live","publisher":"MLB / Netflix","availability":"live Aug 13","genres":["Baseball","Nostalgia","Live Sports"],"overview":"The Minnesota Twins and Philadelphia Phillies play live from the iconic Field of Dreams site in Iowa, blending major-league competition with cinematic mythology."},{"title":"NFL on Netflix: Rams vs. 49ers in Australia","year":"2026","type":"live","publisher":"NFL / Netflix","availability":"live Sept 10","genres":["Football","Rivalry","Live Sports"],"overview":"The NFL's first regular-season game in Australia: divisional rivals Los Angeles and San Francisco meet live at the Melbourne Cricket Ground."},{"title":"NFL Thanksgiving Eve on Netflix","year":"2026","type":"live","publisher":"NFL / Netflix","availability":"live Nov 25","genres":["Football","Holiday","Live Sports"],"overview":"The NFL's first Thanksgiving Eve game brings the Packers and Rams together live under holiday pressure with an audience gathering in real time."},{"title":"NFL Christmas Day on Netflix","year":"2026","type":"live","publisher":"NFL / Netflix","availability":"live Dec 25","genres":["Football","Holiday","Live Sports"],"overview":"Christmas Day football becomes a global live event, with major matchups, family rituals, rivalry, and the unpredictability of games that have not been written yet."},{"title":"FIFA Women's World Cup 2027","year":"2027","type":"live","publisher":"FIFA / Netflix","availability":"announced","genres":["Football","World Cup","Live Sports"],"overview":"The world's biggest women's football tournament, live on Netflix in the United States and Canada, where national identity, pressure, and history collide."}];
@@ -4551,5 +4550,609 @@ if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{
 })();
 </script>
 
+<!-- SUMMON_RESONANT_PROPERTY_LAYOUT_V1_START -->
+
+<style id="summon-resonant-property-layout-style">
+  #summonPropertyPanel {
+    display: none;
+    align-self: end;
+    width: min(48vw, 780px);
+    min-width: 360px;
+  }
+
+  #reveal.summon-property-result .stage {
+    grid-template-columns: minmax(0, .84fr) minmax(360px, 1.16fr);
+    align-items: end;
+    gap: clamp(24px, 4vw, 64px);
+  }
+
+  #reveal.summon-property-result #summonPropertyPanel {
+    display: block;
+  }
+
+  #reveal.summon-property-result #card {
+    display: none !important;
+  }
+
+  #reveal.summon-property-result #revealCanvas #still,
+  #reveal.summon-property-result #revealCanvas #stillBg {
+    object-fit: cover !important;
+    object-position: center !important;
+  }
+
+  #reveal.summon-property-result #revealCanvas::after {
+    background:
+      linear-gradient(180deg,rgba(8,8,7,.68) 0%,rgba(8,8,7,.18) 24%,rgba(8,8,7,.50) 62%,rgba(8,8,7,.98) 100%),
+      linear-gradient(90deg,rgba(8,8,7,.84) 0%,rgba(8,8,7,.20) 48%,rgba(8,8,7,.52) 100%);
+  }
+
+  #reveal.summon-property-result #title {
+    font-size: clamp(34px, 4.4vw, 76px);
+    max-width: 15ch;
+  }
+
+  #reveal.summon-property-result #play {
+    display: none !important;
+  }
+
+  #summonPropertyHeroLink {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background: #111;
+    border: 1px solid rgba(255,255,255,.22);
+    box-shadow: 0 34px 90px rgba(0,0,0,.58);
+  }
+
+  #summonPropertyHero {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  #summonPropertyPhotoCount {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    padding: 6px 8px;
+    background: rgba(8,8,7,.78);
+    border: 1px solid rgba(255,255,255,.22);
+    font-size: 9px;
+    line-height: 1;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+
+  #summonPropertyGallery {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 7px;
+    margin-top: 8px;
+  }
+
+  #summonPropertyGallery:empty {
+    display: none;
+  }
+
+  #summonPropertyGallery button {
+    appearance: none;
+    border: 1px solid transparent;
+    padding: 0;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background: #111;
+    cursor: pointer;
+    opacity: .62;
+    transition: opacity .16s ease, border-color .16s ease;
+  }
+
+  #summonPropertyGallery button:hover,
+  #summonPropertyGallery button.on {
+    opacity: 1;
+    border-color: var(--accent);
+  }
+
+  #summonPropertyGallery img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .tile.summon-property-tile .shot {
+    aspect-ratio: 4 / 3;
+  }
+
+  .tile.summon-property-tile .cap {
+    -webkit-line-clamp: 3;
+  }
+
+  @media (max-width: 900px) {
+    #reveal.summon-property-result .stage {
+      grid-template-columns: minmax(0, 1fr) minmax(300px, .9fr);
+      gap: 22px;
+    }
+
+    #summonPropertyPanel {
+      width: min(46vw, 620px);
+      min-width: 300px;
+    }
+  }
+
+  @media (max-width: 700px) {
+    #reveal.summon-property-result .stage {
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: stretch;
+      overflow: auto;
+    }
+
+    #summonPropertyPanel {
+      width: 100%;
+      min-width: 0;
+    }
+
+    #summonPropertyGallery {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    #reveal.summon-property-result #title {
+      max-width: none;
+    }
+  }
+</style>
+
+
+<script id="summon-resonant-property-layout-runtime">
+(() => {
+  const PROPERTY_TYPES = new Set([
+    'real_estate_listing',
+    'real_estate',
+    'property',
+    'listing'
+  ]);
+
+  function clean(value) {
+    return String(value ?? '').trim();
+  }
+
+  function normalized(value) {
+    return clean(value).toLowerCase();
+  }
+
+  function first(...values) {
+    for (const value of values) {
+      if (value !== undefined && value !== null && clean(value)) {
+        return value;
+      }
+    }
+    return '';
+  }
+
+  function number(value) {
+    if (value === undefined || value === null || value === '') return null;
+    const parsed = Number(String(value).replace(/[$,]/g, ''));
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function money(value) {
+    const parsed = number(value);
+    if (parsed === null || parsed <= 0) return '';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(parsed);
+  }
+
+  function compact(value) {
+    const parsed = number(value);
+    if (parsed === null) return '';
+    return new Intl.NumberFormat('en-US', {
+      maximumFractionDigits: 1
+    }).format(parsed);
+  }
+
+  function integer(value) {
+    const parsed = number(value);
+    if (parsed === null) return '';
+    return new Intl.NumberFormat('en-US', {
+      maximumFractionDigits: 0
+    }).format(parsed);
+  }
+
+  function resultType(row) {
+    return normalized(first(
+      row?.type,
+      row?.object_type,
+      row?.format,
+      row?.record_type,
+      row?.metadata?.type
+    ));
+  }
+
+  function resultSource(row) {
+    return normalized(first(
+      row?.source,
+      row?.provider,
+      row?.source_name,
+      row?.metadata?.source
+    ));
+  }
+
+  function isProperty(row) {
+    const type = resultType(row);
+    const source = resultSource(row);
+    return PROPERTY_TYPES.has(type) ||
+      source.includes('real-estate') ||
+      source.includes('real_estate') ||
+      source.includes('property') ||
+      source.includes('homeharvest');
+  }
+
+  function imageUrl(value) {
+    const candidate = clean(value);
+    if (!candidate) return '';
+    if (/^(https?:|data:image\/|blob:)/i.test(candidate)) return candidate;
+    return '';
+  }
+
+  function collectImages(value, output, depth = 0) {
+    if (depth > 5 || value === undefined || value === null) return;
+
+    if (typeof value === 'string') {
+      const candidate = imageUrl(value);
+      if (candidate) output.push(candidate);
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach(item => collectImages(item, output, depth + 1));
+      return;
+    }
+
+    if (typeof value !== 'object') return;
+
+    const directKeys = [
+      'images', 'photos', 'gallery', 'media',
+      'imageUrl', 'image_url', 'image', 'photo', 'src', 'href', 'url',
+      'original', 'large', 'medium', 'thumbnail'
+    ];
+
+    for (const key of directKeys) {
+      if (key in value) collectImages(value[key], output, depth + 1);
+    }
+  }
+
+  function propertyImages(row) {
+    const output = [];
+    const candidates = [
+      row?.images,
+      row?.photos,
+      row?.gallery,
+      row?.image_urls,
+      row?.imageUrls,
+      row?.imageUrl,
+      row?.image_url,
+      row?.image,
+      row?.photo,
+      row?.listing?.images,
+      row?.listing?.photos,
+      row?.listing?.gallery,
+      row?.listing?.media,
+      row?.metadata?.images,
+      row?.metadata?.photos,
+      row?.metadata?.gallery,
+      row?.property?.images,
+      row?.raw?.images
+    ];
+
+    candidates.forEach(candidate => collectImages(candidate, output));
+
+    return [...new Set(output)].slice(0, 24);
+  }
+
+  function propertyAddress(row) {
+    const street = first(
+      row?.address,
+      row?.full_address,
+      row?.formatted_address,
+      row?.street_address,
+      row?.listing?.address,
+      row?.metadata?.address,
+      row?.title
+    );
+
+    const locality = [
+      first(row?.city, row?.locality, row?.community, row?.listing?.city),
+      first(row?.state, row?.state_code, row?.listing?.state),
+      first(row?.zip, row?.zipcode, row?.postal_code, row?.listing?.zip)
+    ].filter(Boolean).map(clean).join(' ');
+
+    return {
+      street: clean(street) || clean(row?.title) || 'Property listing',
+      locality
+    };
+  }
+
+  function propertyUrl(row) {
+    return clean(first(
+      row?.url,
+      row?.listing_url,
+      row?.property_url,
+      row?.externalUrl,
+      row?.external_url,
+      row?.listing?.url,
+      row?.metadata?.url
+    ));
+  }
+
+  function ensurePanel() {
+    let panel = document.querySelector('#summonPropertyPanel');
+    if (panel) return panel;
+
+    const stage = document.querySelector('#reveal .stage');
+    if (!stage) return null;
+
+    panel = document.createElement('aside');
+    panel.id = 'summonPropertyPanel';
+    panel.setAttribute('aria-label', 'Property photography');
+    panel.innerHTML = `
+      <a id="summonPropertyHeroLink" target="_blank" rel="noopener noreferrer">
+        <img id="summonPropertyHero" alt="">
+        <span id="summonPropertyPhotoCount"></span>
+      </a>
+      <div id="summonPropertyGallery" aria-label="Property image gallery"></div>
+    `;
+
+    stage.appendChild(panel);
+    return panel;
+  }
+
+  function setMeta(values) {
+    const meta = document.querySelector('#meta');
+    if (!meta) return;
+    meta.replaceChildren();
+
+    for (const value of values.filter(Boolean)) {
+      const span = document.createElement('span');
+      span.textContent = value;
+      meta.appendChild(span);
+    }
+  }
+
+  function setHero(url, index, images, row, listingUrl) {
+    const hero = document.querySelector('#summonPropertyHero');
+    const link = document.querySelector('#summonPropertyHeroLink');
+    const count = document.querySelector('#summonPropertyPhotoCount');
+
+    if (!hero || !link || !count) return;
+
+    hero.src = url;
+    hero.alt = `${propertyAddress(row).street} property photo ${index + 1}`;
+    count.textContent = images.length > 1
+      ? `${index + 1} / ${images.length} photos`
+      : 'property photo';
+
+    if (listingUrl) {
+      link.href = listingUrl;
+      link.removeAttribute('aria-disabled');
+    } else {
+      link.removeAttribute('href');
+      link.setAttribute('aria-disabled', 'true');
+    }
+
+    const still = document.querySelector('#still');
+    const stillBg = document.querySelector('#stillBg');
+    const cardImg = document.querySelector('#cardImg');
+
+    if (still) {
+      still.src = url;
+      still.alt = propertyAddress(row).street;
+    }
+    if (stillBg) stillBg.src = url;
+    if (cardImg) cardImg.src = url;
+
+    document.querySelectorAll('#summonPropertyGallery button').forEach(
+      (button, buttonIndex) => button.classList.toggle('on', buttonIndex === index)
+    );
+  }
+
+  function renderGallery(row, images, listingUrl) {
+    const gallery = document.querySelector('#summonPropertyGallery');
+    if (!gallery) return;
+    gallery.replaceChildren();
+
+    images.slice(0, 5).forEach((url, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.setAttribute('aria-label', `Show property photo ${index + 1}`);
+
+      const image = document.createElement('img');
+      image.src = url;
+      image.alt = '';
+      image.loading = 'lazy';
+      image.decoding = 'async';
+      button.appendChild(image);
+
+      button.addEventListener('click', () => {
+        setHero(url, index, images, row, listingUrl);
+      });
+
+      gallery.appendChild(button);
+    });
+  }
+
+  function applyPropertyLayout() {
+    const reveal = document.querySelector('#reveal');
+    const row = Array.isArray(results) ? results[active] : null;
+    const property = Boolean(row && isProperty(row));
+
+    reveal?.classList.toggle('summon-property-result', property);
+
+    const panel = ensurePanel();
+    if (!panel) return;
+
+    if (!property) {
+      panel.hidden = true;
+      return;
+    }
+
+    const images = propertyImages(row);
+    if (!images.length) {
+      panel.hidden = true;
+      return;
+    }
+
+    panel.hidden = false;
+
+    const address = propertyAddress(row);
+    const listingUrl = propertyUrl(row);
+    const price = money(first(
+      row?.price,
+      row?.list_price,
+      row?.asking_price,
+      row?.listing?.price,
+      row?.metadata?.price
+    ));
+    const beds = compact(first(
+      row?.beds,
+      row?.bedrooms,
+      row?.listing?.beds,
+      row?.listing?.bedrooms
+    ));
+    const baths = compact(first(
+      row?.baths,
+      row?.bathrooms,
+      row?.listing?.baths,
+      row?.listing?.bathrooms
+    ));
+    const sqft = integer(first(
+      row?.sqft,
+      row?.square_feet,
+      row?.living_area,
+      row?.listing?.sqft,
+      row?.listing?.square_feet
+    ));
+    const status = clean(first(
+      row?.market_status,
+      row?.status,
+      row?.listing_status,
+      row?.listing?.status
+    )).replaceAll('_', ' ');
+
+    const title = document.querySelector('#title');
+    const format = document.querySelector('#format');
+    const synopsis = document.querySelector('#synopsis');
+    const play = document.querySelector('#play');
+    const watch = document.querySelector('#watch');
+
+    if (title) title.textContent = address.street;
+    if (format) format.textContent = 'property';
+
+    setMeta([
+      price,
+      beds ? `${beds} beds` : '',
+      baths ? `${baths} baths` : '',
+      sqft ? `${sqft} sq ft` : '',
+      status,
+      address.locality
+    ]);
+
+    if (synopsis) {
+      const description = clean(first(
+        row?.description,
+        row?.overview,
+        row?.remarks,
+        row?.public_remarks,
+        row?.listing?.description,
+        row?.listing?.remarks,
+        row?.search_text
+      ));
+      synopsis.textContent = description.length > 360
+        ? `${description.slice(0, 359).trimEnd()}…`
+        : description;
+    }
+
+    if (play) play.disabled = true;
+
+    if (watch) {
+      watch.textContent = listingUrl ? 'open listing ↗' : 'listing source unavailable';
+      watch.disabled = !listingUrl;
+      watch.onclick = listingUrl
+        ? () => window.open(listingUrl, '_blank', 'noopener,noreferrer')
+        : null;
+    }
+
+    renderGallery(row, images, listingUrl);
+    setHero(images[0], 0, images, row, listingUrl);
+  }
+
+  function decorateDeck() {
+    const deck = document.querySelector('#deck');
+    if (!deck || !Array.isArray(results)) return;
+
+    deck.querySelectorAll('.tile[data-i]').forEach(tile => {
+      const index = Number(tile.dataset.i);
+      const row = results[index];
+      const property = isProperty(row);
+      tile.classList.toggle('summon-property-tile', property);
+
+      if (!property) return;
+
+      const images = propertyImages(row);
+      const image = tile.querySelector('.shot img');
+      if (image && images[0]) {
+        image.dataset.imageToken = String((Number(image.dataset.imageToken) || 0) + 1);
+        image.onload = null;
+        image.onerror = null;
+        image.src = images[0];
+      }
+
+      const caption = tile.querySelector('.cap');
+      if (caption) caption.textContent = propertyAddress(row).street;
+    });
+  }
+
+  // Public property admission: a property without actual photography is not
+  // shown as a generic media card. Original global indices remain the ranks.
+  const coreFilteredResultIndices = filteredResultIndices;
+  filteredResultIndices = function(key = resultFilter) {
+    return coreFilteredResultIndices(key).filter(index => {
+      const row = results[index];
+      return !isProperty(row) || propertyImages(row).length > 0;
+    });
+  };
+
+  const coreRenderDeck = renderDeck;
+  renderDeck = function() {
+    coreRenderDeck();
+    decorateDeck();
+  };
+
+  const coreRender = render;
+  render = function() {
+    coreRender();
+    applyPropertyLayout();
+  };
+
+  window.SUMMON_PROPERTY_LAYOUT = Object.freeze({
+    version: 'V1',
+    isProperty,
+    propertyImages
+  });
+
+  ensurePanel();
+  decorateDeck();
+  applyPropertyLayout();
+})();
+</script>
+
+<!-- SUMMON_RESONANT_PROPERTY_LAYOUT_V1_END -->
 </body>
 </html>
