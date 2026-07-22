@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- SUMMON_DIRECT_SNAPPY_LIVE_20260722T144039Z · direct tunnel · local embed · abort stale live queries -->
+    <link rel="preconnect" href="https://summon-joel-ded59863.shares.zrok.io" crossorigin>
+    <link rel="dns-prefetch" href="//summon-joel-ded59863.shares.zrok.io">
     <!-- SUMMON_SAME_ORIGIN_SEARCH_20260722T142844Z · /api/field-search · no-browser-zrok-post -->
     <!-- SUMMON_DYNAMIC_LIVE_COUNT_20260722T141550Z · /api/field-manifest · no-hardcode -->
 
@@ -1276,7 +1279,7 @@ const RETURN_COUNT=10, RESULT_PAGE_SIZE=50, TMDB_MAX_PAGE=500;
 const ARBITER_URL='https://api.arbiter.traut.ai/public/embed';
 // The sidecar is served from the same origin as this page. It continuously adds
 // every finalized ARBITER field shard without changing the core ARBITER server.
-const LIVE_FIELD_URL = new URLSearchParams(location.search).get('field') || '/api/field-search';
+const LIVE_FIELD_URL = new URLSearchParams(location.search).get('field') || 'https://summon-joel-ded59863.shares.zrok.io/field/v1/search';
 const LIVE_FIELD_MANIFEST_URL = '/api/field-manifest';
 const FORMAT_LABELS={film:'film',series:'series',game:'game',book:'book',music:'music',podcast:'podcast',short:'short',live:'live',paper:'paper',patent:'patent',business:'business',place:'place',law:'law',record:'record',real_estate_listing:'real estate',real_estate:'real estate',property:'real estate',stock:'stock',etf:'etf',fund:'fund',etn:'etn',trade_signal:'market signal',market_signal:'market signal',news:'news',web:'web',person:'person',stock_quote:'stock',etf_quote:'etf',fund_quote:'fund',index_quote:'index',crypto_quote:'crypto',commodity_quote:'commodity'};
 
@@ -1410,12 +1413,13 @@ let resultFilterFilling=false;
 let deckScrollIntent=false,deckScrollIntentTimer=null;
 
 /* live resonance state: debounce input, serialize /v1/embed calls, discard stale answers */
-const LIVE_RESONANCE_DEBOUNCE=170;
+const LIVE_RESONANCE_DEBOUNCE = 90;
 const LIVE_RESONANCE_MIN_CHARS=4;
 let liveTimer=null;
 let liveGeneration=0;
 let liveInFlight=false;
 let livePending=null;
+    let liveAbortController = null;
 let liveSwapTimer=null;
 let liveArtTimer=null;
 const cs={genreMaps:null,movieTotal:0,tvTotal:0,moviePage:1,tvPage:1,movies:[],seen:new Set(),curated:false,complete:false};
@@ -2644,7 +2648,7 @@ function topKField(q,corpus,count,k=RETURN_COUNT){
   return top;
 }
 
-async function measure(q,corpus,count){
+async function measure(q, corpus, count, signal=null){
   const visibleCount=Number(universalFieldInfo.count)||Number(count)||0;
   setState(`measuring ${visibleCount.toLocaleString()} objects`);
 
@@ -2656,6 +2660,7 @@ async function measure(q,corpus,count){
 
   const res=await fetch(LIVE_FIELD_URL,{
     method:'POST',mode:'cors',cache:'no-store',
+            signal: signal || undefined,
     headers:{'Content-Type':'application/json','Accept':'application/json'},
     body:JSON.stringify({text:q,k:RESULT_PAGE_SIZE,offset:0})
   });
@@ -3528,38 +3533,47 @@ async function step(d,{play=false}={}){
 /* ═══════ LIVE RESONANCE ═══════
    The precomputed field re-ranks while the user is still typing.
    Only the current thought may commit; older /v1/embed answers are discarded. */
-function cancelLiveResonance(){
-  liveGeneration++;
-  clearTimeout(liveTimer);
-  clearTimeout(liveArtTimer);
-  liveTimer=null;
-  liveArtTimer=null;
-  livePending=null;
-}
+function cancelLiveResonance() {
+        liveGeneration++;
+        clearTimeout(liveTimer);
+        clearTimeout(liveArtTimer);
+        if (liveAbortController) {
+            liveAbortController.abort();
+            liveAbortController = null;
+        }
+        liveTimer = null;
+        liveArtTimer = null;
+        livePending = null;
+    }
 
-function liveInputValue(source){
+    function liveInputValue(source){
   const el=source==='landing'?$('#query'):$('#revealQuery');
   return (el?.value||'').trim();
 }
 
-function queueLiveResonance(text,source='reveal',{immediate=false,commit=false}={}){
-  // Preserve the exact text the person typed, including trailing spaces.
-  // Only the measurement text is trimmed; the editable thought must never be normalized by a live result.
-  const raw=String(text||'');
-  const q=raw.trim();
-  const generation=++liveGeneration;
-  clearTimeout(liveTimer);
+function queueLiveResonance(text, source='reveal', {immediate=false, commit=false}={}) {
+        const raw = String(text || '');
+        const q = raw.trim();
+        const generation = ++liveGeneration;
+        clearTimeout(liveTimer);
+        if (liveAbortController) {
+            liveAbortController.abort();
+            liveAbortController = null;
+        }
 
-  if(q.length<LIVE_RESONANCE_MIN_CHARS){
-    livePending=null;
-    return;
-  }
+        if (q.length < LIVE_RESONANCE_MIN_CHARS) {
+            livePending = null;
+            return;
+        }
 
-  livePending={q,raw,source,generation,commit};
-  liveTimer=setTimeout(pumpLiveResonance,immediate?0:LIVE_RESONANCE_DEBOUNCE);
-}
+        livePending = {q, raw, source, generation, commit};
+        liveTimer = setTimeout(
+            pumpLiveResonance,
+            immediate ? 0 : LIVE_RESONANCE_DEBOUNCE
+        );
+    }
 
-function animateLiveSwap(){
+    function animateLiveSwap(){
   const reveal=$('#reveal');
   if(!reveal?.classList.contains('on'))return;
   reveal.classList.remove('live-swap');
@@ -3643,19 +3657,47 @@ function commitLiveResults(next,q,raw,source,generation,commit){
   scheduleLiveArt(generation);
 }
 
-async function pumpLiveResonance(){
-  if(liveInFlight||!livePending)return;
-  const job=livePending;livePending=null;liveInFlight=true;
-  try{
-    if(job.generation!==liveGeneration)return;
-    const count=Number(universalFieldInfo.count)||0;
-    const next=await measure(job.q,null,count);
-    commitLiveResults(next,job.q,job.raw,job.source,job.generation,job.commit);
-  }catch(e){console.error('live resonance failed',e)}
-  finally{liveInFlight=false;if(livePending){clearTimeout(liveTimer);liveTimer=setTimeout(pumpLiveResonance,0)}}
-}
+async function pumpLiveResonance() {
+        if (!livePending)
+            return;
 
-function scheduleLiveFrom(el,source){
+        const job = livePending;
+        livePending = null;
+        const controller = new AbortController();
+        liveAbortController = controller;
+
+        try {
+            if (job.generation !== liveGeneration)
+                return;
+            const count = Number(universalFieldInfo.count) || 0;
+            const next = await measure(
+                job.q,
+                null,
+                count,
+                controller.signal
+            );
+            commitLiveResults(
+                next,
+                job.q,
+                job.raw,
+                job.source,
+                job.generation,
+                job.commit
+            );
+        } catch (error) {
+            if (error?.name !== 'AbortError')
+                console.error('live resonance failed', error);
+        } finally {
+            if (liveAbortController === controller)
+                liveAbortController = null;
+            if (livePending) {
+                clearTimeout(liveTimer);
+                liveTimer = setTimeout(pumpLiveResonance, 0);
+            }
+        }
+    }
+
+    function scheduleLiveFrom(el,source){
   autoResize(el);
   queueLiveResonance(el.value,source);
 }
