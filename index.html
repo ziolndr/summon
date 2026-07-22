@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- SUMMON_HYBRID_INSTANT_LIVE_20260722T150944Z · instant browser field → exact 2.3M refinement on commit -->
     <!-- SUMMON_PROXY_SNAPPY_20260722T145138Z · /api/field-search · abort-stale-live-queries -->
 <!-- SUMMON_SAME_ORIGIN_SEARCH_20260722T142844Z · /api/field-search · no-browser-zrok-post -->
     <!-- SUMMON_DYNAMIC_LIVE_COUNT_20260722T141550Z · /api/field-manifest · no-hardcode -->
@@ -1137,6 +1138,7 @@ body.playing #projector{display:block}
 <!-- SUMMON_RAW_FIELD_FILTERS_V43_20260720T192357Z · raw-ranks · client-view-filter · auto-fill · shareable -->
 <!-- SUMMON_DEFAULT_FIELD_DEPTH_100_V45_20260720T194534Z · raw-100 · page-100 · viewport-10 · filtered-fill-10 -->
 <!-- SUMMON_FILTER_GROWTH_STOP_V46_20260720T195902Z · stop-after-first-dry-selected-format-page · raw-page-remains-100 -->
+    <link rel="preconnect" href="https://api.arbiter.traut.ai" crossorigin>
 </head>
 <body>
 
@@ -1411,13 +1413,14 @@ let resultFilterFilling=false;
 let deckScrollIntent=false,deckScrollIntentTimer=null;
 
 /* live resonance state: debounce input, serialize /v1/embed calls, discard stale answers */
-const LIVE_RESONANCE_DEBOUNCE = 90;
+const LIVE_RESONANCE_DEBOUNCE = 80;
 const LIVE_RESONANCE_MIN_CHARS=4;
 let liveTimer=null;
 let liveGeneration=0;
 let liveInFlight=false;
 let livePending=null;
     let liveAbortController = null;
+    let liveExactAbortController = null;
 let liveSwapTimer=null;
 let liveArtTimer=null;
 const cs={genreMaps:null,movieTotal:0,tvTotal:0,moviePage:1,tvPage:1,movies:[],seen:new Set(),curated:false,complete:false};
@@ -2594,18 +2597,37 @@ function startLeader(q){
 function stopLeader(){clearInterval(tickTimer);clearInterval(ambTimer);document.body.classList.remove('locked','launch')}
 
 /* ═══════ ARBITER ═══════ */
-async function arbiter(payload,attempts=3){
-  let last;
-  for(let i=0;i<attempts;i++){
-    try{
-      const res=await fetch(ARBITER_URL,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload)});
-      const raw=await res.text();
-      if(!res.ok)throw new Error('arbiter '+res.status);
-      return JSON.parse(raw);
-    }catch(e){last=e;if(i<attempts-1){setState('engine busy · retrying');await pause(1000)}}
-  }
-  throw last;
-}
+async function arbiter(payload, attempts=3, signal=null) {
+        let last;
+        for (let i = 0; i < attempts; i++) {
+            try {
+                const res = await fetch(ARBITER_URL, {
+                    method: 'POST',
+                    cache: 'no-store',
+                    signal: signal || undefined,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const raw = await res.text();
+                if (!res.ok)
+                    throw new Error('arbiter ' + res.status);
+                return JSON.parse(raw);
+            } catch (e) {
+                if (e?.name === 'AbortError')
+                    throw e;
+                last = e;
+                if (i < attempts - 1) {
+                    setState('engine busy · retrying');
+                    await pause(180);
+                }
+            }
+        }
+        throw last;
+    }
+
 
 function embedRows(d){
   if(Array.isArray(d?.vectors))return d.vectors;
@@ -2646,83 +2668,167 @@ function topKField(q,corpus,count,k=RETURN_COUNT){
   return top;
 }
 
-async function measure(q, corpus, count, signal=null){
-  const visibleCount=Number(universalFieldInfo.count)||Number(count)||0;
-  setState(`measuring ${visibleCount.toLocaleString()} objects`);
+async function measureFast(q, corpus, count, signal=null) {
+        const visibleCount = Number(universalFieldInfo.count) || Number(count) || 0;
+        setState(`measuring ${visibleCount.toLocaleString()} objects`);
 
-  const generation=++resultPageGeneration;
-  resultQuery=q;
-  resultOffset=0;
-  resultHasMore=false;
-  resultLoadingMore=false;
+        if (!corpus?.vectors || !corpus?.norms || !Array.isArray(corpus?.movies))
+            throw new Error('browser field is not ready');
 
-  const res=await fetch(LIVE_FIELD_URL,{
-    method:'POST',mode:'cors',cache:'no-store',
-            signal: signal || undefined,
-    headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify({text:q,k:RESULT_PAGE_SIZE,offset:0})
-  });
-  const raw=await res.text();
-  if(!res.ok)throw new Error(`live field ${res.status} - ${raw.slice(0,180)}`);
-  const data=JSON.parse(raw);
-  if(generation!==resultPageGeneration)throw new Error('stale result page');
+        const localCount = Math.max(
+            0,
+            Math.min(
+                Number(count) || corpus.movies.length,
+                corpus.movies.length,
+                Math.floor(corpus.vectors.length / corpus.dim),
+                corpus.norms.length
+            )
+        );
 
-  universalFieldInfo={
-    count:Number(data.count)||universalFieldInfo.count||visibleCount,
-    dim:Number(data.dim)||universalFieldInfo.dim||72,
-    use_freq:data.use_freq!==false,
-    units:Number(data.units)||universalFieldInfo.units||0,
-    sources:data.sources||universalFieldInfo.sources||{},
-    updated_at:data.updated_at||universalFieldInfo.updated_at||null
-  };
-  const next=Array.isArray(data.results)?data.results:[];
-  if(!next.length)throw new Error('live field returned no ranked results');
-  resultOffset=next.length;
-  resultHasMore=next.length===RESULT_PAGE_SIZE;
-  setStatus(statusLine('ready'));
-  return next;
-}
+        if (!localCount)
+            throw new Error('browser field is empty');
 
-/* ═══════ SEARCH ═══════ */
-async function search(text){
-  const q=(text||'').trim();
-  if(!q)return;
-  cancelLiveResonance();
-  rollStop();
-  currentQuery=q;
-  $('#query').value=q;$('#revealQuery').value=q;
-  requestAnimationFrame(()=>autoResize($('#revealQuery')));
-  closeProjector();
-  startLeader(q);
-  try{
-    const count=Number(universalFieldInfo.count)||0;
-    $('#workLabel').textContent='summoning';
-    setState(`measuring ${count.toLocaleString()} objects`);
-    try{results=await measure(q,null,count)}
-    catch(e){console.error(e);setState('the engine did not answer');toast('engine unreachable');show('landing');return}
-    if(!results.length){setState('nothing came close');show('landing');return}
-    active=initialSharedResultIndex==null?0:Math.max(0,Math.min(results.length-1,initialSharedResultIndex));
-    initialSharedResultIndex=null;
-    resultFilter=initialSharedResultFilter||'all';
-    initialSharedResultFilter=null;
-    resultFilterFillGeneration++;
+        const useFreq = corpus?.manifest?.use_freq !== false;
+        const embedded = await arbiter(
+            {
+                texts: [q],
+                use_freq: useFreq
+            },
+            1,
+            signal
+        );
 
-    render();
+        const qVector = embedRows(embedded)[0];
 
-    if(resultFilter!=='all'){
-      ensureResultFilterFilled(10).catch(error=>{
-        console.error('filter fill failed',error);
-      });
+        if (!qVector || qVector.length !== corpus.dim)
+            throw new Error('query embedding dimension mismatch');
+
+        const measured = topKField(
+            qVector,
+            corpus,
+            localCount,
+            Math.min(RESULT_PAGE_SIZE, localCount)
+        );
+
+        resultQuery = q;
+        resultOffset = measured.length;
+        resultHasMore = false;
+        resultLoadingMore = false;
+
+        return measured.map(x => ({
+            ...corpus.movies[x.index],
+            score: x.score
+        }));
     }
-    $('#reveal').classList.add('on');
-    $('#landing').classList.remove('on');
-    $('#leader').classList.remove('on');
-    requestAnimationFrame(()=>{autoResize($('#revealQuery'));fitRevealContent()});
-    history.replaceState(null,'','#'+encodeURIComponent(q));
-    results.forEach(m=>{if(!m.posterPath&&!m.backdropPath&&!m.imageUrl){resolveArt(m).then(ok=>{if(ok&&$('#reveal').classList.contains('on'))render()}).catch(()=>{})}});
-    Promise.all(results.map(hydrateProviders)).then(()=>{if($('#reveal').classList.contains('on'))render()}).catch(()=>{});
-  }finally{stopLeader()}
-}
+
+    async function measureExact(q, count, signal=null) {
+        const visibleCount = Number(universalFieldInfo.count) || Number(count) || 0;
+        setState(`resolving ${visibleCount.toLocaleString()} objects`);
+
+        const generation = ++resultPageGeneration;
+        resultQuery = q;
+        resultOffset = 0;
+        resultHasMore = false;
+        resultLoadingMore = false;
+
+        const res = await fetch(LIVE_FIELD_URL, {
+            method: 'POST',
+            cache: 'no-store',
+            signal: signal || undefined,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                text: q,
+                k: RESULT_PAGE_SIZE,
+                offset: 0
+            })
+        });
+
+        const raw = await res.text();
+
+        if (!res.ok)
+            throw new Error(
+                `live field ${res.status} - ${raw.slice(0, 180)}`
+            );
+
+        const data = JSON.parse(raw);
+
+        if (generation !== resultPageGeneration)
+            throw new DOMException(
+                'stale exact result',
+                'AbortError'
+            );
+
+        universalFieldInfo = {
+            count: Number(data.count) || universalFieldInfo.count || visibleCount,
+            dim: Number(data.dim) || universalFieldInfo.dim || 72,
+            use_freq: data.use_freq !== false,
+            units: Number(data.units) || universalFieldInfo.units || 0,
+            sources: data.sources || universalFieldInfo.sources || {},
+            updated_at: data.updated_at || universalFieldInfo.updated_at || null
+        };
+
+        if (universalFieldInfo.count)
+            setFieldOpening(universalFieldInfo.count);
+
+        const next = Array.isArray(data.results)
+            ? data.results
+            : [];
+
+        if (!next.length)
+            throw new Error(
+                'live field returned no ranked results'
+            );
+
+        resultOffset = next.length;
+        resultHasMore = next.length === RESULT_PAGE_SIZE;
+        setStatus(statusLine('ready'));
+        return next;
+    }
+
+    async function measure(q, corpus, count, signal=null) {
+        if (corpus)
+            return measureFast(q, corpus, count, signal);
+        return measureExact(q, count, signal);
+    }
+
+    /* ═══════ SEARCH ═══════ */
+async function search(text) {
+        const q = String(text || '').trim();
+
+        if (!q)
+            return;
+
+        const landingInput = $('#query');
+        const revealInput = $('#revealQuery');
+
+        if (landingInput)
+            landingInput.value = q;
+
+        if (revealInput)
+            revealInput.value = q;
+
+        requestAnimationFrame(
+            () => autoResize(revealInput)
+        );
+
+        const source = $('#landing')?.classList.contains('on')
+            ? 'landing'
+            : 'reveal';
+
+        queueLiveResonance(
+            q,
+            source,
+            {
+                immediate: true,
+                commit: true
+            }
+        );
+    }
+
+
 
 
 const providerCache=new Map();
@@ -3553,10 +3659,17 @@ function queueLiveResonance(text, source='reveal', {immediate=false, commit=fals
         const raw = String(text || '');
         const q = raw.trim();
         const generation = ++liveGeneration;
+
         clearTimeout(liveTimer);
+
         if (liveAbortController) {
             liveAbortController.abort();
             liveAbortController = null;
+        }
+
+        if (liveExactAbortController) {
+            liveExactAbortController.abort();
+            liveExactAbortController = null;
         }
 
         if (q.length < LIVE_RESONANCE_MIN_CHARS) {
@@ -3564,12 +3677,20 @@ function queueLiveResonance(text, source='reveal', {immediate=false, commit=fals
             return;
         }
 
-        livePending = {q, raw, source, generation, commit};
+        livePending = {
+            q,
+            raw,
+            source,
+            generation,
+            commit
+        };
+
         liveTimer = setTimeout(
             pumpLiveResonance,
             immediate ? 0 : LIVE_RESONANCE_DEBOUNCE
         );
     }
+
 
     function animateLiveSwap(){
   const reveal=$('#reveal');
@@ -3661,19 +3782,46 @@ async function pumpLiveResonance() {
 
         const job = livePending;
         livePending = null;
+
+        if (liveAbortController)
+            liveAbortController.abort();
+
         const controller = new AbortController();
         liveAbortController = controller;
+        liveInFlight = true;
 
         try {
-            if (job.generation !== liveGeneration)
+            let corpus = cache;
+
+            if (!corpus)
+                corpus = await loadCorpus();
+
+            if (
+                controller.signal.aborted ||
+                job.generation !== liveGeneration
+            )
                 return;
-            const count = Number(universalFieldInfo.count) || 0;
-            const next = await measure(
+
+            const localCount = Math.min(
+                Number(corpus?.manifest?.count) ||
+                    Number(corpus?.movies?.length) ||
+                    0,
+                Number(corpus?.movies?.length) || 0
+            );
+
+            const next = await measureFast(
                 job.q,
-                null,
-                count,
+                corpus,
+                localCount,
                 controller.signal
             );
+
+            if (
+                controller.signal.aborted ||
+                job.generation !== liveGeneration
+            )
+                return;
+
             commitLiveResults(
                 next,
                 job.q,
@@ -3682,18 +3830,70 @@ async function pumpLiveResonance() {
                 job.generation,
                 job.commit
             );
-        } catch (error) {
-            if (error?.name !== 'AbortError')
-                console.error('live resonance failed', error);
+
+            if (job.commit) {
+                const exactController = new AbortController();
+                liveExactAbortController = exactController;
+                const exactGeneration = job.generation;
+                const exactCount =
+                    Number(universalFieldInfo.count) || 0;
+
+                measureExact(
+                    job.q,
+                    exactCount,
+                    exactController.signal
+                ).then(exact => {
+                    if (
+                        exactController.signal.aborted ||
+                        exactGeneration !== liveGeneration ||
+                        liveInputValue(job.source) !== job.q
+                    )
+                        return;
+
+                    commitLiveResults(
+                        exact,
+                        job.q,
+                        job.raw,
+                        job.source,
+                        exactGeneration,
+                        true
+                    );
+                }).catch(error => {
+                    if (error?.name !== 'AbortError')
+                        console.error(
+                            'exact field refinement failed',
+                            error
+                        );
+                }).finally(() => {
+                    if (
+                        liveExactAbortController ===
+                        exactController
+                    )
+                        liveExactAbortController = null;
+                });
+            }
+        } catch (e) {
+            if (e?.name !== 'AbortError')
+                console.error(
+                    'live resonance failed',
+                    e
+                );
         } finally {
             if (liveAbortController === controller)
                 liveAbortController = null;
+
+            liveInFlight = false;
+
             if (livePending) {
                 clearTimeout(liveTimer);
-                liveTimer = setTimeout(pumpLiveResonance, 0);
+                liveTimer = setTimeout(
+                    pumpLiveResonance,
+                    0
+                );
             }
         }
     }
+
 
     function scheduleLiveFrom(el,source){
   autoResize(el);
