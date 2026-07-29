@@ -5154,5 +5154,151 @@ if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{
 </script>
 
 <!-- SUMMON_RESONANT_PROPERTY_LAYOUT_V1_END -->
+
+<script>
+/* SUMMON_LIVE_FIELD_COUNT_V1 */
+(() => {
+  const COUNT_URL = "/field/v1/manifest";
+  const COUNT_SELECTORS = [
+    "[data-field-count]",
+    "[data-object-count]",
+    "[data-record-count]",
+    "#field-count",
+    "#object-count",
+    "#record-count",
+    ".field-count",
+    ".object-count",
+    ".record-count"
+  ];
+
+  const staleCountPattern =
+    /\b(?:200(?:,\s?000|000)|200\s*[kK])\b(?=\s*(?:objects?|records?)\b)/g;
+
+  const formattedCount = count =>
+    Number(count).toLocaleString("en-US");
+
+  const updateKnownNodes = count => {
+    const formatted = formattedCount(count);
+
+    for (const selector of COUNT_SELECTORS) {
+      for (const node of document.querySelectorAll(selector)) {
+        const existing = String(node.textContent || "");
+
+        if (/\d/.test(existing)) {
+          node.textContent = existing.replace(
+            /\b\d[\d,]*\b/,
+            formatted
+          );
+        } else {
+          node.textContent = formatted;
+        }
+
+        node.dataset.liveFieldCount = String(count);
+      }
+    }
+  };
+
+  const updateStaleTextNodes = count => {
+    const formatted = formattedCount(count);
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT
+    );
+
+    const nodes = [];
+
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      const parent = node.parentElement;
+
+      if (
+        !parent ||
+        parent.closest("script, style, textarea, pre, code")
+      ) {
+        continue;
+      }
+
+      if (staleCountPattern.test(node.nodeValue || "")) {
+        nodes.push(node);
+      }
+
+      staleCountPattern.lastIndex = 0;
+    }
+
+    for (const node of nodes) {
+      node.nodeValue = String(node.nodeValue || "").replace(
+        staleCountPattern,
+        formatted
+      );
+      staleCountPattern.lastIndex = 0;
+    }
+  };
+
+  const syncLiveFieldCount = async () => {
+    const response = await fetch(COUNT_URL, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json"
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `SUMMON manifest returned ${response.status}`
+      );
+    }
+
+    const manifest = await response.json();
+    const count = Number(manifest.count || 0);
+
+    if (!Number.isFinite(count) || count < 1) {
+      throw new Error("SUMMON manifest returned no count");
+    }
+
+    window.SUMMON_FIELD_MANIFEST = manifest;
+    window.SUMMON_FIELD_COUNT = count;
+    document.documentElement.dataset.fieldCount =
+      String(count);
+
+    updateKnownNodes(count);
+    updateStaleTextNodes(count);
+
+    window.dispatchEvent(
+      new CustomEvent("summon:field-manifest", {
+        detail: manifest
+      })
+    );
+  };
+
+  const start = () => {
+    syncLiveFieldCount().catch(error => {
+      console.error(
+        "SUMMON live field count synchronization failed",
+        error
+      );
+    });
+
+    window.setInterval(() => {
+      syncLiveFieldCount().catch(error => {
+        console.error(
+          "SUMMON live field count refresh failed",
+          error
+        );
+      });
+    }, 20000);
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+      start,
+      { once: true }
+    );
+  } else {
+    start();
+  }
+})();
+</script>
+
 </body>
 </html>
