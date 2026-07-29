@@ -11,10 +11,11 @@ from urllib.request import Request, urlopen
 DEFAULT_BACKEND = "https://89kzehob57fw.shares.zrok.io"
 ROOT = Path(__file__).resolve().parent
 PORT = int(os.environ.get("PORT", "10000"))
-BACKEND = os.environ.get(
-    "SUMMON_BACKEND_URL",
-    DEFAULT_BACKEND,
-).rstrip("/")
+
+# Use the repository-pinned backend for this repair. This deliberately
+# prevents an old Render SUMMON_BACKEND_URL value from overriding the
+# current live zrok share.
+BACKEND = DEFAULT_BACKEND.rstrip("/")
 
 HOP_BY_HOP = {
     "connection",
@@ -29,7 +30,7 @@ HOP_BY_HOP = {
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "SUMMONRenderProxy/1.0"
+    server_version = "SUMMONRenderProxy/2.0"
 
     def log_message(self, fmt: str, *args: object) -> None:
         print(
@@ -75,8 +76,14 @@ class Handler(BaseHTTPRequestHandler):
             ).encode("utf-8")
 
             self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(payload)))
+            self.send_header(
+                "Content-Type",
+                "application/json; charset=utf-8",
+            )
+            self.send_header(
+                "Content-Length",
+                str(len(payload)),
+            )
             self._cors()
             self.end_headers()
 
@@ -92,7 +99,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def _proxy(self, head_only: bool) -> None:
         target = BACKEND + self.path
-        length = int(self.headers.get("Content-Length", "0") or 0)
+        length = int(
+            self.headers.get("Content-Length", "0") or 0
+        )
         body = self.rfile.read(length) if length else None
 
         blocked_request_headers = {
@@ -110,11 +119,8 @@ class Handler(BaseHTTPRequestHandler):
             and key.lower() not in blocked_request_headers
         }
 
-        # zrok can return an HTML browser interstitial when Chrome's
-        # request headers are forwarded upstream. Render must identify
-        # itself as a server-side proxy and explicitly skip that page.
         headers["Accept"] = "application/json"
-        headers["User-Agent"] = "SUMMON-render-proxy/1.0"
+        headers["User-Agent"] = "SUMMON-render-proxy/2.0"
         headers["skip_zrok_interstitial"] = "1"
 
         request = Request(
@@ -131,11 +137,19 @@ class Handler(BaseHTTPRequestHandler):
 
                 for key, value in response.headers.items():
                     lower = key.lower()
-                    if lower in HOP_BY_HOP or lower == "content-length":
+
+                    if (
+                        lower in HOP_BY_HOP
+                        or lower == "content-length"
+                    ):
                         continue
+
                     self.send_header(key, value)
 
-                self.send_header("Content-Length", str(len(payload)))
+                self.send_header(
+                    "Content-Length",
+                    str(len(payload)),
+                )
                 self._cors()
                 self.end_headers()
 
@@ -149,10 +163,13 @@ class Handler(BaseHTTPRequestHandler):
                 "Content-Type",
                 error.headers.get(
                     "Content-Type",
-                    "application/json",
+                    "application/json; charset=utf-8",
                 ),
             )
-            self.send_header("Content-Length", str(len(payload)))
+            self.send_header(
+                "Content-Length",
+                str(len(payload)),
+            )
             self._cors()
             self.end_headers()
 
@@ -169,8 +186,14 @@ class Handler(BaseHTTPRequestHandler):
             ).encode("utf-8")
 
             self.send_response(502)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(payload)))
+            self.send_header(
+                "Content-Type",
+                "application/json; charset=utf-8",
+            )
+            self.send_header(
+                "Content-Length",
+                str(len(payload)),
+            )
             self._cors()
             self.end_headers()
 
@@ -209,10 +232,13 @@ class Handler(BaseHTTPRequestHandler):
 
         self.send_response(200)
         self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(payload)))
+        self.send_header(
+            "Content-Length",
+            str(len(payload)),
+        )
         self.send_header(
             "Cache-Control",
-            "no-cache"
+            "no-store"
             if candidate.name == "index.html"
             else "public, max-age=3600",
         )
