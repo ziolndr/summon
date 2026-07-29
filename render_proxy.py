@@ -95,12 +95,27 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0") or 0)
         body = self.rfile.read(length) if length else None
 
+        blocked_request_headers = {
+            "host",
+            "user-agent",
+            "accept-encoding",
+            "origin",
+            "referer",
+        }
+
         headers = {
             key: value
             for key, value in self.headers.items()
             if key.lower() not in HOP_BY_HOP
-            and key.lower() != "host"
+            and key.lower() not in blocked_request_headers
         }
+
+        # zrok can return an HTML browser interstitial when Chrome's
+        # request headers are forwarded upstream. Render must identify
+        # itself as a server-side proxy and explicitly skip that page.
+        headers["Accept"] = "application/json"
+        headers["User-Agent"] = "SUMMON-render-proxy/1.0"
+        headers["skip_zrok_interstitial"] = "1"
 
         request = Request(
             target,
