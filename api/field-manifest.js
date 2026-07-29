@@ -1,5 +1,5 @@
 const DEFAULT_FIELD_ORIGIN =
-  'https://summon-joel-ded59863.shares.zrok.io';
+  'https://89kzehob57fw.shares.zrok.io';
 
 export default async function handler(request, response) {
   if (request.method !== 'GET') {
