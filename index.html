@@ -5156,50 +5156,68 @@ if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{
 <!-- SUMMON_RESONANT_PROPERTY_LAYOUT_V1_END -->
 
 <script>
-/* SUMMON_LIVE_FIELD_COUNT_V1 */
+/* SUMMON_LIVE_FIELD_COUNT_V3 */
 (() => {
-  const COUNT_URL = "/field/v1/manifest";
-  const COUNT_SELECTORS = [
-    "[data-field-count]",
-    "[data-object-count]",
-    "[data-record-count]",
-    "#field-count",
-    "#object-count",
-    "#record-count",
-    ".field-count",
-    ".object-count",
-    ".record-count"
-  ];
+  const MANIFEST_URL = "/field/v1/manifest";
+  let liveCount = 0;
+  let scheduled = false;
 
-  const staleCountPattern =
-    /\b(?:200(?:,\s?000|000)|200\s*[kK])\b(?=\s*(?:objects?|records?)\b)/g;
+  const formatCount = value =>
+    Number(value).toLocaleString("en-US");
 
-  const formattedCount = count =>
-    Number(count).toLocaleString("en-US");
-
-  const updateKnownNodes = count => {
-    const formatted = formattedCount(count);
-
-    for (const selector of COUNT_SELECTORS) {
-      for (const node of document.querySelectorAll(selector)) {
-        const existing = String(node.textContent || "");
-
-        if (/\d/.test(existing)) {
-          node.textContent = existing.replace(
-            /\b\d[\d,]*\b/,
-            formatted
-          );
-        } else {
-          node.textContent = formatted;
-        }
-
-        node.dataset.liveFieldCount = String(count);
-      }
+  const replaceObjectCountText = text => {
+    if (!liveCount || !/\bobjects?\b/i.test(text)) {
+      return text;
     }
+
+    return text.replace(
+      /\b\d[\d,]*\b(?=\s+objects?\b)/gi,
+      formatCount(liveCount)
+    );
   };
 
-  const updateStaleTextNodes = count => {
-    const formatted = formattedCount(count);
+  const applyLiveCount = () => {
+    scheduled = false;
+
+    if (!liveCount || !document.body) {
+      return;
+    }
+
+    document.documentElement.dataset.fieldCount =
+      String(liveCount);
+
+    const selectors = [
+      "[data-field-count]",
+      "[data-object-count]",
+      "[data-record-count]",
+      "#field-count",
+      "#object-count",
+      "#record-count",
+      ".field-count",
+      ".object-count",
+      ".record-count"
+    ];
+
+    for (const selector of selectors) {
+      for (const element of document.querySelectorAll(selector)) {
+        const current = String(element.textContent || "");
+
+        if (/\bobjects?\b/i.test(current)) {
+          element.textContent = replaceObjectCountText(current);
+        } else if (/\d/.test(current)) {
+          element.textContent = current.replace(
+            /\b\d[\d,]*\b/,
+            formatCount(liveCount)
+          );
+        } else {
+          element.textContent = `${formatCount(liveCount)} objects`;
+        }
+
+        element.dataset.liveFieldCount =
+          String(liveCount);
+      }
+    }
+
     const walker = document.createTreeWalker(
       document.body,
       NodeFilter.SHOW_TEXT
@@ -5213,29 +5231,38 @@ if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{
 
       if (
         !parent ||
-        parent.closest("script, style, textarea, pre, code")
+        parent.closest(
+          "script, style, textarea, pre, code"
+        )
       ) {
         continue;
       }
 
-      if (staleCountPattern.test(node.nodeValue || "")) {
+      const current = String(node.nodeValue || "");
+
+      if (/\b\d[\d,]*\s+objects?\b/i.test(current)) {
         nodes.push(node);
       }
-
-      staleCountPattern.lastIndex = 0;
     }
 
     for (const node of nodes) {
-      node.nodeValue = String(node.nodeValue || "").replace(
-        staleCountPattern,
-        formatted
+      node.nodeValue = replaceObjectCountText(
+        String(node.nodeValue || "")
       );
-      staleCountPattern.lastIndex = 0;
     }
   };
 
-  const syncLiveFieldCount = async () => {
-    const response = await fetch(COUNT_URL, {
+  const scheduleApply = () => {
+    if (scheduled) {
+      return;
+    }
+
+    scheduled = true;
+    requestAnimationFrame(applyLiveCount);
+  };
+
+  const loadManifest = async () => {
+    const response = await fetch(MANIFEST_URL, {
       cache: "no-store",
       headers: {
         Accept: "application/json"
@@ -5252,16 +5279,16 @@ if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{
     const count = Number(manifest.count || 0);
 
     if (!Number.isFinite(count) || count < 1) {
-      throw new Error("SUMMON manifest returned no count");
+      throw new Error(
+        "SUMMON manifest returned no object count"
+      );
     }
 
+    liveCount = count;
     window.SUMMON_FIELD_MANIFEST = manifest;
     window.SUMMON_FIELD_COUNT = count;
-    document.documentElement.dataset.fieldCount =
-      String(count);
 
-    updateKnownNodes(count);
-    updateStaleTextNodes(count);
+    scheduleApply();
 
     window.dispatchEvent(
       new CustomEvent("summon:field-manifest", {
@@ -5271,15 +5298,25 @@ if(document.fonts?.ready)document.fonts.ready.then(fitRevealContent).catch(()=>{
   };
 
   const start = () => {
-    syncLiveFieldCount().catch(error => {
+    const observer = new MutationObserver(() => {
+      scheduleApply();
+    });
+
+    observer.observe(document.documentElement, {
+      subtree: true,
+      childList: true,
+      characterData: true
+    });
+
+    loadManifest().catch(error => {
       console.error(
-        "SUMMON live field count synchronization failed",
+        "SUMMON live field count failed",
         error
       );
     });
 
     window.setInterval(() => {
-      syncLiveFieldCount().catch(error => {
+      loadManifest().catch(error => {
         console.error(
           "SUMMON live field count refresh failed",
           error
